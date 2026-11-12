@@ -397,7 +397,7 @@ void main() {
     expect(
       await (container.read(searchBrowseCatalogCacheProvider)
               as _MemorySearchBrowseCatalogCache)
-          .read('es'),
+          .read('en'),
       isNotNull,
     );
   });

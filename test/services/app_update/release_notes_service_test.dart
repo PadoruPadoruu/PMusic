@@ -43,7 +43,7 @@ with a wrapped line.
 do not show installation commands
 ```
 '''),
-      languageCode: 'es',
+      languageCode: 'en',
     );
 
     expect(result.items, [
@@ -140,7 +140,7 @@ do not show installation commands
   }
 
   test('same language only detects and preserves the GitHub text', () async {
-    final session = _Session(source: 'es');
+    final session = _Session(source: 'en');
     final service = ReleaseNotesService(
       cache: _Cache(),
       sessionFactory: () => session,
@@ -149,7 +149,7 @@ do not show installation commands
 
     final result = await service.load(
       _release('- Mejor reproducción.\n- Nuevos widgets.'),
-      languageCode: 'es',
+      languageCode: 'en',
     );
 
     expect(result.items, ['Mejor reproducción.', 'Nuevos widgets.']);
@@ -174,14 +174,14 @@ do not show installation commands
       addTearDown(service.dispose);
       final release = _release('- Better playback.');
 
-      final first = service.load(release, languageCode: 'es');
-      final second = service.load(release, languageCode: 'es');
+      final first = service.load(release, languageCode: 'en');
+      final second = service.load(release, languageCode: 'en');
       expect(identical(first, second), isTrue);
       gate.complete();
       final result = await first;
       expect((await second).items, result.items);
       expect(
-        (await service.load(release, languageCode: 'es')).items,
+        (await service.load(release, languageCode: 'en')).items,
         result.items,
       );
       expect(sessions, 1);
@@ -202,20 +202,20 @@ do not show installation commands
       );
       final first = service();
       final release = _release('- Better playback.');
-      await first.load(release, languageCode: 'es');
+      await first.load(release, languageCode: 'en');
       first.dispose();
       final next = service();
       addTearDown(next.dispose);
 
-      expect((await next.load(release, languageCode: 'es')).items, [
-        'es:Better playback.',
+      expect((await next.load(release, languageCode: 'en')).items, [
+        'en:Better playback.',
       ]);
       expect(sessions, 1);
       await next.load(release, languageCode: 'fr');
-      await next.load(_release('- New widgets.'), languageCode: 'es');
+      await next.load(_release('- New widgets.'), languageCode: 'en');
       await next.load(
         _release('- Better playback.', tag: 'v1.3.1'),
-        languageCode: 'es',
+        languageCode: 'en',
       );
       expect(sessions, 4);
       expect(cache.values, hasLength(4));
@@ -234,10 +234,10 @@ do not show installation commands
 
       final result = await service.load(
         _release('- Better playback.\n- New widgets.'),
-        languageCode: 'es',
+        languageCode: 'en',
       );
 
-      expect(result.items, ['es:Better playback.', 'es:New widgets.']);
+      expect(result.items, ['en:Better playback.', 'en:New widgets.']);
       expect(
         session.calls
             .where((call) => !call.detectOnly)
@@ -262,14 +262,14 @@ do not show installation commands
       addTearDown(service.dispose);
       final release = _release('- Better playback.\n- New widgets.');
 
-      final result = await service.load(release, languageCode: 'es');
+      final result = await service.load(release, languageCode: 'en');
 
       expect(result.items, ['Better playback.', 'New widgets.']);
       expect(result.translationFailed, isTrue);
       expect(result.translated, isFalse);
       expect(cache.values, isEmpty);
-      final retry = await service.load(release, languageCode: 'es');
-      expect(retry.items, ['es:Better playback.', 'es:New widgets.']);
+      final retry = await service.load(release, languageCode: 'en');
+      expect(retry.items, ['en:Better playback.', 'en:New widgets.']);
       expect(retry.translationFailed, isFalse);
       expect(sessionCount, 2);
     },
@@ -284,10 +284,10 @@ do not show installation commands
 
     final result = await service.load(
       _release('- Better playback.'),
-      languageCode: 'es',
+      languageCode: 'en',
     );
 
-    expect(result.items, ['es:Better playback.']);
+    expect(result.items, ['en:Better playback.']);
     expect(result.translationFailed, isFalse);
   });
 
@@ -304,7 +304,7 @@ do not show installation commands
 
       final result = await service.load(
         _release('- 日本語の歌詞とウィジェット🎵を改善しました。\n- 音楽を楽しみましょう。'),
-        languageCode: 'es',
+        languageCode: 'en',
       );
 
       expect(result.translationFailed, isFalse);
@@ -331,7 +331,7 @@ do not show installation commands
 
       final timedOut = await service.load(
         _release('- Better playback.'),
-        languageCode: 'es',
+        languageCode: 'en',
       );
 
       expect(timedOut.translationFailed, isTrue);
@@ -346,7 +346,7 @@ do not show installation commands
       addTearDown(limited.dispose);
       final overBudget = await limited.load(
         _release('- Better playback.'),
-        languageCode: 'es',
+        languageCode: 'en',
       );
       expect(overBudget.translationFailed, isTrue);
       expect(overBudget.items, ['Better playback.']);
@@ -365,7 +365,7 @@ do not show installation commands
 
       final oversized = await service.load(
         _release('- Better playback.'),
-        languageCode: 'es',
+        languageCode: 'en',
       );
       final unsupported = await service.load(
         _release('- Hi.'),
@@ -389,7 +389,7 @@ do not show installation commands
 
     final pending = service.load(
       _release('- Better playback.'),
-      languageCode: 'es',
+      languageCode: 'en',
     );
     await started.future;
     service.dispose();
@@ -411,7 +411,7 @@ do not show installation commands
 
     final result = await service.load(
       _release('## v1.3.0\n![image](https://example.com/img)'),
-      languageCode: 'es',
+      languageCode: 'en',
     );
 
     expect(result.items, isEmpty);

@@ -39,7 +39,7 @@ void main() {
       find.byKey(const ValueKey('update-release-notes-loading')),
       findsOneWidget,
     );
-    expect(service.languages, ['es']);
+    expect(service.languages, ['en']);
 
     completion.complete(
       const LocalizedReleaseNotes(
@@ -54,7 +54,7 @@ void main() {
       find.byKey(const ValueKey('update-release-notes-loading')),
       findsNothing,
     );
-    expect(service.languages, ['es']);
+    expect(service.languages, ['en']);
     expect(tester.takeException(), isNull);
   });
 

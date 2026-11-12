@@ -57,9 +57,9 @@ void main() {
         ],
       );
 
-      await cache.write('es', snapshot);
+      await cache.write('en', snapshot);
 
-      final restored = await cache.read('es');
+      final restored = await cache.read('en');
       expect(restored?.usesLiveYouTubeMusicCategories, isTrue);
       expect(restored?.categories.single.title, 'ConcentraciÃ³n');
       expect(restored?.categories.single.params, 'opaque-focus');

@@ -39,7 +39,7 @@ void main() {
       isFavorite: false,
       repeatMode: 'off',
       accentColor: 0xFF22D3EE,
-      languageCode: 'es',
+      languageCode: 'en',
     );
 
     publish(true);
@@ -77,7 +77,7 @@ void main() {
           isFavorite: favorite,
           repeatMode: repeat,
           accentColor: 0xFF22D3EE,
-          languageCode: 'es',
+          languageCode: 'en',
         );
 
     publish(favorite: false, repeat: 'off');
@@ -109,7 +109,7 @@ void main() {
       isFavorite: false,
       repeatMode: 'off',
       accentColor: 0xFF22D3EE,
-      languageCode: 'es',
+      languageCode: 'en',
       queue: const [
         {'id': 'track-a', 'title': 'A', 'artist': 'Artist'},
         {'id': 'track-b', 'title': 'B', 'artist': 'Artist'},
@@ -181,7 +181,7 @@ void main() {
         isFavorite: false,
         repeatMode: 'off',
         accentColor: 0xFF22D3EE,
-        languageCode: 'es',
+        languageCode: 'en',
         queue: List.generate(
           30,
           (index) => {
@@ -247,7 +247,7 @@ void main() {
       isFavorite: favorite,
       repeatMode: 'off',
       accentColor: 0xFF22D3EE,
-      languageCode: 'es',
+      languageCode: 'en',
     );
 
     publish(false, false);
@@ -296,7 +296,7 @@ void main() {
         isFavorite: false,
         repeatMode: 'off',
         accentColor: 0xFF22D3EE,
-        languageCode: 'es',
+        languageCode: 'en',
       );
 
       publish('1');

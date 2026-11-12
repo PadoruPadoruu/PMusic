@@ -36,7 +36,7 @@ void main() {
         final value = await fetchTtwid(
           timeout: const Duration(seconds: 3),
           userAgent: 'BStream-Test-UA',
-          language: 'es',
+          language: 'en',
           region: 'NI',
           registrationUri: _serverUri(server, '/ttwid/register/'),
           bootstrapUris: const [],
@@ -223,7 +223,7 @@ void main() {
       'webcast-ws.us.tiktok.com',
       'webcast-ws.eu.tiktok.com',
     ]);
-    expect(tiktokCdnCandidates('webcast-ws.tiktok.com', region: 'ES'), [
+    expect(tiktokCdnCandidates('webcast-ws.tiktok.com', region: 'EN'), [
       'webcast-ws.tiktok.com',
       'webcast-ws.eu.tiktok.com',
       'webcast-ws.us.tiktok.com',

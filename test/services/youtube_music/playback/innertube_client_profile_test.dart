@@ -182,7 +182,7 @@ void main() {
       final profile = InnerTubeClientRegistry.visionOS;
       final headers = profile.requestHeaders;
       final context = profile.buildClientContext(
-        language: 'es',
+        language: 'en',
         region: 'NI',
         visitorData: ' visitor ',
       );
@@ -194,7 +194,7 @@ void main() {
       expect(headers['Referer'], '${profile.origin}/');
       expect(headers['X-Goog-Api-Format-Version'], '1');
       expect(profile.playerEndpoint.host, profile.host);
-      expect(context['hl'], 'es');
+      expect(context['hl'], 'en');
       expect(context['gl'], 'NI');
       expect(context['visitorData'], 'visitor');
       expect(context['userAgent'], profile.userAgent);

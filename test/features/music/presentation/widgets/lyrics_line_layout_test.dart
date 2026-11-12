@@ -76,7 +76,7 @@ void main() {
                 secondaryFontSize: romanizedLyricsFontSize(37),
                 textScaler: textScaler,
                 textDirection: TextDirection.ltr,
-                locale: const Locale('es'),
+                locale: const Locale('en'),
                 textHeightBehavior: heightBehavior,
               );
               for (final active in [false, true]) {
@@ -188,7 +188,7 @@ void main() {
       secondaryFontSize: 20,
       textScaler: textScaler,
       textDirection: TextDirection.ltr,
-      locale: const Locale('es'),
+      locale: const Locale('en'),
       accessibility: accessibility,
     );
     await tester.pumpWidget(

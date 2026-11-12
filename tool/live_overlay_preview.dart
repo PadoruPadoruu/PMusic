@@ -92,7 +92,7 @@ Map<String, Object> _previewState(LiveWidgetStyle style) => <String, Object>{
   'style': style.code,
   'type': 'state',
   'version': 1,
-  'locale': 'es',
+  'locale': 'zh',
   'labels': <String, String>{
     'resolving': 'BUSCANDO',
     'downloading': 'CARGANDO',

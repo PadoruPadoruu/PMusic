@@ -249,7 +249,7 @@ void main() {
         playerEndpoint: Uri.parse('https://example.test/player'),
         nextEndpoint: Uri.parse('https://example.test/next'),
         bootstrapUri: Uri.parse('https://example.test/bootstrap'),
-        language: 'es',
+        language: 'en',
         region: 'ni',
         userAgent: 'BStreamMusic/RelatedTest',
         retryDelay: _immediateRetryDelay,

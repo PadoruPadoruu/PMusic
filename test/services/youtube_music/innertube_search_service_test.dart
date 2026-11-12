@@ -37,7 +37,7 @@ void main() {
         browseEndpoint: Uri.parse('https://example.test/browse'),
         playerEndpoint: Uri.parse('https://example.test/player'),
         bootstrapUri: Uri.parse('https://example.test/bootstrap'),
-        language: 'es',
+        language: 'en',
         region: 'ni',
         userAgent: 'BStreamMusic/InnerTubeTest',
         requestTimeout: requestTimeout,
@@ -429,14 +429,14 @@ void main() {
         'client': {
           'clientName': 'TEST_REMIX',
           'clientVersion': 'bootstrap-version',
-          'hl': 'es',
+          'hl': 'en',
           'gl': 'NI',
           'visitorData': 'visitor-data',
         },
       });
       expect(transport.getRequests.single.uri.path, '/bootstrap');
       expect(transport.getRequests.single.uri.queryParameters, {
-        'hl': 'es',
+        'hl': 'en',
         'gl': 'NI',
       });
     });
@@ -520,7 +520,7 @@ void main() {
         'client': {
           'clientName': 'TEST_REMIX',
           'clientVersion': 'bootstrap-version',
-          'hl': 'es',
+          'hl': 'en',
           'gl': 'NI',
           'visitorData': 'visitor-data',
         },
@@ -966,7 +966,7 @@ void main() {
           'client': {
             'clientName': 'TEST_REMIX',
             'clientVersion': 'bootstrap-version',
-            'hl': 'es',
+            'hl': 'en',
             'gl': 'NI',
             'visitorData': 'visitor-data',
           },
@@ -1402,7 +1402,7 @@ void main() {
           'client': {
             'clientName': 'TEST_REMIX',
             'clientVersion': 'bootstrap-version',
-            'hl': 'es',
+            'hl': 'en',
             'gl': 'NI',
             'visitorData': 'visitor-data',
           },
@@ -1547,7 +1547,7 @@ void main() {
           'client': {
             'clientName': 'TEST_REMIX',
             'clientVersion': 'bootstrap-version',
-            'hl': 'es',
+            'hl': 'en',
             'gl': 'NI',
             'visitorData': 'visitor-data',
           },

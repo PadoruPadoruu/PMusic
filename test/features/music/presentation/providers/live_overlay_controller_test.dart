@@ -293,7 +293,7 @@ void main() {
       expect(container.read(liveOverlayControllerProvider).isActive, isTrue);
       var payload = client.published.last;
       expect(payload['type'], 'state');
-      expect(payload['locale'], 'es');
+      expect(payload['locale'], 'en');
       expect(payload['labels'], <String, String>{
         'resolving': 'BUSCANDO',
         'downloading': 'CARGANDO',

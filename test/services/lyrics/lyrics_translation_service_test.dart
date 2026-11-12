@@ -19,13 +19,13 @@ LyricsDocument _document(List<String> texts) => LyricsDocument(
 
 void main() {
   test('same language only detects and does not translate', () async {
-    final session = _Session(source: 'es');
+    final session = _Session(source: 'en');
     final service = LyricsTranslationService(sessionFactory: () => session);
     addTearDown(service.dispose);
     final result = await service
         .translateDocument(
           _document(['Una prueba', 'Música']),
-          targetLanguage: 'es',
+          targetLanguage: 'en',
         )
         .result;
     expect(result.alreadyInTargetLanguage, isTrue);
@@ -42,7 +42,7 @@ void main() {
       addTearDown(service.dispose);
       final document = _document(['One', '', 'Two', 'One', '  Two  ']);
       final result = await service
-          .translateDocument(document, targetLanguage: 'es')
+          .translateDocument(document, targetLanguage: 'en')
           .result;
       expect(result.syncedLines, ['es:One', '', 'es:Two', 'es:One', 'es:Two']);
       expect(
@@ -60,7 +60,7 @@ void main() {
     final service = LyricsTranslationService(sessionFactory: () => session);
     addTearDown(service.dispose);
     final result = await service
-        .translateDocument(_document(['One', 'Two']), targetLanguage: 'es')
+        .translateDocument(_document(['One', 'Two']), targetLanguage: 'en')
         .result;
     expect(result.syncedLines, ['es:One', 'es:Two']);
     expect(
@@ -80,10 +80,10 @@ void main() {
     final result = await service
         .translateDocument(
           _document(['First', 'Second', 'Third']),
-          targetLanguage: 'es',
+          targetLanguage: 'en',
         )
         .result;
-    expect(result.syncedLines, ['es:First', 'es:Second', 'es:Third']);
+    expect(result.syncedLines, ['en:First', 'en:Second', 'en:Third']);
     expect(session.calls.where((call) => !call.detectOnly), hasLength(3));
     expect(session.maximumConcurrent, 1);
   });
@@ -101,10 +101,10 @@ void main() {
       );
       addTearDown(service.dispose);
       final first = await service
-          .translateDocument(_document(['One']), targetLanguage: 'es')
+          .translateDocument(_document(['One']), targetLanguage: 'en')
           .result;
       final second = await service
-          .translateDocument(_document(['One']), targetLanguage: 'es')
+          .translateDocument(_document(['One']), targetLanguage: 'en')
           .result;
       expect(second.syncedLines, first.syncedLines);
       expect(sessions, hasLength(1));
@@ -127,7 +127,7 @@ void main() {
     addTearDown(service.dispose);
     for (final line in ['One', 'Two', 'One', 'Three', 'One', 'Two']) {
       await service
-          .translateDocument(_document([line]), targetLanguage: 'es')
+          .translateDocument(_document([line]), targetLanguage: 'en')
           .result;
     }
     expect(sessions, 4);
@@ -145,19 +145,19 @@ void main() {
         plainLyrics: 'One\n\nTwo',
       );
       final result = await service
-          .translateDocument(document, targetLanguage: 'es')
+          .translateDocument(document, targetLanguage: 'en')
           .result;
-      expect(result.plainLyrics, 'es:One\n\nes:Two');
+      expect(result.plainLyrics, 'en:One\n\nen:Two');
       expect(result.syncedLines, isEmpty);
       expect(document.plainLyrics, 'One\n\nTwo');
       // The same cache entry can serve a synced version without losing its map.
       final synced = await service
           .translateDocument(
             _document(['One', '', 'Two']),
-            targetLanguage: 'es',
+            targetLanguage: 'en',
           )
           .result;
-      expect(synced.syncedLines, ['es:One', '', 'es:Two']);
+      expect(synced.syncedLines, ['en:One', '', 'en:Two']);
     },
   );
 
@@ -173,7 +173,7 @@ void main() {
       addTearDown(service.dispose);
       final request = service.translateDocument(
         _document(['One']),
-        targetLanguage: 'es',
+        targetLanguage: 'en',
       );
       final cancelled = expectLater(
         request.result,
@@ -186,7 +186,7 @@ void main() {
       await Future<void>.delayed(Duration.zero);
       expect(first.calls, hasLength(1));
       await service
-          .translateDocument(_document(['One']), targetLanguage: 'es')
+          .translateDocument(_document(['One']), targetLanguage: 'en')
           .result;
       expect(count, 2);
     },
@@ -203,15 +203,15 @@ void main() {
     addTearDown(service.dispose);
     await expectLater(
       service
-          .translateDocument(_document(['One']), targetLanguage: 'es')
+          .translateDocument(_document(['One']), targetLanguage: 'en')
           .result,
       throwsA(isA<LyricsTranslationException>()),
     );
     expect(count, 1);
     final result = await service
-        .translateDocument(_document(['One']), targetLanguage: 'es')
+        .translateDocument(_document(['One']), targetLanguage: 'en')
         .result;
-    expect(result.syncedLines, ['es:One']);
+    expect(result.syncedLines, ['en:One']);
     expect(count, 2);
   });
 
@@ -221,7 +221,7 @@ void main() {
     final service = LyricsTranslationService(sessionFactory: () => session);
     final request = service.translateDocument(
       _document(['One']),
-      targetLanguage: 'es',
+      targetLanguage: 'en',
     );
     final cancelled = expectLater(
       request.result,
