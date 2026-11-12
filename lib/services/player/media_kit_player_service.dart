@@ -9,6 +9,7 @@ import '../../core/platform/app_platform.dart';
 import '../../features/music/domain/entities/local_track.dart';
 import '../../features/music/domain/entities/track_info.dart';
 import 'crossfade_transition.dart';
+import 'player_audio_output.dart';
 import 'player_service.dart';
 
 typedef MediaKitOperationDeadline = Future<void> Function(Duration duration);
@@ -44,10 +45,12 @@ abstract interface class MediaKitPlayerBackend {
   Future<void> dispose();
 }
 
-class _MediaKitPlayerBackend implements MediaKitPlayerBackend {
+class _MediaKitPlayerBackend
+    implements MediaKitPlayerBackend, PlayerAudioOutput {
   _MediaKitPlayerBackend() {
     _player = _createPlayer();
     _playerInitialization = _headlessInitialization(_player);
+    _playerInitialization?.ignore();
     _playerSubscriptions = _forwardEvents(_player, _epoch);
   }
 
@@ -68,6 +71,60 @@ class _MediaKitPlayerBackend implements MediaKitPlayerBackend {
   final _playings = StreamController<bool>.broadcast();
   final _completions = StreamController<bool>.broadcast();
   final _errors = StreamController<String>.broadcast();
+  final _audioOutputs = StreamController<PlayerAudioOutputState>.broadcast();
+  List<PlayerAudioDevice> _audioDevices = const [];
+  String _audioDeviceId = systemDefaultAudioDeviceId;
+
+  @override
+  PlayerAudioOutputState get audioOutputState => PlayerAudioOutputState(
+    supported: true,
+    devices: _audioDevices,
+    selectedDeviceId: _audioDeviceId,
+  );
+
+  @override
+  Stream<PlayerAudioOutputState> get audioOutputStream => _audioOutputs.stream;
+
+  void _publishAudioOutput() {
+    if (!_disposed) _audioOutputs.add(audioOutputState);
+  }
+
+  Future<void> _setPlayerAudioDevice(Player player, String id) async {
+    await player.setAudioDevice(AudioDevice(id, ''));
+    // media_kit logs some native command failures instead of throwing. Read
+    // back the preference before reporting that it was accepted.
+    final platform = player.platform;
+    if (platform is NativePlayer &&
+        await platform.getProperty('audio-device') != id) {
+      throw StateError('The player did not accept the audio output.');
+    }
+  }
+
+  @override
+  Future<void> selectAudioOutput(String deviceId) async {
+    final player = _player;
+    final epoch = _epoch;
+    await _withPlayer((player) => _setPlayerAudioDevice(player, deviceId));
+    if (_disposed || epoch != _epoch || !identical(player, _player)) {
+      throw StateError('Audio output selection was cancelled.');
+    }
+    _audioDeviceId = deviceId;
+    _publishAudioOutput();
+  }
+
+  Future<void> _restoreAudioOutput(Player player, String id) async {
+    final initialization = _headlessInitialization(player);
+    if (initialization != null) await initialization;
+    try {
+      await _setPlayerAudioDevice(player, id);
+    } catch (_) {
+      await _setPlayerAudioDevice(player, systemDefaultAudioDeviceId);
+      if (!_disposed && identical(player, _player)) {
+        _audioDeviceId = systemDefaultAudioDeviceId;
+        _publishAudioOutput();
+      }
+    }
+  }
 
   Player _createPlayer() => Player(
     configuration: const PlayerConfiguration(title: AppConstants.appName),
@@ -99,7 +156,23 @@ class _MediaKitPlayerBackend implements MediaKitPlayerBackend {
 
   List<StreamSubscription<Object?>> _forwardEvents(Player player, int epoch) {
     bool isCurrent() => !_disposed && epoch == _epoch;
-    return <StreamSubscription<Object?>>[
+    void updateAudioDevices(List<AudioDevice> devices) {
+      if (!isCurrent()) return;
+      final seen = <String>{};
+      _audioDevices = List.unmodifiable([
+        for (final device in devices)
+          if (device.name.isNotEmpty && seen.add(device.name))
+            PlayerAudioDevice(
+              id: device.name,
+              name: device.description.isEmpty
+                  ? device.name
+                  : device.description,
+            ),
+      ]);
+      _publishAudioOutput();
+    }
+
+    final subscriptions = <StreamSubscription<Object?>>[
       player.stream.position.listen((value) {
         if (isCurrent()) _positions.add(value);
       }),
@@ -121,7 +194,19 @@ class _MediaKitPlayerBackend implements MediaKitPlayerBackend {
       player.stream.error.listen((value) {
         if (isCurrent()) _errors.add(value);
       }),
+      player.stream.audioDevices.listen(updateAudioDevices),
+      player.stream.audioDevice.listen((_) {
+        if (isCurrent()) _publishAudioOutput();
+      }),
     ];
+    // Read after subscribing so a device notification cannot be lost between
+    // the initial state and the stream subscription.
+    // A replacement Player initially exposes only "auto" before its native
+    // enumeration arrives. Retain the known list across that startup window.
+    if (epoch == 0 || _audioDevices.isEmpty) {
+      updateAudioDevices(player.state.audioDevices);
+    }
+    return subscriptions;
   }
 
   @override
@@ -133,7 +218,8 @@ class _MediaKitPlayerBackend implements MediaKitPlayerBackend {
     final retiredSubscriptions = _playerSubscriptions;
     final epoch = ++_epoch;
     _player = _createPlayer();
-    _playerInitialization = _headlessInitialization(_player);
+    _playerInitialization = _restoreAudioOutput(_player, _audioDeviceId);
+    _playerInitialization?.ignore();
     _playerSubscriptions = _forwardEvents(_player, epoch);
     unawaited(_retire(retiredPlayer, retiredSubscriptions));
   }
@@ -208,12 +294,14 @@ class _MediaKitPlayerBackend implements MediaKitPlayerBackend {
       _playings.close(),
       _completions.close(),
       _errors.close(),
+      _audioOutputs.close(),
     ]);
     await _player.dispose();
   }
 }
 
-class MediaKitPlayerService implements PlayerService, CrossfadeCapablePlayer {
+class MediaKitPlayerService
+    implements PlayerService, CrossfadeCapablePlayer, PlayerAudioOutput {
   static const _crossfadeShutdownGrace = Duration(seconds: 2);
   static const _crossfadeRetirementGrace = Duration(milliseconds: 250);
 
@@ -245,6 +333,12 @@ class MediaKitPlayerService implements PlayerService, CrossfadeCapablePlayer {
   final MediaKitPlayerBackendFactory _backendFactory;
   final bool _usesDefaultBackendFactory;
   final _snapshotController = StreamController<PlayerSnapshot>.broadcast();
+  final _audioOutputController =
+      StreamController<PlayerAudioOutputState>.broadcast();
+  PlayerAudioOutputState _audioOutputState = const PlayerAudioOutputState();
+  Future<void> _audioOutputTail = Future<void>.value();
+  bool _changingAudioOutput = false;
+  Timer? _missingAudioDeviceTimer;
   final _subscriptions = <StreamSubscription<Object?>>[];
   final _standbySubscriptions = <StreamSubscription<Object?>>[];
   final Duration _operationTimeout;
@@ -288,6 +382,152 @@ class MediaKitPlayerService implements PlayerService, CrossfadeCapablePlayer {
 
   @override
   bool get crossfadeEnabled => _crossfadeEnabled;
+
+  @override
+  PlayerAudioOutputState get audioOutputState => _audioOutputState;
+
+  @override
+  Stream<PlayerAudioOutputState> get audioOutputStream =>
+      _audioOutputController.stream;
+
+  Future<void> _serializeAudioOutput(Future<void> Function() operation) {
+    final future = _audioOutputTail.then((_) async {
+      if (_disposed) return;
+      await operation();
+    });
+    _audioOutputTail = future.catchError((Object _) {});
+    return future;
+  }
+
+  Future<void> _setBackendAudioOutput(
+    MediaKitPlayerBackend backend,
+    String deviceId,
+  ) async {
+    if (backend case final PlayerAudioOutput output) {
+      await output
+          .selectAudioOutput(deviceId)
+          .timeout(
+            _operationTimeout,
+            onTimeout: () {
+              // A timed-out command can still complete natively. Isolate its
+              // Player before allowing another route request to enter this lane.
+              backend.abandonPendingOperations();
+              _crossfadeGeneration++;
+              unawaited(_resetCrossfadeState(restoreActiveVolume: true));
+              if (identical(backend, _player)) {
+                _backendGeneration = null;
+                _emit(
+                  _snapshot.copyWith(
+                    status: PlayerStatus.failed,
+                    errorMessage: 'No se pudo cambiar la salida de audio.',
+                  ),
+                );
+              }
+              throw TimeoutException(
+                'media_kit audio output selection exceeded $_operationTimeout',
+                _operationTimeout,
+              );
+            },
+          );
+    }
+  }
+
+  void _publishAudioOutputState(PlayerAudioOutputState state) {
+    if (_disposed) return;
+    _audioOutputState = state;
+    _audioOutputController.add(state);
+  }
+
+  void _onAudioOutputState(PlayerAudioOutputState state) {
+    if (_disposed) return;
+    final selectedId = _changingAudioOutput
+        ? _audioOutputState.selectedDeviceId
+        : state.selectedDeviceId;
+    _publishAudioOutputState(
+      PlayerAudioOutputState(
+        supported: state.supported,
+        devices: state.devices,
+        selectedDeviceId: selectedId,
+      ),
+    );
+    _missingAudioDeviceTimer?.cancel();
+    if (selectedId == systemDefaultAudioDeviceId ||
+        state.devices.any((device) => device.id == selectedId)) {
+      return;
+    }
+    // Hotplug notifications can briefly expose an empty/automatic-only list,
+    // especially while a native backend initializes. Confirm disappearance
+    // after that burst before falling back, even while the picker is closed.
+    _missingAudioDeviceTimer = Timer(const Duration(milliseconds: 600), () {
+      if (_disposed ||
+          _changingAudioOutput ||
+          _audioOutputState.selectedDeviceId != selectedId ||
+          _audioOutputState.devices.any((device) => device.id == selectedId)) {
+        return;
+      }
+      unawaited(
+        selectAudioOutput(systemDefaultAudioDeviceId).catchError((
+          Object error,
+          StackTrace stackTrace,
+        ) {
+          developer.log(
+            'Could not restore the automatic audio output',
+            name: 'BStreamPlayback',
+            error: error,
+            stackTrace: stackTrace,
+          );
+        }),
+      );
+    });
+  }
+
+  @override
+  Future<void> selectAudioOutput(String deviceId) => _serializeAudioOutput(
+    () async {
+      if (!_audioOutputState.supported ||
+          (deviceId != systemDefaultAudioDeviceId &&
+              !_audioOutputState.devices.any(
+                (device) => device.id == deviceId,
+              ))) {
+        throw ArgumentError.value(deviceId, 'deviceId', 'Unavailable output.');
+      }
+      final previousId = _audioOutputState.selectedDeviceId;
+      final outputs = <MediaKitPlayerBackend>[
+        if (_player is PlayerAudioOutput) _player,
+        if (_standbyPlayer case final PlayerAudioOutput _) _standbyPlayer!,
+      ];
+      _changingAudioOutput = true;
+      try {
+        for (final output in outputs) {
+          await _setBackendAudioOutput(output, deviceId);
+        }
+        if (_disposed) return;
+        _publishAudioOutputState(
+          PlayerAudioOutputState(
+            supported: true,
+            devices: _audioOutputState.devices,
+            selectedDeviceId: deviceId,
+          ),
+        );
+      } catch (_) {
+        // Keep both decks on the previous route if either native write fails.
+        for (final output in outputs) {
+          try {
+            await _setBackendAudioOutput(output, previousId);
+          } catch (_) {
+            // A disconnected device may also reject rollback. Reflect the
+            // active backend below rather than claiming a failed selection.
+          }
+        }
+        rethrow;
+      } finally {
+        _changingAudioOutput = false;
+        if (_player case final PlayerAudioOutput output) {
+          _onAudioOutputState(output.audioOutputState);
+        }
+      }
+    },
+  );
 
   @override
   Future<void> configureCrossfade({
@@ -381,6 +621,18 @@ class MediaKitPlayerService implements PlayerService, CrossfadeCapablePlayer {
         if (!_isCrossfadeCurrent(generation) ||
             !identical(standby, _standbyPlayer)) {
           return;
+        }
+        if (standby is PlayerAudioOutput) {
+          await _serializeAudioOutput(
+            () => _setBackendAudioOutput(
+              standby,
+              _audioOutputState.selectedDeviceId,
+            ),
+          );
+          if (!_isCrossfadeCurrent(generation) ||
+              !identical(standby, _standbyPlayer)) {
+            return;
+          }
         }
         await standby.open(_crossfadeMedia(source), play: false);
       }, cancellation: cancellation);
@@ -894,6 +1146,16 @@ class MediaKitPlayerService implements PlayerService, CrossfadeCapablePlayer {
   }
 
   void _attachActivePlayer(MediaKitPlayerBackend player) {
+    if (player case final PlayerAudioOutput output) {
+      _subscriptions.add(
+        output.audioOutputStream.listen((_) {
+          if (!_disposed && identical(player, _player)) {
+            _onAudioOutputState(output.audioOutputState);
+          }
+        }),
+      );
+      _onAudioOutputState(output.audioOutputState);
+    }
     _subscriptions.addAll([
       player.positionStream.listen((position) {
         if (!identical(player, _player) || !_acceptBackendEvent) {
@@ -1368,6 +1630,7 @@ class MediaKitPlayerService implements PlayerService, CrossfadeCapablePlayer {
       return;
     }
     _disposed = true;
+    _missingAudioDeviceTimer?.cancel();
     _requestedGeneration++;
     _crossfadeGeneration++;
     _standbyRetirementGeneration++;
@@ -1419,6 +1682,7 @@ class MediaKitPlayerService implements PlayerService, CrossfadeCapablePlayer {
       // resources must still be released and application shutdown must finish.
     } finally {
       await _snapshotController.close();
+      await _audioOutputController.close();
     }
   }
 

@@ -367,7 +367,8 @@ class _ArtistProfilePageState extends ConsumerState<ArtistProfilePage> {
             ),
             sliver: SliverList.separated(
               itemCount: tracks.length,
-              separatorBuilder: (_, _) => const SizedBox(height: 6),
+              separatorBuilder: (_, _) =>
+                  const SizedBox(height: appTrackRowGap),
               itemBuilder: (context, index) {
                 final track = tracks[index];
                 return Center(

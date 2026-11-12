@@ -12,14 +12,21 @@ import '../../core/utils/image_source.dart';
 /// Position is deliberately omitted: publishing every playback tick would
 /// wake the launcher and WidgetKit unnecessarily.
 class HomeScreenWidgetSync {
-  HomeScreenWidgetSync({MethodChannel? channel, this.onAction})
-    : _channel = channel ?? const MethodChannel('bstream_music/home_widget') {
+  HomeScreenWidgetSync({
+    MethodChannel? channel,
+    this.onAction,
+    this.supportsQueue = false,
+  }) : _channel = channel ?? const MethodChannel('bstream_music/home_widget') {
     _channel.setMethodCallHandler(_handleCall);
     unawaited(_registerAndConsumePendingAction());
   }
 
   final MethodChannel _channel;
   final Future<void> Function(String action)? onAction;
+
+  /// Only Android currently exposes a queue in its native home-screen widget.
+  /// Other widgets need the current song and must not prefetch queue artwork.
+  final bool supportsQueue;
   int _generation = 0;
   int? _artworkRequestGeneration;
   String? _lastIdentity;
@@ -72,7 +79,9 @@ class HomeScreenWidgetSync {
     List<Map<String, String>> queue = const [],
     int currentQueueIndex = -1,
   }) {
-    final queueJson = _encodeQueue(queue, currentQueueIndex);
+    final queueJson = supportsQueue
+        ? _encodeQueue(queue, currentQueueIndex)
+        : '[]';
     final identity =
         '$trackId\u0000$title\u0000$artist\u0000$artworkUrl\u0000'
         '$isPlaying\u0000$isFavorite\u0000$repeatMode\u0000'
@@ -186,18 +195,20 @@ class HomeScreenWidgetSync {
         'repeatMode': repeatMode,
         'accentColor': accentColor,
         'languageCode': languageCode,
-        'queueJson': queueJson,
+        if (supportsQueue) 'queueJson': queueJson,
       };
       await _channel.invokeMethod<void>('update', updateData);
-      unawaited(
-        _publishCachedQueueArtworkPaths(
-          updateData: updateData,
-          queueJson: queueJson,
-          generation: generation,
-          artworkIdentity: artworkIdentity,
-          snapshotIdentity: snapshotIdentity,
-        ),
-      );
+      if (supportsQueue) {
+        unawaited(
+          _publishCachedQueueArtworkPaths(
+            updateData: updateData,
+            queueJson: queueJson,
+            generation: generation,
+            artworkIdentity: artworkIdentity,
+            snapshotIdentity: snapshotIdentity,
+          ),
+        );
+      }
       if (generation != _generation ||
           artworkIdentity == _lastArtworkIdentity ||
           _artworkRequestGeneration == generation ||

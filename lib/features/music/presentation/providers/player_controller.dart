@@ -76,6 +76,7 @@ class PlayerController extends AsyncNotifier<PlayerSnapshot> {
   Object? _completionToken;
   bool get _handlingCompletion => _completionToken != null;
   int? _changingLocalTrackRequestId;
+  int? _remoteSelectionPauseRequestId;
   bool _explicitlyStopped = false;
   bool _playWhenReady = false;
   bool _userPaused = false;
@@ -245,6 +246,13 @@ class PlayerController extends AsyncNotifier<PlayerSnapshot> {
     );
     final subscription = service.snapshotStream.listen((snapshot) {
       if (_disposed) {
+        return;
+      }
+      if (snapshot.status == PlayerStatus.paused &&
+          _remoteSelectionPauseRequestId == _playRequestId) {
+        // This acknowledges pausing the outgoing source for a manual skip.
+        // It is not a pause of the newly selected song, even when a repeated
+        // song or wrapped queue has the same identity as the outgoing source.
         return;
       }
       if (_explicitlyStopped && _queue.isEmpty) return;
@@ -1441,10 +1449,6 @@ class PlayerController extends AsyncNotifier<PlayerSnapshot> {
     state = AsyncData(pendingSnapshot);
 
     try {
-      await _syncNativePlaybackOptions();
-      if (!_isCurrentPlayRequest(requestId)) {
-        return;
-      }
       final service = ref.read(playerServiceProvider);
       final previousSnapshot = service.currentSnapshot;
       final replacingRemoteSource =
@@ -1452,6 +1456,24 @@ class PlayerController extends AsyncNotifier<PlayerSnapshot> {
           previousSnapshot.isRemote ||
           previousSnapshot.trackId?.startsWith(_remoteCacheTrackIdPrefix) ==
               true;
+      if (!automaticTransition && replacingRemoteSource) {
+        // The selected URL may take seconds to resolve. Silence the skipped
+        // source now, including one that is already playing, rather than
+        // letting it sound behind the next song's loading screen.
+        _remoteSelectionPauseRequestId = requestId;
+        try {
+          await service.pause();
+        } finally {
+          if (_remoteSelectionPauseRequestId == requestId) {
+            _remoteSelectionPauseRequestId = null;
+          }
+        }
+        if (!_isCurrentPlayRequest(requestId)) return;
+      }
+      await _syncNativePlaybackOptions();
+      if (!_isCurrentPlayRequest(requestId)) {
+        return;
+      }
       // Remote-to-remote transitions must not move audio_service through idle.
       // On Android that can stop the foreground service before Dart loads the
       // replacement source while the app is in the background.

@@ -1,6 +1,8 @@
 import 'dart:async';
+import 'player_lyrics_icon.dart';
 import 'dart:math' as math;
 
+import 'package:flutter/foundation.dart' show ValueListenable;
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart' show ScrollCacheExtent;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -22,11 +24,12 @@ import 'lyrics_animation_transition.dart';
 import 'lyrics_line_layout.dart';
 import 'lyrics_share_preview.dart';
 import 'lyrics_text_style_transition.dart';
+import 'lyrics_word_timing_text.dart';
 import 'mini_player.dart';
 import 'playback_gradient_background.dart';
 import 'playback_menu_bottom_sheet.dart';
 import 'playback_progress_line.dart';
-import 'playlist_artwork.dart';
+import '../providers/playback_artwork_provider.dart';
 import 'source_image.dart';
 import 'decorative_progress_transition.dart';
 import 'uniform_playback_slider_track_shape.dart';
@@ -625,13 +628,7 @@ class _LyricsPageState extends ConsumerState<LyricsPage>
     final lines = _shareLinesFor(lyrics);
     final indices = _shareSelectedLines.toList()..sort();
     final snapshot = ref.read(playerControllerProvider).value;
-    final tracks = ref.read(libraryTracksProvider).value;
-    final local = tracks
-        ?.where((track) => track.id == snapshot?.trackId)
-        .firstOrNull;
-    final artwork = local == null
-        ? null
-        : preferredLocalTrackArtworkSource(local);
+    final artwork = ref.read(playbackArtworkProvider);
     await showLyricsSharePreview(
       context: context,
       data: LyricsShareCardData(
@@ -642,8 +639,8 @@ class _LyricsPageState extends ConsumerState<LyricsPage>
             ? snapshot!.artist!
             : lyrics.artistName,
         lines: [for (final index in indices) lines[index].trim()],
-        artworkSource: artwork?.source ?? snapshot?.thumbnailUrl,
-        artworkFallbackSource: artwork?.fallbackSource,
+        artworkSource: artwork.source,
+        artworkFallbackSource: artwork.fallback,
       ),
     );
   }
@@ -2174,6 +2171,13 @@ List<_LyricsTimelineEntry> _buildLyricsTimelineEntries(
 }
 
 Duration? _inferredInstrumentalStart(LyricLine current, LyricLine next) {
+  if (current.hasWordTiming) {
+    final end = current.words.fold<Duration>(
+      current.timestamp,
+      (latest, word) => word.end > latest ? word.end : latest,
+    );
+    return next.timestamp - end >= _minimumInferredInstrumentalGap ? end : null;
+  }
   final distance = next.timestamp - current.timestamp;
   if (distance < _minimumUnmarkedLyricGap) {
     return null;
@@ -2218,6 +2222,7 @@ class _SyncedLyricsTimelineState extends ConsumerState<_SyncedLyricsTimeline>
   ProviderSubscription<_LyricsPlaybackClockSample?>? _playbackSubscription;
   Stopwatch? _ownedMonotonicClock;
   late final Duration Function() _monotonicNow;
+  late final ValueNotifier<LyricsWordPlaybackSample> _wordPlayback;
   _LyricsPlaybackClockSample? _playbackSample;
   Duration _playbackAnchor = Duration.zero;
   Duration _monotonicAnchor = Duration.zero;
@@ -2270,6 +2275,15 @@ class _SyncedLyricsTimelineState extends ConsumerState<_SyncedLyricsTimeline>
       _entries,
       initialPosition + widget.offset,
     );
+    _wordPlayback = ValueNotifier(
+      LyricsWordPlaybackSample(
+        position: initialPosition + widget.offset,
+        sampledAt: _monotonicNow(),
+        isPlaying:
+            _presentationActive &&
+            initialSnapshot?.status == PlayerStatus.playing,
+      ),
+    );
     _playbackSubscription = ref.listenManual<_LyricsPlaybackClockSample?>(
       playerControllerProvider.select((player) {
         final snapshot = player.value;
@@ -2313,6 +2327,7 @@ class _SyncedLyricsTimelineState extends ConsumerState<_SyncedLyricsTimeline>
     if (linesChanged || offsetChanged) {
       _updateActiveLine(_estimatedPlaybackPosition(), notify: false);
       _scheduleNextLineBoundary();
+      _publishWordPlayback();
     }
     if (linesChanged ||
         offsetChanged ||
@@ -2328,6 +2343,7 @@ class _SyncedLyricsTimelineState extends ConsumerState<_SyncedLyricsTimeline>
     final tickerModeEnabled = TickerMode.valuesOf(context).enabled;
     if (_tickerModeEnabled != tickerModeEnabled) {
       _tickerModeEnabled = tickerModeEnabled;
+      _publishWordPlayback();
       if (tickerModeEnabled) {
         _updateActiveLine(_estimatedPlaybackPosition(), notify: false);
         _scheduleNextLineBoundary();
@@ -2351,6 +2367,7 @@ class _SyncedLyricsTimelineState extends ConsumerState<_SyncedLyricsTimeline>
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     _playbackSubscription?.close();
+    _wordPlayback.dispose();
     _cancelLineBoundaryTimer();
     _resumeAutoScrollTimer?.cancel();
     _ownedMonotonicClock?.stop();
@@ -2365,6 +2382,7 @@ class _SyncedLyricsTimelineState extends ConsumerState<_SyncedLyricsTimeline>
     final active = state == AppLifecycleState.resumed;
     if (_appActive == active) return;
     _appActive = active;
+    _publishWordPlayback();
     if (active) {
       _updateActiveLine(_estimatedPlaybackPosition());
       _scheduleNextLineBoundary();
@@ -2386,6 +2404,7 @@ class _SyncedLyricsTimelineState extends ConsumerState<_SyncedLyricsTimeline>
     _playbackSample = sample;
     _playbackAnchor = sample.position;
     _monotonicAnchor = _monotonicNow();
+    _publishWordPlayback();
     if (_presentationActive) {
       _updateActiveLine(sample.position);
     }
@@ -2399,6 +2418,16 @@ class _SyncedLyricsTimelineState extends ConsumerState<_SyncedLyricsTimeline>
     }
     final elapsed = _monotonicNow() - _monotonicAnchor;
     return elapsed.isNegative ? _playbackAnchor : _playbackAnchor + elapsed;
+  }
+
+  void _publishWordPlayback() {
+    _wordPlayback.value = LyricsWordPlaybackSample(
+      position: _estimatedPlaybackPosition() + widget.offset,
+      sampledAt: _monotonicNow(),
+      isPlaying:
+          _presentationActive &&
+          _playbackSample?.status == PlayerStatus.playing,
+    );
   }
 
   bool _updateActiveLine(Duration position, {bool notify = true}) {
@@ -2787,6 +2816,9 @@ class _SyncedLyricsTimelineState extends ConsumerState<_SyncedLyricsTimeline>
                           ? const ValueKey('active-lyric-line')
                           : ValueKey('lyric-line-$sourceIndex'),
                       originalText: line.text,
+                      words: line.hasWordTiming ? line.words : const [],
+                      wordPlayback: _wordPlayback,
+                      monotonicClock: _monotonicNow,
                       romanizedText:
                           widget.romanizedLines != null &&
                               sourceIndex < widget.romanizedLines!.length
@@ -2892,7 +2924,14 @@ class _InstrumentalLyricsTile extends ConsumerWidget {
         ? (elapsedMilliseconds / totalMilliseconds).clamp(0.0, 1.0).toDouble()
         : 0.0;
     final reduceMotion = MediaQuery.disableAnimationsOf(context);
-    final accent = AppColors.downloadAccentFor(context);
+    final artworkColor = TickerMode.valuesOf(context).enabled
+        ? ref.watch(playbackArtworkColorProvider)
+        : null;
+    final waveColor = playbackWaveColorFor(
+      context,
+      artworkColor,
+      surfaceBrightness: Brightness.dark,
+    );
     final strings = ref.watch(appStringsProvider);
     final opacity = active ? 1.0 : (passed ? 0.48 : 0.28);
     final alignment = lyricsCentered
@@ -2938,7 +2977,7 @@ class _InstrumentalLyricsTile extends ConsumerWidget {
                         key: progressKey,
                         value: value,
                         isPlaying: active && playback.isPlaying && progress < 1,
-                        waveColor: accent,
+                        waveColor: waveColor,
                         surfaceBrightness: Brightness.dark,
                         height: 48,
                         waveAmplitude: 12,
@@ -2960,6 +2999,9 @@ class _LyricLineTile extends StatelessWidget {
   const _LyricLineTile({
     required this.contentKey,
     required this.originalText,
+    required this.words,
+    required this.wordPlayback,
+    required this.monotonicClock,
     required this.romanizedText,
     required this.romanizationKey,
     required this.active,
@@ -2977,6 +3019,9 @@ class _LyricLineTile extends StatelessWidget {
 
   final Key contentKey;
   final String originalText;
+  final List<LyricWord> words;
+  final ValueListenable<LyricsWordPlaybackSample> wordPlayback;
+  final Duration Function() monotonicClock;
   final String? romanizedText;
   final Key romanizationKey;
   final bool active;
@@ -3028,6 +3073,9 @@ class _LyricLineTile extends StatelessWidget {
       contentKey: contentKey,
       active: active,
       originalText: originalText,
+      words: words,
+      wordPlayback: wordPlayback,
+      monotonicClock: monotonicClock,
       secondaryText: trimmedRomanization,
       secondaryKey: romanizationKey,
       activeStyle: activeStyle,
@@ -3858,7 +3906,19 @@ class _LyricsMessage extends StatelessWidget {
                 child: CircularProgressIndicator(strokeWidth: 4),
               )
             else
-              Icon(icon, size: 52, color: AppColors.downloadAccentFor(context)),
+              icon == Icons.lyrics_outlined
+                  ? IconTheme(
+                      data: IconThemeData(
+                        size: 52,
+                        color: AppColors.downloadAccentFor(context),
+                      ),
+                      child: const PlayerLyricsIcon(),
+                    )
+                  : Icon(
+                      icon,
+                      size: 52,
+                      color: AppColors.downloadAccentFor(context),
+                    ),
             const SizedBox(height: 18),
             Text(
               message,

@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:ui' as ui;
 
 import 'package:bstream_music/core/platform/app_platform.dart';
 import 'package:bstream_music/features/music/domain/entities/local_track.dart';
@@ -13,6 +14,7 @@ import 'package:bstream_music/services/player/player_service.dart';
 import 'package:bstream_music/services/spotify_canvas/spotify_canvas_resolver.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:video_player_platform_interface/video_player_platform_interface.dart';
@@ -72,25 +74,7 @@ void main() {
         VideoPlayerPlatform.instance = _LayoutVideoPlatform();
         addTearDown(() => VideoPlayerPlatform.instance = originalVideoPlatform);
         final cache = _CompletedCanvasCache();
-        final container = ProviderContainer(
-          overrides: [
-            databaseServiceProvider.overrideWith(
-              (ref) => throw StateError('Layout fixture cannot use user data'),
-            ),
-            playbackVisualCacheProvider.overrideWith((ref) => cache),
-            spotifyCanvasResolverProvider.overrideWithValue(
-              _FixtureCanvasResolver(),
-            ),
-            playerServiceProvider.overrideWithValue(_LayoutAudio()),
-            playerControllerProvider.overrideWith(_LayoutPlayer.new),
-            settingsControllerProvider.overrideWith(_LayoutSettings.new),
-            playlistsControllerProvider.overrideWith(_LayoutPlaylists.new),
-            libraryTracksProvider.overrideWith(
-              (ref) async => const <LocalTrack>[],
-            ),
-            favoriteTrackIdsProvider.overrideWithValue(const <String>{}),
-          ],
-        );
+        final container = _canvasTestContainer(cache);
         addTearDown(container.dispose);
         await tester.pumpWidget(
           UncontrolledProviderScope(
@@ -140,6 +124,224 @@ void main() {
         await tester.pump();
       }, skip: AppPlatform.current == AppPlatformType.linux);
     }
+  }
+
+  for (final style in [
+    PlayerStyle.bstreamMusic,
+    PlayerStyle.appleMusic,
+    PlayerStyle.spotifyMusic,
+  ]) {
+    for (final scenario in [
+      (
+        name: 'Android portrait',
+        platform: TargetPlatform.android,
+        size: const Size(390, 820),
+        brightness: Brightness.dark,
+        fullHero: true,
+      ),
+      (
+        name: 'iPhone portrait with a light app theme',
+        platform: TargetPlatform.iOS,
+        size: const Size(390, 820),
+        brightness: Brightness.light,
+        fullHero: true,
+      ),
+      (
+        name: 'dark desktop',
+        platform: TargetPlatform.windows,
+        size: const Size(1200, 800),
+        brightness: Brightness.dark,
+        fullHero: false,
+      ),
+      (
+        name: 'light desktop',
+        platform: TargetPlatform.windows,
+        size: const Size(1200, 800),
+        brightness: Brightness.light,
+        fullHero: false,
+      ),
+    ]) {
+      testWidgets('$style Canvas leaves no lower edge on ${scenario.name}', (
+        tester,
+      ) async {
+        tester.view.physicalSize = scenario.size;
+        tester.view.devicePixelRatio = 1;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+        final originalVideoPlatform = VideoPlayerPlatform.instance;
+        VideoPlayerPlatform.instance = _LayoutVideoPlatform();
+        addTearDown(() => VideoPlayerPlatform.instance = originalVideoPlatform);
+        final cache = _CompletedCanvasCache();
+        final container = _canvasTestContainer(cache);
+        addTearDown(container.dispose);
+        final captureKey = GlobalKey();
+
+        Widget harness({required bool canvasEnabled}) {
+          return UncontrolledProviderScope(
+            container: container,
+            child: MaterialApp(
+              theme: ThemeData(
+                platform: scenario.platform,
+                brightness: scenario.brightness,
+              ),
+              home: Scaffold(
+                body: RepaintBoundary(
+                  key: captureKey,
+                  child: ColoredBox(
+                    color: scenario.brightness == Brightness.dark
+                        ? const Color(0xFF321E38)
+                        : const Color(0xFFF8E3CF),
+                    child: PlayerPanel(
+                      style: style,
+                      artworkStyle: PlayerArtworkStyle.expanded,
+                      spotifyCanvasEnabled: canvasEnabled,
+                      animatedArtworkEnabled: false,
+                      drawBackground: false,
+                      trackTransitionsEnabled: false,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          );
+        }
+
+        await tester.pumpWidget(harness(canvasEnabled: true));
+        await tester.pump();
+        // Initialization and the resolver finish on different microtasks.
+        // Wait for an advancing fake frame before finishing its reveal.
+        final videoOpacity = find.descendant(
+          of: find.byType(SpotifyCanvasVideo),
+          matching: find.byType(AnimatedOpacity),
+        );
+        for (var attempt = 0; attempt < 10; attempt++) {
+          await tester.pump(const Duration(milliseconds: 100));
+          if (videoOpacity.evaluate().isNotEmpty &&
+              tester.widget<AnimatedOpacity>(videoOpacity.first).opacity == 1) {
+            break;
+          }
+        }
+        expect(tester.widget<AnimatedOpacity>(videoOpacity.first).opacity, 1);
+        await tester.pump(const Duration(milliseconds: 300));
+        final fade = find.byKey(
+          ValueKey(
+            scenario.fullHero
+                ? 'player-expanded-artwork-video-fade'
+                : 'player-bounded-artwork-video-fade',
+          ),
+        );
+        expect(fade, findsOneWidget);
+        expect(find.byType(SpotifyCanvasVideo), findsOneWidget);
+        final videoRect = tester.getRect(fade);
+        final artworkRect = tester.getRect(
+          find.byKey(const ValueKey('player-artwork-surface')),
+        );
+        if (!scenario.fullHero) {
+          expect(videoRect.bottom, greaterThan(artworkRect.bottom));
+        }
+        final points = <Offset>[
+          // A fully opaque point proves that the video was actually shown.
+          Offset(videoRect.center.dx, videoRect.top + videoRect.height * .4),
+          for (final xFraction in [.25, .5, .75])
+            for (final yFraction in [.975, .985, .995])
+              Offset(
+                videoRect.left + videoRect.width * xFraction,
+                videoRect.top + videoRect.height * yFraction,
+              ),
+          // A fractional mask boundary can leak one unmasked video row even
+          // when the preceding rows are fully transparent.
+          for (final xFraction in [.25, .5, .75])
+            for (final y in [
+              videoRect.bottom.floorToDouble(),
+              videoRect.bottom.ceilToDouble(),
+            ])
+              Offset(videoRect.left + videoRect.width * xFraction, y),
+          // Also cover the still artwork's boundary after Canvas overscan.
+          Offset(artworkRect.center.dx, artworkRect.bottom - 1),
+        ];
+        final withCanvas = await _capturePixels(tester, captureKey, points);
+
+        await tester.pumpWidget(harness(canvasEnabled: false));
+        await tester.pump(const Duration(milliseconds: 500));
+        expect(find.byType(SpotifyCanvasVideo), findsNothing);
+        final withoutCanvas = await _capturePixels(tester, captureKey, points);
+        expect(
+          [
+            for (var channel = 0; channel < 3; channel++)
+              (withCanvas.first[channel] - withoutCanvas.first[channel]).abs(),
+          ].any((difference) => difference > 32),
+          isTrue,
+          reason:
+              'The opaque cyan video must be visible above its fade: '
+              '${withCanvas.first} versus ${withoutCanvas.first}.',
+        );
+        for (var point = 1; point < points.length; point++) {
+          for (var channel = 0; channel < 4; channel++) {
+            expect(
+              withCanvas[point][channel],
+              closeTo(withoutCanvas[point][channel], 1),
+              reason:
+                  'Canvas must be transparent before its physical lower '
+                  'edge at ${points[point]}, channel $channel.',
+            );
+          }
+        }
+        expect(tester.takeException(), isNull);
+        await tester.pumpWidget(const SizedBox.shrink());
+        await tester.pump();
+      }, skip: AppPlatform.current == AppPlatformType.linux);
+    }
+  }
+}
+
+ProviderContainer _canvasTestContainer(PlaybackVisualCache cache) {
+  return ProviderContainer(
+    overrides: [
+      databaseServiceProvider.overrideWith(
+        (ref) => throw StateError('Layout fixture cannot use user data'),
+      ),
+      playbackVisualCacheProvider.overrideWith((ref) => cache),
+      spotifyCanvasResolverProvider.overrideWithValue(_FixtureCanvasResolver()),
+      playerServiceProvider.overrideWithValue(_LayoutAudio()),
+      playerControllerProvider.overrideWith(_LayoutPlayer.new),
+      settingsControllerProvider.overrideWith(_LayoutSettings.new),
+      playlistsControllerProvider.overrideWith(_LayoutPlaylists.new),
+      libraryTracksProvider.overrideWith((ref) async => const <LocalTrack>[]),
+      favoriteTrackIdsProvider.overrideWithValue(const <String>{}),
+    ],
+  );
+}
+
+Future<List<List<int>>> _capturePixels(
+  WidgetTester tester,
+  GlobalKey captureKey,
+  List<Offset> globalPoints,
+) async {
+  final boundary = tester.renderObject<RenderRepaintBoundary>(
+    find.byKey(captureKey),
+  );
+  final image = (await tester.runAsync(() => boundary.toImage(pixelRatio: 1)))!;
+  try {
+    final bytes = (await tester.runAsync(
+      () => image.toByteData(format: ui.ImageByteFormat.rawRgba),
+    ))!;
+    return [
+      for (final globalPoint in globalPoints)
+        () {
+          final point = boundary.globalToLocal(globalPoint);
+          final x = point.dx.floor();
+          final y = point.dy.floor();
+          expect(x, inInclusiveRange(0, image.width - 1));
+          expect(y, inInclusiveRange(0, image.height - 1));
+          final offset = (y * image.width + x) * 4;
+          return [
+            for (var channel = 0; channel < 4; channel++)
+              bytes.getUint8(offset + channel),
+          ];
+        }(),
+    ];
+  } finally {
+    image.dispose();
   }
 }
 
@@ -254,7 +456,7 @@ class _LayoutVideoPlatform extends VideoPlayerPlatform {
 
   @override
   Widget buildViewWithOptions(VideoViewOptions options) =>
-      const ColoredBox(color: Colors.green);
+      const ColoredBox(color: Colors.cyan);
 
   @override
   Future<void> dispose(int playerId) => _events.close();

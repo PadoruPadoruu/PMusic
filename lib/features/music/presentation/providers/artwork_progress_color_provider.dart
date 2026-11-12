@@ -352,8 +352,8 @@ final artworkProgressColorProvider = FutureProvider.autoDispose
       return lease.future;
     });
 
-/// Detail pages keep the actual saturation of neutral covers. The small color
-/// sample is shared by the header and body and cached across page visits.
+/// Detail pages and playback menus keep the actual saturation of neutral covers.
+/// Their small color samples share pending requests and the cache across visits.
 final artworkSurfaceColorServiceProvider =
     Provider<ArtworkProgressColorService>((ref) {
       final service = ArtworkProgressColorService(

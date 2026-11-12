@@ -89,6 +89,88 @@ void main() {
     expect(updates.last['repeatMode'], 'all');
   });
 
+  test(
+    'iOS updates its current cover without loading or publishing queue artwork',
+    () async {
+      final updates = <Map<Object?, Object?>>[];
+      final artworkLoads = <Map<Object?, Object?>>[];
+      final currentCoverPublished = Completer<void>();
+      var networkClients = 0;
+      messenger.setMockMethodCallHandler(artworkChannel, (call) async {
+        artworkLoads.add(call.arguments as Map<Object?, Object?>);
+        return Uint8List.fromList([1, 2, 3]);
+      });
+      messenger.setMockMethodCallHandler(channel, (call) async {
+        if (call.method == 'update') {
+          updates.add(call.arguments as Map<Object?, Object?>);
+        }
+        if (call.method == 'updateArtworkBytes' &&
+            !currentCoverPublished.isCompleted) {
+          expect(call.arguments['trackId'], 'current');
+          expect(call.arguments['bytes'], [1, 2, 3]);
+          currentCoverPublished.complete();
+        }
+        return null;
+      });
+
+      await HttpOverrides.runZoned(
+        () async {
+          final sync = HomeScreenWidgetSync(
+            channel: channel,
+            supportsQueue: false,
+          );
+          addTearDown(sync.dispose);
+          void publish(String upcomingId) => sync.publish(
+            trackId: 'current',
+            title: 'Current song',
+            artist: 'Artist',
+            artworkUrl: deviceAudioArtworkSourceForUri(
+              'ipod-library://current',
+            ),
+            isPlaying: true,
+            isFavorite: false,
+            repeatMode: 'off',
+            accentColor: 0xFF22D3EE,
+            languageCode: 'es',
+            queue: [
+              {
+                'id': upcomingId,
+                'title': 'Upcoming local song',
+                'artworkUrl': deviceAudioArtworkSourceForUri(
+                  'ipod-library://$upcomingId',
+                )!,
+              },
+              {
+                'id': 'remote-upcoming',
+                'title': 'Upcoming remote song',
+                'artworkUrl': 'https://queue-artwork.example/cover.jpg',
+              },
+            ],
+            currentQueueIndex: 1,
+          );
+
+          publish('first');
+          await currentCoverPublished.future.timeout(
+            const Duration(seconds: 2),
+          );
+          publish('replacement');
+          await Future<void>.delayed(Duration.zero);
+
+          expect(updates, hasLength(1), reason: 'queue changes need no reload');
+          expect(updates.single.containsKey('queueJson'), isFalse);
+          expect(artworkLoads, [
+            {'audioUri': 'ipod-library://current', 'targetWidth': 320},
+          ]);
+          expect(networkClients, 0);
+        },
+        createHttpClient: (_) {
+          networkClients++;
+          throw StateError('Queue artwork must not start network requests');
+        },
+      );
+    },
+  );
+
   test('keeps two played songs before the current queue entry', () async {
     Map<Object?, Object?>? published;
     messenger.setMockMethodCallHandler(channel, (call) async {
@@ -97,7 +179,7 @@ void main() {
       }
       return null;
     });
-    final sync = HomeScreenWidgetSync(channel: channel);
+    final sync = HomeScreenWidgetSync(channel: channel, supportsQueue: true);
     addTearDown(sync.dispose);
 
     sync.publish(
@@ -144,7 +226,7 @@ void main() {
   });
 
   test(
-    'resolves covers beyond the first page of a large widget queue',
+    'Android resolves covers beyond the first page of a large widget queue',
     () async {
       final resolvedQueue = Completer<List<dynamic>>();
       messenger.setMockMethodCallHandler(artworkChannel, (call) async {
@@ -169,7 +251,7 @@ void main() {
         }
         return null;
       });
-      final sync = HomeScreenWidgetSync(channel: channel);
+      final sync = HomeScreenWidgetSync(channel: channel, supportsQueue: true);
       addTearDown(sync.dispose);
 
       sync.publish(

@@ -9,6 +9,8 @@ final localTrackDownloadHelperProvider = Provider<LocalTrackDownloadHelper>((
 typedef ArtworkCacheFileLookup = Future<File?> Function(String source);
 typedef LocalTrackThumbnailValidator =
     Future<String?> Function(Uint8List bytes);
+typedef LocalTrackLegacyArtworkCleanup =
+    Future<bool> Function(String directory);
 
 final artworkCacheFileLookupProvider = Provider<ArtworkCacheFileLookup>((ref) {
   final cache = BStreamArtworkCacheManager();
@@ -33,10 +35,26 @@ class LocalTrackDownloadHelper {
   LocalTrackDownloadHelper(
     Ref ref, {
     @visibleForTesting LocalTrackThumbnailValidator? thumbnailValidator,
+    @visibleForTesting LocalTrackLegacyArtworkCleanup? legacyArtworkCleanup,
   }) : _ref = ref,
        // Keep the test injection named without exposing the stored callback.
        // ignore: prefer_initializing_formals
-       _thumbnailValidator = thumbnailValidator;
+       _thumbnailValidator = thumbnailValidator,
+       // ignore: prefer_initializing_formals
+       _legacyArtworkCleanup = legacyArtworkCleanup {
+    final maintenance = ref
+        .read(libraryOperationCoordinatorProvider)
+        .phaseStream
+        .listen((phase) {
+          if (phase == LibraryMaintenancePhase.committingRestore ||
+              phase == LibraryMaintenancePhase.migratingDirectory) {
+            _legacyThumbnailCleanupGeneration++;
+            _cleanedLegacyThumbnailDirectories.clear();
+            _legacyThumbnailCleanups.clear();
+          }
+        });
+    ref.onDispose(() => unawaited(maintenance.cancel()));
+  }
 
   static const _maxThumbnailBytes = 10 * 1024 * 1024;
   static const _thumbnailIdleTimeout = Duration(seconds: 10);
@@ -48,6 +66,10 @@ class LocalTrackDownloadHelper {
 
   final Ref _ref;
   final LocalTrackThumbnailValidator? _thumbnailValidator;
+  final LocalTrackLegacyArtworkCleanup? _legacyArtworkCleanup;
+  final Set<String> _cleanedLegacyThumbnailDirectories = {};
+  final Map<String, Future<void>> _legacyThumbnailCleanups = {};
+  int _legacyThumbnailCleanupGeneration = 0;
   final Map<String, (int, DateTime, DateTime)> _validatedThumbnailFiles = {};
   final Map<String, Future<LocalTrackDownloadResult>> _inFlight = {};
   final Map<String, Future<LocalTrackDownloadResult>> _resolvedInFlight = {};
@@ -1041,10 +1063,41 @@ class LocalTrackDownloadHelper {
         .trim();
   }
 
-  Future<void> _removeMisplacedThumbnailFiles(String audioDirectory) async {
+  Future<void> _removeMisplacedThumbnailFiles(String audioDirectory) {
+    final absolutePath = p.normalize(p.absolute(audioDirectory));
+    final key = AppPlatform.isWindows
+        ? absolutePath.toLowerCase()
+        : absolutePath;
+    if (_cleanedLegacyThumbnailDirectories.contains(key)) {
+      return Future.value();
+    }
+    final active = _legacyThumbnailCleanups[key];
+    if (active != null) return active;
+
+    final generation = _legacyThumbnailCleanupGeneration;
+    late final Future<void> cleanup;
+    cleanup =
+        (_legacyArtworkCleanup ?? _cleanMisplacedThumbnailFiles)(audioDirectory)
+            .then((complete) {
+              if (complete && generation == _legacyThumbnailCleanupGeneration) {
+                _cleanedLegacyThumbnailDirectories.add(key);
+              }
+            })
+            .whenComplete(() {
+              if (identical(_legacyThumbnailCleanups[key], cleanup)) {
+                _legacyThumbnailCleanups.remove(key);
+              }
+            });
+    _legacyThumbnailCleanups[key] = cleanup;
+    return cleanup;
+  }
+
+  Future<bool> _cleanMisplacedThumbnailFiles(String audioDirectory) async {
     final directory = Directory(audioDirectory);
     if (!await directory.exists()) {
-      return;
+      // The downloader creates this directory later. Inspect it on the next
+      // request instead of remembering a cleanup that never ran.
+      return false;
     }
 
     final files = await directory
@@ -1052,6 +1105,7 @@ class LocalTrackDownloadHelper {
         .where((entity) => entity is File)
         .cast<File>()
         .toList();
+    var complete = true;
     for (final file in files) {
       final extension = p.extension(file.path).toLowerCase();
       if (const {'.jpg', '.jpeg', '.png', '.webp'}.contains(extension)) {
@@ -1059,9 +1113,11 @@ class LocalTrackDownloadHelper {
           await file.delete();
         } catch (_) {
           // Best effort cleanup for files left by older Android commands.
+          complete = false;
         }
       }
     }
+    return complete;
   }
 
   Future<_SavedThumbnail?> _saveThumbnail(

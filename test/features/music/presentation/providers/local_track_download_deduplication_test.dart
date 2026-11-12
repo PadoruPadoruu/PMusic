@@ -29,6 +29,132 @@ void main() {
   });
 
   group('LocalTrackDownloadHelper deduplication', () {
+    test(
+      'shares legacy cleanup across concurrent and later downloads',
+      () async {
+        final releaseCleanup = Completer<bool>();
+        final cleanupStarted = Completer<void>();
+        var cleanupCalls = 0;
+        final fixture = await _DownloadFixture.create(
+          legacyArtworkCleanup: (_) {
+            cleanupCalls++;
+            if (!cleanupStarted.isCompleted) cleanupStarted.complete();
+            return releaseCleanup.future;
+          },
+        );
+        addTearDown(fixture.dispose);
+
+        Future<LocalTrackDownloadResult> download(int index) =>
+            fixture.helper.resolveForLibrary(
+              _remoteTrack(
+                id: 'cleanup-$index',
+                url: 'https://catalog.example/tracks/cleanup-$index',
+              ),
+              allowConcurrentDownload: true,
+            );
+        final first = download(1);
+        final second = download(2);
+        await cleanupStarted.future;
+        await Future<void>.delayed(Duration.zero);
+        expect(cleanupCalls, 1);
+        releaseCleanup.complete(true);
+        await Future.wait([first, second]);
+        await download(3);
+
+        expect(cleanupCalls, 1);
+        expect(fixture.musicRepository.downloadCalls, 3);
+      },
+    );
+
+    test(
+      'retries incomplete legacy cleanup and resets it after restore',
+      () async {
+        var cleanupCalls = 0;
+        final fixture = await _DownloadFixture.create(
+          legacyArtworkCleanup: (_) async => ++cleanupCalls > 1,
+        );
+        addTearDown(fixture.dispose);
+
+        Future<LocalTrackDownloadResult> download(int index) =>
+            fixture.helper.resolveForLibrary(
+              _remoteTrack(
+                id: 'cleanup-retry-$index',
+                url: 'https://catalog.example/tracks/cleanup-retry-$index',
+              ),
+            );
+        await download(1);
+        await download(2);
+        await download(3);
+        expect(cleanupCalls, 2);
+
+        final coordinator = fixture.container.read(
+          libraryOperationCoordinatorProvider,
+        );
+        await coordinator.runExclusive(
+          LibraryMaintenancePhase.committingRestore,
+          () async {},
+        );
+        await download(4);
+        expect(cleanupCalls, 3);
+      },
+    );
+
+    test('retries legacy cleanup after a directory read failure', () async {
+      var cleanupCalls = 0;
+      final fixture = await _DownloadFixture.create(
+        legacyArtworkCleanup: (_) async {
+          if (++cleanupCalls == 1) {
+            throw const FileSystemException('Directory cannot be read');
+          }
+          return true;
+        },
+      );
+      addTearDown(fixture.dispose);
+      final track = _remoteTrack(
+        url: 'https://catalog.example/tracks/cleanup-read-retry',
+      );
+
+      await expectLater(
+        fixture.helper.resolveForLibrary(track),
+        throwsA(isA<FileSystemException>()),
+      );
+      expect(fixture.musicRepository.downloadCalls, 0);
+      await fixture.helper.resolveForLibrary(track);
+      expect(cleanupCalls, 2);
+      expect(fixture.musicRepository.downloadCalls, 1);
+    });
+
+    test(
+      'cleans only legacy images and checks directories created later',
+      () async {
+        final fixture = await _DownloadFixture.create();
+        addTearDown(fixture.dispose);
+
+        Future<LocalTrackDownloadResult> download(int index) =>
+            fixture.helper.resolveForLibrary(
+              _remoteTrack(
+                id: 'cleanup-files-$index',
+                url: 'https://catalog.example/tracks/cleanup-files-$index',
+              ),
+            );
+        final first = await download(1);
+        final directory = File(first.track.filePath).parent;
+        final legacy = File(p.join(directory.path, 'old-cover.jpg'));
+        final unrelated = File(p.join(directory.path, 'keep.txt'));
+        await legacy.writeAsBytes([1]);
+        await unrelated.writeAsString('preserved');
+
+        await download(2);
+        expect(await legacy.exists(), isFalse);
+        expect(await unrelated.exists(), isTrue);
+        expect(await File(first.track.filePath).exists(), isTrue);
+        expect(
+          await directory.list().where((entry) => entry is File).length,
+          3,
+        );
+      },
+    );
+
     test('always reuses an existing valid library file', () async {
       final fixture = await _DownloadFixture.create();
       addTearDown(fixture.dispose);
@@ -1134,6 +1260,7 @@ class _DownloadFixture {
     bool failSavingLocalTrack = false,
     ArtworkCacheFileLookup? artworkCacheFileLookup,
     LocalTrackThumbnailValidator? thumbnailValidator,
+    LocalTrackLegacyArtworkCleanup? legacyArtworkCleanup,
   }) async {
     final tempDirectory = await Directory.systemTemp.createTemp(
       'bstream-download-dedupe-',
@@ -1157,11 +1284,12 @@ class _DownloadFixture {
         artworkCacheFileLookupProvider.overrideWithValue(
           artworkCacheFileLookup ?? (_) async => null,
         ),
-        if (thumbnailValidator != null)
+        if (thumbnailValidator != null || legacyArtworkCleanup != null)
           localTrackDownloadHelperProvider.overrideWith(
             (ref) => LocalTrackDownloadHelper(
               ref,
               thumbnailValidator: thumbnailValidator,
+              legacyArtworkCleanup: legacyArtworkCleanup,
             ),
           ),
       ],

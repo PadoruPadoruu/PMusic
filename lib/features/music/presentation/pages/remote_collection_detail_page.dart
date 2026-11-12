@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_ui.dart';
 import '../../domain/entities/track_info.dart';
 import '../providers/music_providers.dart';
 import '../providers/track_selection_controller.dart';
@@ -223,7 +224,8 @@ class _RemoteCollectionDetailPageState
                   padding: const EdgeInsets.fromLTRB(6, 6, 6, 0),
                   sliver: SliverList.separated(
                     itemCount: visibleTracks.length,
-                    separatorBuilder: (_, _) => const SizedBox(height: 6),
+                    separatorBuilder: (_, _) =>
+                        const SizedBox(height: appTrackRowGap),
                     itemBuilder: (context, index) {
                       final track = visibleTracks[index];
                       final identity = track.id.trim().isEmpty

@@ -59,6 +59,47 @@ void main() {
     );
     expect(tester.takeException(), isNull);
   });
+
+  testWidgets('retained settings card refreshes only when becoming visible', (
+    tester,
+  ) async {
+    final active = ValueNotifier(false);
+    addTearDown(active.dispose);
+    final controller = _TestYouTubeMusicAuthController(_anonymousState);
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          youtubeMusicAuthControllerProvider.overrideWith(() => controller),
+        ],
+        child: MaterialApp(
+          home: Scaffold(
+            body: ValueListenableBuilder<bool>(
+              valueListenable: active,
+              builder: (_, visible, _) => YouTubeMusicSettingsAccountCard(
+                strings: const AppStrings(AppLanguage.spanish),
+                active: visible,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    expect(controller.refreshCalls, 0);
+
+    active.value = true;
+    await tester.pump();
+    expect(controller.refreshCalls, 1);
+    await tester.pump();
+    expect(controller.refreshCalls, 1);
+
+    active.value = false;
+    await tester.pump();
+    expect(controller.refreshCalls, 1);
+    active.value = true;
+    await tester.pump();
+    expect(controller.refreshCalls, 2);
+    expect(tester.takeException(), isNull);
+  });
 }
 
 const _anonymousState = YouTubeMusicAuthState(
@@ -89,7 +130,13 @@ class _TestYouTubeMusicAuthController extends YouTubeMusicAuthController {
   _TestYouTubeMusicAuthController(this.initialState);
 
   final YouTubeMusicAuthState initialState;
+  var refreshCalls = 0;
 
   @override
   YouTubeMusicAuthState build() => initialState;
+
+  @override
+  Future<void> refreshProfile({bool force = false}) async {
+    refreshCalls++;
+  }
 }

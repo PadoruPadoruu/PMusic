@@ -25,6 +25,7 @@ import '../../domain/entities/playlist_entry.dart';
 import '../../domain/entities/track_info.dart';
 import '../providers/local_audio_availability.dart';
 import '../providers/music_providers.dart';
+import '../providers/playback_queue_selection_provider.dart';
 import '../providers/subscribed_artists_controller.dart';
 import '../providers/youtube_music_auth_controller.dart';
 import '../pages/artist_profile_page.dart';
@@ -35,6 +36,7 @@ import 'glass_popup_menu_button.dart';
 import 'library_subscribed_artists_shelf.dart';
 import 'now_playing_equalizer.dart';
 import 'playlist_artwork.dart';
+import 'playlist_artwork_editor.dart';
 import 'playlist_artwork_mosaic.dart';
 import 'playlist_picker_dialog.dart';
 import 'playlist_track_subtitle.dart';
@@ -343,9 +345,11 @@ class _LibraryPanelState extends ConsumerState<LibraryPanel> {
                         }
                         return tracks.when(
                           data: (libraryTracks) {
-                            final allItems = _catalogDisplayItems(
-                              catalogPlaylist,
-                              libraryTracks,
+                            final allItems = ref.watch(
+                              _catalogDisplayItemsProvider((
+                                playlist: catalogPlaylist,
+                                libraryTracks: libraryTracks,
+                              )),
                             );
                             // A legacy backup can briefly expose playlist.trackIds
                             // before its v8 catalog entries are repaired. Keep the
@@ -362,10 +366,14 @@ class _LibraryPanelState extends ConsumerState<LibraryPanel> {
                                   .whereType<LocalTrack>()
                                   .toList(growable: false);
                               return _TrackListView(
-                                artworkSources: _playlistThumbnailSources(
+                                artworkSources: playlistArtworkSourcesFor(
+                                  ref,
                                   playlist,
-                                  byId,
-                                  rotationSeed: _artworkRotationSeed,
+                                  () => _playlistThumbnailSources(
+                                    playlist,
+                                    byId,
+                                    rotationSeed: _artworkRotationSeed,
+                                  ),
                                 ),
                                 bottomContentPadding:
                                     widget.bottomContentPadding,
@@ -418,10 +426,14 @@ class _LibraryPanelState extends ConsumerState<LibraryPanel> {
                               );
                             }
                             return _CatalogTrackListView(
-                              artworkSources: _catalogPlaylistThumbnailSources(
-                                playlist.id,
-                                allItems,
-                                rotationSeed: _artworkRotationSeed,
+                              artworkSources: playlistArtworkSourcesFor(
+                                ref,
+                                playlist,
+                                () => _catalogPlaylistThumbnailSources(
+                                  playlist.id,
+                                  allItems,
+                                  rotationSeed: _artworkRotationSeed,
+                                ),
                               ),
                               bottomContentPadding: widget.bottomContentPadding,
                               title: playlist.isFavorites
@@ -1418,7 +1430,12 @@ class _LiveQueueView extends ConsumerWidget {
                   itemCount: items.length,
                   itemBuilder: (context, index) {
                     return Padding(
-                      padding: const EdgeInsets.fromLTRB(6, 0, 6, 6),
+                      padding: const EdgeInsets.fromLTRB(
+                        6,
+                        0,
+                        6,
+                        appTrackRowGap,
+                      ),
                       child: _LiveQueueTile(
                         item: items[index],
                         onOpenPlayer: onOpenPlayer,
@@ -1768,24 +1785,23 @@ class _PlaylistDownloadProgress extends StatelessWidget {
   }
 }
 
+final _catalogDisplayItemsProvider = Provider.autoDispose
+    .family<
+      List<_CatalogDisplayItem>,
+      ({CatalogPlaylist playlist, List<LocalTrack> libraryTracks})
+    >((ref, request) {
+      return _catalogDisplayItems(request.playlist, request.libraryTracks);
+    });
+
 List<_CatalogDisplayItem> _catalogDisplayItems(
   CatalogPlaylist playlist,
   Iterable<LocalTrack> libraryTracks,
 ) {
-  final playbackByEntry = <String, CatalogPlaybackItem>{
-    for (final item in catalogPlaylistPlaybackItems(playlist, libraryTracks))
-      item.entryId: item,
-  };
-  final entries = playlist.entries.where((entry) => !entry.isDeleted).toList()
-    ..sort((left, right) {
-      final byPosition = left.position.compareTo(right.position);
-      return byPosition != 0 ? byPosition : left.id.compareTo(right.id);
-    });
   return List<_CatalogDisplayItem>.unmodifiable(
-    entries.map(
-      (entry) => _CatalogDisplayItem(
-        entry: entry,
-        playback: playbackByEntry[entry.id],
+    catalogPlaylistResolvedEntries(playlist, libraryTracks).map(
+      (resolved) => _CatalogDisplayItem(
+        entry: resolved.entry,
+        playback: resolved.playback,
       ),
     ),
   );
@@ -2028,7 +2044,12 @@ class _CatalogTrackListView extends ConsumerWidget {
                               key: ValueKey(
                                 'library-catalog-row-${item.entry.id}',
                               ),
-                              padding: const EdgeInsets.fromLTRB(6, 0, 6, 6),
+                              padding: const EdgeInsets.fromLTRB(
+                                6,
+                                0,
+                                6,
+                                appTrackRowGap,
+                              ),
                               child: _CatalogTrackTile(
                                 key: ValueKey(
                                   'library-catalog-entry-${item.entry.id}',
@@ -2050,7 +2071,12 @@ class _CatalogTrackListView extends ConsumerWidget {
                       : SliverList.builder(
                           itemCount: items.length,
                           itemBuilder: (context, index) => Padding(
-                            padding: const EdgeInsets.fromLTRB(6, 0, 6, 6),
+                            padding: const EdgeInsets.fromLTRB(
+                              6,
+                              0,
+                              6,
+                              appTrackRowGap,
+                            ),
                             child: _CatalogTrackTile(
                               key: ValueKey(
                                 'library-catalog-entry-${items[index].entry.id}',
@@ -2120,8 +2146,10 @@ class _CatalogTrackTileState extends ConsumerState<_CatalogTrackTile> {
         return (trackId: snapshot?.trackId, status: snapshot?.status);
       }),
     );
-    final queue = ref.watch(playbackQueueProvider);
-    final isCurrent = _isCurrentOccurrence(playback.trackId, queue);
+    final currentLogicalEntryId = ref.watch(currentQueueLogicalEntryIdProvider);
+    final isCurrent = currentLogicalEntryId != null
+        ? currentLogicalEntryId == widget.item.entry.id
+        : widget.item.matchesTrackId(playback.trackId);
     final isPlaying = isCurrent && playback.status == PlayerStatus.playing;
     final localTrack = widget.item.localTrack;
     final remoteTrack = widget.item.playback?.remoteTrack;
@@ -2678,7 +2706,7 @@ class _TrackListView extends ConsumerWidget {
     final track = tracks[index];
     return Padding(
       key: ValueKey('library-track-row-${track.id}'),
-      padding: const EdgeInsets.fromLTRB(6, 0, 6, 6),
+      padding: const EdgeInsets.fromLTRB(6, 0, 6, appTrackRowGap),
       child: _LocalTrackTile(
         key: ValueKey('library-track-${track.id}'),
         track: track,
@@ -3058,18 +3086,8 @@ class _PlaylistMenu extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final strings = ref.watch(appStringsProvider);
-    final catalog = ref.watch(catalogPlaylistProvider(playlist.id)).value;
-    final library =
-        ref.watch(libraryTracksProvider).value ?? const <LocalTrack>[];
     final hasPendingDownloads = ref.watch(
-      downloadControllerProvider.select(
-        (tasks) => pendingPlaylistDownloadUrls(
-          playlist,
-          catalog,
-          library,
-          tasks,
-        ).isNotEmpty,
-      ),
+      playlistHasPendingDownloadsProvider(playlist.id),
     );
     final preparingDownloads = ref.watch(
       playlistDownloadPreparationsProvider.select(
@@ -3762,44 +3780,87 @@ class _PlaylistList extends StatelessWidget {
       itemCount: playlists.length,
       itemBuilder: (context, index) {
         final playlist = playlists[index];
-        final playlistTracks = playlist.trackIds
-            .map((id) => tracksById[id])
-            .whereType<LocalTrack>()
-            .toList(growable: false);
-        final catalog = catalogPlaylists[playlist.id];
-        final catalogItems = catalog == null
-            ? const <_CatalogDisplayItem>[]
-            : _catalogDisplayItems(catalog, libraryTracks);
-        final itemCount = catalog == null
-            ? playlistTracks.length
-            : catalogItems.length;
-        final duration = catalog == null
-            ? sumKnownDurations(playlistTracks.map((track) => track.duration))
-            : sumKnownDurations(catalogItems.map((item) => item.duration));
-        final thumbnailSources =
-            catalogItems.isEmpty && playlistTracks.isNotEmpty || catalog == null
-            ? _playlistThumbnailSources(
-                playlist,
-                tracksById,
-                rotationSeed: artworkRotationSeed,
-              )
-            : _catalogPlaylistThumbnailSources(
-                playlist.id,
-                catalogItems,
-                rotationSeed: artworkRotationSeed,
-              );
         return Padding(
           padding: const EdgeInsets.fromLTRB(6, 0, 6, appCardGap),
-          child: _PlaylistRow(
-            key: ValueKey('library-playlist-${playlist.id}'),
+          child: _PlaylistSummaryRow(
             playlist: playlist,
-            thumbnailSources: thumbnailSources,
-            subtitle: strings.songCountWithDuration(itemCount, duration),
+            catalog: catalogPlaylists[playlist.id],
+            libraryTracks: libraryTracks,
+            tracksById: tracksById,
+            artworkRotationSeed: artworkRotationSeed,
             strings: strings,
             onTap: () => onOpenPlaylist(playlist.id),
           ),
         );
       },
+    );
+  }
+}
+
+class _PlaylistSummaryRow extends ConsumerWidget {
+  const _PlaylistSummaryRow({
+    required this.playlist,
+    required this.catalog,
+    required this.libraryTracks,
+    required this.tracksById,
+    required this.artworkRotationSeed,
+    required this.strings,
+    required this.onTap,
+  });
+
+  final Playlist playlist;
+  final CatalogPlaylist? catalog;
+  final List<LocalTrack> libraryTracks;
+  final Map<String, LocalTrack> tracksById;
+  final int artworkRotationSeed;
+  final AppStrings strings;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final playlistTracks = playlist.trackIds
+        .map((id) => tracksById[id])
+        .whereType<LocalTrack>()
+        .toList(growable: false);
+    final currentCatalog = catalog;
+    final catalogItems = currentCatalog == null
+        ? const <_CatalogDisplayItem>[]
+        : ref.watch(
+            _catalogDisplayItemsProvider((
+              playlist: currentCatalog,
+              libraryTracks: libraryTracks,
+            )),
+          );
+    final itemCount = currentCatalog == null
+        ? playlistTracks.length
+        : catalogItems.length;
+    final duration = currentCatalog == null
+        ? sumKnownDurations(playlistTracks.map((track) => track.duration))
+        : sumKnownDurations(catalogItems.map((item) => item.duration));
+    final thumbnailSources = playlistArtworkSourcesFor(
+      ref,
+      playlist,
+      () =>
+          catalogItems.isEmpty && playlistTracks.isNotEmpty ||
+              currentCatalog == null
+          ? _playlistThumbnailSources(
+              playlist,
+              tracksById,
+              rotationSeed: artworkRotationSeed,
+            )
+          : _catalogPlaylistThumbnailSources(
+              playlist.id,
+              catalogItems,
+              rotationSeed: artworkRotationSeed,
+            ),
+    );
+    return _PlaylistRow(
+      key: ValueKey('library-playlist-${playlist.id}'),
+      playlist: playlist,
+      thumbnailSources: thumbnailSources,
+      subtitle: strings.songCountWithDuration(itemCount, duration),
+      strings: strings,
+      onTap: onTap,
     );
   }
 }
@@ -3826,22 +3887,29 @@ class _PlaylistRow extends StatelessWidget {
       icon: playlist.isFavorites
           ? Icons.favorite_rounded
           : Icons.queue_music_rounded,
-      leading: thumbnailSources.isEmpty
-          ? null
-          : Stack(
-              children: [
-                _PlaylistCover(
-                  key: ValueKey('library-playlist-artwork-${playlist.id}'),
-                  sources: thumbnailSources,
-                ),
-                if (playlist.isFavorites)
-                  const Positioned(
-                    top: 1,
-                    right: 1,
-                    child: FavoriteStarBadge(iconSize: 15),
+      leading: PlaylistArtworkEditor(
+        playlist: playlist,
+        child: thumbnailSources.isEmpty
+            ? _FolderIcon(
+                icon: playlist.isFavorites
+                    ? Icons.favorite_rounded
+                    : Icons.queue_music_rounded,
+              )
+            : Stack(
+                children: [
+                  _PlaylistCover(
+                    key: ValueKey('library-playlist-artwork-${playlist.id}'),
+                    sources: thumbnailSources,
                   ),
-              ],
-            ),
+                  if (playlist.isFavorites)
+                    const Positioned(
+                      top: 1,
+                      right: 1,
+                      child: FavoriteStarBadge(iconSize: 15),
+                    ),
+                ],
+              ),
+      ),
       title: playlist.isFavorites ? strings.favorites : playlist.name,
       subtitle: subtitle,
       trailing: const Icon(Icons.chevron_right_rounded),
@@ -3961,12 +4029,15 @@ class _PlaylistArtworkHeader extends ConsumerWidget {
                     MediaQuery.devicePixelRatioOf(context))
                 .ceil()
                 .clamp(1, 1280);
-        final artwork = PlaylistArtworkMosaic(
-          key: ValueKey('library-playlist-hero-${playlist.id}'),
-          sources: sources,
-          size: artworkSize,
-          borderRadius: 16,
-          cacheWidth: decodeWidth,
+        final artwork = PlaylistArtworkEditor(
+          playlist: playlist,
+          child: PlaylistArtworkMosaic(
+            key: ValueKey('library-playlist-hero-${playlist.id}'),
+            sources: sources,
+            size: artworkSize,
+            borderRadius: 16,
+            cacheWidth: decodeWidth,
+          ),
         );
         final description = Column(
           mainAxisSize: MainAxisSize.min,

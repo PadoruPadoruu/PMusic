@@ -1,4 +1,6 @@
 import 'dart:async';
+import 'player_lyrics_icon.dart';
+import 'player_panel.dart' show showDesktopPlaybackQueue;
 import 'dart:math' as math;
 import 'dart:ui';
 
@@ -16,13 +18,12 @@ import '../../../../core/widgets/marquee_text.dart';
 import '../../../../core/widgets/liquid_glass_surface.dart';
 import '../../../../services/downloader/audio_stream_resolver.dart';
 import '../../../../services/player/player_service.dart';
-import '../../domain/entities/local_track.dart';
 import '../providers/music_providers.dart';
+import '../providers/playback_artwork_provider.dart';
 import '../providers/playback_visual_cache_provider.dart';
 import 'favorite_star_badge.dart';
 import 'decorative_progress_transition.dart';
 import 'playback_progress_line.dart';
-import 'playlist_artwork.dart';
 import 'source_image.dart';
 import 'track_change_transition.dart';
 
@@ -129,18 +130,9 @@ class MiniPlayer extends ConsumerWidget {
       }),
     );
     final strings = ref.watch(appStringsProvider);
-    final localTracks =
-        ref.watch(libraryTracksProvider).value ?? const <LocalTrack>[];
-    final localTrack = _miniLocalTrackForSnapshot(
-      localTracks,
-      trackId: presentation.trackId,
-      sourceUrl: presentation.sourceUrl,
-    );
-    final localArtwork = localTrack == null
-        ? null
-        : preferredLocalTrackArtworkSource(localTrack);
-    final artworkSource = localArtwork?.source ?? presentation.thumbnailUrl;
-    final artworkFallbackSource = localArtwork?.fallbackSource;
+    final artwork = ref.watch(playbackArtworkProvider);
+    final artworkSource = artwork.source;
+    final artworkFallbackSource = artwork.fallback;
     final isFavorite = ref.watch(
       favoriteTrackIdsProvider.select(
         (ids) => ids.contains(presentation.trackId),
@@ -357,7 +349,14 @@ class MiniPlayer extends ConsumerWidget {
       key: const ValueKey('mini-player-lyrics-control'),
       tooltip: strings.lyrics,
       icon: Icons.lyrics_rounded,
+      customIcon: const PlayerLyricsIcon(),
       onPressed: onOpenLyrics,
+    );
+    final desktopQueue = _MiniTransportButton(
+      key: const ValueKey('mini-player-queue-control'),
+      tooltip: strings.playbackQueue,
+      icon: Icons.format_list_bulleted_rounded,
+      onPressed: () => showDesktopPlaybackQueue(context),
     );
     final swipeEnabled =
         compactMobile &&
@@ -630,6 +629,8 @@ class MiniPlayer extends ConsumerWidget {
                                                 ),
                                               if (presentation.hasError)
                                                 const SizedBox(width: 12),
+                                              desktopQueue,
+                                              const SizedBox(width: 4),
                                               desktopLyrics,
                                               const SizedBox(width: 4),
                                               Flexible(child: desktopVolume),
@@ -1001,6 +1002,7 @@ class _MiniTransportButton extends StatelessWidget {
     this.dimension = 48,
     this.iconSize,
     this.color,
+    this.customIcon,
     super.key,
   });
 
@@ -1010,6 +1012,7 @@ class _MiniTransportButton extends StatelessWidget {
   final double dimension;
   final double? iconSize;
   final Color? color;
+  final Widget? customIcon;
 
   @override
   Widget build(BuildContext context) {
@@ -1017,7 +1020,7 @@ class _MiniTransportButton extends StatelessWidget {
       dimension: dimension,
       child: IconButton(
         tooltip: tooltip,
-        icon: Icon(icon),
+        icon: customIcon ?? Icon(icon),
         color: color ?? AppColors.playbackControlForegroundFor(context),
         iconSize: iconSize,
         padding: EdgeInsets.zero,
@@ -1079,7 +1082,7 @@ class _MiniVolumeControl extends ConsumerWidget {
             children: [
               Icon(
                 _miniVolumeIcon(normalizedVolume),
-                size: 22,
+                size: 22 * appVolumeIconScale,
                 color: AppColors.playbackControlForegroundFor(context),
               ),
               const SizedBox(width: 6),
@@ -1755,30 +1758,4 @@ class _MiniArtworkImage extends StatelessWidget {
             ),
     );
   }
-}
-
-LocalTrack? _miniLocalTrackForSnapshot(
-  List<LocalTrack> tracks, {
-  required String? trackId,
-  required String? sourceUrl,
-}) {
-  final normalizedId = trackId?.trim();
-  if (normalizedId != null && normalizedId.isNotEmpty) {
-    for (final track in tracks) {
-      if (track.id == normalizedId) {
-        return track;
-      }
-    }
-  }
-
-  final normalizedSource = sourceUrl?.trim();
-  if (normalizedSource == null || normalizedSource.isEmpty) {
-    return null;
-  }
-  for (final track in tracks) {
-    if (track.sourceUrl?.trim() == normalizedSource) {
-      return track;
-    }
-  }
-  return null;
 }

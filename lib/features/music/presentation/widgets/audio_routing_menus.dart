@@ -3,14 +3,30 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/theme/app_ui.dart';
+
 import '../../../../services/audio_output/audio_output_service.dart';
 import '../../../../services/casting/cast_coordinator.dart';
 import '../../../../services/player/cast_aware_player_service.dart';
+import '../../../../services/player/player_audio_output.dart';
+import '../../../../services/player/player_service.dart';
 import '../providers/audio_route_providers.dart';
 import '../providers/music_providers.dart';
 import 'playback_menu_bottom_sheet.dart';
 
 Future<void> showAudioOutputPicker(BuildContext context, WidgetRef ref) async {
+  if (switch (Theme.of(context).platform) {
+    TargetPlatform.windows ||
+    TargetPlatform.linux ||
+    TargetPlatform.macOS => true,
+    _ => false,
+  }) {
+    await showPlaybackMenuBottomSheet<void>(
+      context: context,
+      builder: (_) => const DesktopAudioOutputMenu(),
+    );
+    return;
+  }
   try {
     final player = ref.read(playerServiceProvider);
     if (player is CastAwarePlayerService && player.isCasting) {
@@ -37,6 +53,139 @@ Future<void> showCastDevicesMenu(BuildContext context) =>
       context: context,
       builder: (_) => const CastDevicesMenu(),
     );
+
+class DesktopAudioOutputMenu extends ConsumerStatefulWidget {
+  const DesktopAudioOutputMenu({super.key});
+
+  @override
+  ConsumerState<DesktopAudioOutputMenu> createState() =>
+      _DesktopAudioOutputMenuState();
+}
+
+class _DesktopAudioOutputMenuState
+    extends ConsumerState<DesktopAudioOutputMenu> {
+  bool _busy = false;
+  String? _message;
+  double? _dragVolume;
+
+  Future<void> _select(PlayerAudioOutput output, String id) async {
+    if (_busy) return;
+    setState(() {
+      _busy = true;
+      _message = null;
+    });
+    try {
+      await output.selectAudioOutput(id);
+    } catch (_) {
+      if (mounted) {
+        _message = ref.read(appStringsProvider).playerAudioControlFailed;
+      }
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final strings = ref.watch(appStringsProvider);
+    final player = ref.watch(playerServiceProvider);
+    final output = player is PlayerAudioOutput
+        ? player as PlayerAudioOutput
+        : null;
+    return StreamBuilder<PlayerAudioOutputState>(
+      stream: output?.audioOutputStream,
+      initialData: output?.audioOutputState ?? const PlayerAudioOutputState(),
+      builder: (context, snapshot) {
+        final state = snapshot.data ?? const PlayerAudioOutputState();
+        final devices = {
+          systemDefaultAudioDeviceId: strings.systemDefaultAudioOutput,
+          for (final device in state.devices)
+            if (device.id != systemDefaultAudioDeviceId)
+              device.id: device.name.isEmpty ? device.id : device.name,
+        };
+        return _RouteMenuLayout(
+          menuKey: 'desktop-audio-output-menu',
+          title: strings.playerAudioOutput,
+          children: [
+            Text(strings.playerAudioOutputHint),
+            const SizedBox(height: 12),
+            if (!state.supported || snapshot.hasError)
+              Text(strings.outputLoadFailed),
+            if (state.supported)
+              for (final device in devices.entries)
+                ListTile(
+                  key: ValueKey('desktop-audio-output-route-${device.key}'),
+                  contentPadding: EdgeInsets.zero,
+                  leading: Icon(
+                    device.key == systemDefaultAudioDeviceId
+                        ? Icons.computer_rounded
+                        : Icons.speaker_rounded,
+                  ),
+                  title: Text(device.value),
+                  trailing: state.selectedDeviceId == device.key
+                      ? Icon(
+                          Icons.check_rounded,
+                          color: Theme.of(context).colorScheme.primary,
+                        )
+                      : null,
+                  enabled: !_busy && !snapshot.hasError,
+                  onTap: output == null
+                      ? null
+                      : () => _select(output, device.key),
+                ),
+            const Divider(height: 24),
+            Text(
+              strings.playerVolume,
+              style: Theme.of(context).textTheme.labelLarge,
+            ),
+            StreamBuilder<PlayerSnapshot>(
+              stream: player.snapshotStream,
+              initialData: player.currentSnapshot,
+              builder: (context, snapshot) => Row(
+                children: [
+                  const Icon(
+                    Icons.volume_down_rounded,
+                    size: 24 * appVolumeIconScale,
+                  ),
+                  Expanded(
+                    child: Slider(
+                      key: const ValueKey('desktop-audio-output-volume'),
+                      value: (_dragVolume ?? snapshot.data!.volume).clamp(0, 1),
+                      onChanged: _busy
+                          ? null
+                          : (value) => setState(() => _dragVolume = value),
+                      onChangeEnd: _busy
+                          ? null
+                          : (value) async {
+                              try {
+                                await player.setVolume(value);
+                              } catch (_) {
+                                if (mounted) {
+                                  _message = strings.playerAudioControlFailed;
+                                }
+                              } finally {
+                                if (mounted) {
+                                  setState(() => _dragVolume = null);
+                                }
+                              }
+                            },
+                    ),
+                  ),
+                  const Icon(
+                    Icons.volume_up_rounded,
+                    size: 24 * appVolumeIconScale,
+                  ),
+                ],
+              ),
+            ),
+            if (_busy) const LinearProgressIndicator(),
+            if (_message != null) Text(_message!),
+          ],
+        );
+      },
+    );
+  }
+}
 
 class AudioOutputMenu extends ConsumerStatefulWidget {
   const AudioOutputMenu({super.key});
@@ -193,7 +342,7 @@ class _AudioOutputMenuState extends ConsumerState<AudioOutputMenu> {
       ),
       Row(
         children: [
-          const Icon(Icons.volume_down_rounded),
+          const Icon(Icons.volume_down_rounded, size: 24 * appVolumeIconScale),
           Expanded(
             child: Slider(
               key: const ValueKey('audio-output-volume'),
@@ -222,7 +371,7 @@ class _AudioOutputMenuState extends ConsumerState<AudioOutputMenu> {
                   : null,
             ),
           ),
-          const Icon(Icons.volume_up_rounded),
+          const Icon(Icons.volume_up_rounded, size: 24 * appVolumeIconScale),
         ],
       ),
     ],

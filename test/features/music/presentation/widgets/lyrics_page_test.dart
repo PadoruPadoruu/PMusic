@@ -14,6 +14,7 @@ import 'package:bstream_music/features/music/presentation/widgets/lyrics_page.da
 import 'package:bstream_music/features/music/presentation/widgets/lyrics_page_route.dart';
 import 'package:bstream_music/features/music/presentation/widgets/lyrics_share_preview.dart';
 import 'package:bstream_music/features/music/presentation/widgets/lyrics_text_style_transition.dart';
+import 'package:bstream_music/features/music/presentation/widgets/lyrics_word_timing_text.dart';
 import 'package:bstream_music/features/music/presentation/widgets/uniform_playback_slider_track_shape.dart';
 import 'package:bstream_music/features/music/presentation/widgets/wavy_playback_seek_bar.dart';
 import 'package:bstream_music/platform_channels/lyrics_presentation_chrome.dart';
@@ -598,6 +599,155 @@ void main() {
     expect(_activeLine('Third line'), findsOneWidget);
     expect(_activeLine('First line'), findsNothing);
   });
+
+  testWidgets('word lyrics share the seek, pause and offset clock with lines', (
+    tester,
+  ) async {
+    const document = LyricsDocument(
+      provider: 'Test provider',
+      trackName: 'Test song',
+      artistName: 'Test artist',
+      lines: [
+        LyricLine(
+          timestamp: Duration.zero,
+          text: 'Hello world',
+          words: [
+            LyricWord(
+              text: 'Hello',
+              start: Duration.zero,
+              end: Duration(seconds: 1),
+              startOffset: 0,
+              endOffset: 5,
+            ),
+            LyricWord(
+              text: 'world',
+              start: Duration(milliseconds: 1200),
+              end: Duration(milliseconds: 2100),
+              startOffset: 6,
+              endOffset: 11,
+            ),
+          ],
+        ),
+        LyricLine(timestamp: Duration(seconds: 3), text: 'Line-only fallback'),
+      ],
+    );
+    final clock = _MutableLyricsMonotonicClock();
+    final initial = lookupSnapshot.copyWith(
+      status: PlayerStatus.paused,
+      position: const Duration(milliseconds: 500),
+    );
+    final player = _FakePlayerService(initial);
+    final container = await _pumpLyricsPage(
+      tester,
+      player: player,
+      lyrics: _FakeLyricsService(document),
+      monotonicClock: clock.now,
+      disableAnimations: true,
+    );
+    final wordText = find.byType(LyricsWordTimingText);
+    expect(wordText, findsOneWidget);
+    LyricsWordTimingText wordWidget() => tester.widget(wordText);
+    expect(wordWidget().text, 'Hello world');
+    expect(
+      wordWidget().playback.value.position,
+      const Duration(milliseconds: 500),
+    );
+    expect(wordWidget().playback.value.isPlaying, isFalse);
+    clock.advance(const Duration(seconds: 2));
+    await tester.pump(const Duration(seconds: 2));
+    expect(
+      wordWidget().playback.value.position,
+      const Duration(milliseconds: 500),
+    );
+
+    player.emit(initial.copyWith(position: const Duration(milliseconds: 1250)));
+    await tester.pump();
+    expect(
+      wordWidget().playback.value.position,
+      const Duration(milliseconds: 1250),
+    );
+    container.read(lyricsOffsetControllerProvider.notifier).increase();
+    await tester.pump();
+    expect(
+      wordWidget().playback.value.position,
+      const Duration(milliseconds: 1750),
+    );
+    player.emit(initial.copyWith(status: PlayerStatus.playing));
+    await tester.pump();
+    expect(wordWidget().playback.value.isPlaying, isTrue);
+    expect(wordWidget().playback.value.position, const Duration(seconds: 1));
+
+    player.emit(initial.copyWith(position: const Duration(milliseconds: 3200)));
+    await tester.pump();
+    expect(_activeLine('Line-only fallback'), findsOneWidget);
+    expect(wordText, findsNothing);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets(
+    'timed sustained words do not turn into an inferred instrumental',
+    (tester) async {
+      const document = LyricsDocument(
+        provider: 'Test provider',
+        trackName: 'Test song',
+        artistName: 'Test artist',
+        lines: [
+          LyricLine(
+            timestamp: Duration.zero,
+            text: 'Hold on',
+            words: [
+              LyricWord(
+                text: 'Hold',
+                start: Duration.zero,
+                end: Duration(seconds: 20),
+                startOffset: 0,
+                endOffset: 4,
+              ),
+              LyricWord(
+                text: 'on',
+                start: Duration(seconds: 5),
+                end: Duration(seconds: 10),
+                startOffset: 5,
+                endOffset: 7,
+              ),
+            ],
+          ),
+          LyricLine(timestamp: Duration(seconds: 30), text: 'Next verse'),
+        ],
+      );
+      final initial = lookupSnapshot.copyWith(
+        status: PlayerStatus.paused,
+        position: const Duration(seconds: 12),
+      );
+      final player = _FakePlayerService(initial);
+      await _pumpLyricsPage(
+        tester,
+        player: player,
+        lyrics: _FakeLyricsService(document),
+        disableAnimations: true,
+      );
+      final activeTransition = find.ancestor(
+        of: find.byKey(const ValueKey('active-lyric-line')),
+        matching: find.byType(LyricsTextStyleTransition),
+      );
+      expect(
+        tester.widget<LyricsTextStyleTransition>(activeTransition).originalText,
+        'Hold on',
+      );
+      expect(find.byType(LyricsWordTimingText), findsOneWidget);
+      expect(
+        find.byKey(const ValueKey('active-lyrics-instrumental-progress')),
+        findsNothing,
+      );
+      player.emit(initial.copyWith(position: const Duration(seconds: 21)));
+      await tester.pump();
+      expect(
+        find.byKey(const ValueKey('active-lyrics-instrumental-progress')),
+        findsOneWidget,
+      );
+      expect(tester.takeException(), isNull);
+    },
+  );
 
   testWidgets(
     'playing lyrics cross a line boundary between backend snapshots',

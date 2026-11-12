@@ -36,6 +36,7 @@ import 'package:bstream_music/features/music/presentation/widgets/decorative_pro
 import 'package:bstream_music/features/music/presentation/widgets/gradient_progress_bar.dart';
 import 'package:bstream_music/features/music/presentation/widgets/mini_player.dart';
 import 'package:bstream_music/features/music/presentation/widgets/playback_page_transition.dart';
+import 'package:bstream_music/features/music/presentation/widgets/playback_gradient_background.dart';
 import 'package:bstream_music/features/music/presentation/widgets/player_panel.dart';
 import 'package:bstream_music/features/music/presentation/widgets/scrolled_under_tab_frame.dart';
 import 'package:bstream_music/features/music/presentation/widgets/settings_panel.dart';
@@ -104,6 +105,108 @@ void main() {
     expect(find.byIcon(Icons.search_rounded), findsWidgets);
     expect(find.text('Reproductor'), findsNothing);
   });
+
+  for (final platform in [TargetPlatform.android, TargetPlatform.iOS]) {
+    testWidgets(
+      '$platform player covers the status bar and restores browsing safely',
+      (tester) async {
+        debugDefaultTargetPlatformOverride = platform;
+        tester.view
+          ..physicalSize = const Size(390, 844)
+          ..devicePixelRatio = 1
+          ..padding = const FakeViewPadding(top: 44, bottom: 24)
+          ..viewPadding = const FakeViewPadding(top: 44, bottom: 24);
+        addTearDown(() {
+          debugDefaultTargetPlatformOverride = null;
+          tester.view
+            ..resetPhysicalSize()
+            ..resetDevicePixelRatio()
+            ..resetPadding()
+            ..resetViewPadding();
+        });
+        await tester.pumpWidget(
+          _testApp(
+            settingsController: _FakeSettingsController(
+              const SettingsState(
+                downloadDirectory: '/tmp/bstream',
+                language: AppLanguage.spanish,
+                themeMode: AppThemeMode.light,
+                playerStyle: PlayerStyle.bstreamMusic,
+              ),
+            ),
+            playerService: _FakePlayerService(
+              snapshot: const PlayerSnapshot(
+                status: PlayerStatus.paused,
+                title: 'Barra transparente',
+                artist: 'BStream Music',
+                trackId: 'status-bar-track',
+                duration: Duration(minutes: 3),
+              ),
+            ),
+          ),
+        );
+        await tester.pump();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 500));
+
+        SystemUiOverlayStyle styleAtStatusBar() => tester
+            .binding
+            .renderViews
+            .single
+            .debugLayer!
+            .find<SystemUiOverlayStyle>(const Offset(195, 22))!;
+        final header = find.byKey(const ValueKey('home-tab-header-surface'));
+        final title = find.byKey(const ValueKey('home-tab-title'));
+        final browsingHeader = tester.getRect(header);
+        final browsingTitle = tester.getRect(title);
+        expect(browsingHeader.top, 44);
+        expect(styleAtStatusBar().statusBarIconBrightness, Brightness.dark);
+
+        await tester.tapAt(
+          tester.getCenter(find.byKey(const ValueKey('mini-player-metadata'))),
+        );
+        await tester.pump();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 100));
+        expect(tester.getRect(header), browsingHeader);
+        expect(tester.getRect(title), browsingTitle);
+        await tester.pump(const Duration(milliseconds: 600));
+        await tester.pump();
+
+        final player = find.byType(PlayerPanel);
+        final backdrop = find.descendant(
+          of: player,
+          matching: find.byType(PlaybackArtworkBackdrop),
+        );
+        expect(tester.getRect(backdrop), const Rect.fromLTWH(0, 0, 390, 844));
+        expect(MediaQuery.paddingOf(tester.element(player)).top, 44);
+        expect(
+          tester
+              .getRect(find.byKey(const ValueKey('bstream-player-grabber')))
+              .top,
+          greaterThanOrEqualTo(44),
+        );
+        final playerBars = styleAtStatusBar();
+        expect(playerBars.statusBarColor, Colors.transparent);
+        expect(playerBars.statusBarIconBrightness, Brightness.light);
+        expect(playerBars.statusBarBrightness, Brightness.dark);
+        expect(playerBars.systemStatusBarContrastEnforced, isFalse);
+
+        await tester.binding.handlePopRoute();
+        await tester.pump();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 800));
+        await tester.pump();
+        expect(tester.getRect(header), browsingHeader);
+        expect(tester.getRect(title), browsingTitle);
+        expect(styleAtStatusBar().statusBarIconBrightness, Brightness.dark);
+        expect(Theme.of(tester.element(title)).brightness, Brightness.light);
+        expect(tester.takeException(), isNull);
+        await tester.pumpWidget(const SizedBox.shrink());
+        debugDefaultTargetPlatformOverride = null;
+      },
+    );
+  }
 
   for (final themeMode in [AppThemeMode.light, AppThemeMode.dark]) {
     for (final photoPath in <String?>[null, '/tmp/shell-background.jpg']) {
@@ -218,8 +321,8 @@ void main() {
           checkCount += 1;
           return AppReleaseCheckResult(
             currentVersion: currentVersion,
-            latestVersion: '1.3.0',
-            releaseTag: 'v1.3.0',
+            latestVersion: '1.3.2',
+            releaseTag: 'v1.3.2',
           );
         },
         testHome: const HomePage(checkForUpdatesOnStartup: true),
@@ -506,12 +609,47 @@ void main() {
 
         await tester.tap(previous);
         await tester.pump();
-        expect(find.byKey(const ValueKey('player-tab-title')), findsNothing);
+        expect(find.byKey(const ValueKey('player-track-title')), findsNothing);
         await tester.tap(next);
         await tester.pump();
-        expect(find.byKey(const ValueKey('player-tab-title')), findsNothing);
+        expect(find.byKey(const ValueKey('player-track-title')), findsNothing);
         expect(tester.takeException(), isNull);
       }
+      await tester.tap(find.byKey(const ValueKey('mini-player-queue-control')));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(
+        find.byKey(const ValueKey('desktop-global-playback-queue')),
+        findsOneWidget,
+      );
+      expect(find.byKey(const ValueKey('player-track-title')), findsNothing);
+      await tester.tap(find.byKey(const ValueKey('queue-close')));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(
+        find.byKey(const ValueKey('desktop-global-playback-queue')),
+        findsNothing,
+      );
+      final libraryTab = find.byKey(const ValueKey('side-navigation-item-4'));
+      final bottomLibraryTab = find.byKey(
+        const ValueKey('bottom-navigation-item-4'),
+      );
+      await tester.tap(
+        libraryTab.evaluate().isNotEmpty ? libraryTab : bottomLibraryTab,
+      );
+      await tester.pump(const Duration(milliseconds: 500));
+      expect(find.byKey(const ValueKey('library-tab-title')), findsOneWidget);
+      await tester.tap(find.byKey(const ValueKey('mini-player-queue-control')));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(
+        find.byKey(const ValueKey('desktop-global-playback-queue')),
+        findsOneWidget,
+      );
+      await tester.tap(find.byKey(const ValueKey('queue-close')));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(find.byKey(const ValueKey('library-tab-title')), findsOneWidget);
       debugDefaultTargetPlatformOverride = null;
     },
     skip: !io.Platform.isWindows,
@@ -6340,7 +6478,7 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 500));
 
-      expect(find.byKey(const ValueKey('player-tab-title')), findsOneWidget);
+      expect(find.byKey(const ValueKey('player-track-title')), findsOneWidget);
       expect(player.remotePlayCalls, 1);
       expect(player.lastRemoteTrack?.id, 'dQw4w9WgXcQ');
       expect(player.lastRemoteTrack?.title, 'Never Gonna Give You Up');
@@ -6393,7 +6531,7 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 500));
 
-    expect(find.byKey(const ValueKey('player-tab-title')), findsOneWidget);
+    expect(find.byKey(const ValueKey('player-track-title')), findsOneWidget);
     expect(player.remotePlayCalls, 1);
     expect(player.lastRemoteTrack?.id, 'dQw4w9WgXcQ');
     expect(player.lastRemoteTrack?.title, 'Never Gonna Give You Up');
@@ -6541,7 +6679,10 @@ void main() {
       tester,
       () =>
           player.remotePlayCalls == 1 &&
-          find.byKey(const ValueKey('player-tab-title')).evaluate().isNotEmpty,
+          find
+              .byKey(const ValueKey('player-track-title'))
+              .evaluate()
+              .isNotEmpty,
       reason: 'the newer linked track to replace the playlist detail',
     );
     await tester.pump(const Duration(milliseconds: 400));
@@ -6784,6 +6925,7 @@ void main() {
       );
       expect(find.byKey(const ValueKey('home-recent-card')), findsOneWidget);
       expect(find.byKey(const ValueKey('home-playlist-card')), findsNothing);
+      expect(find.byKey(const ValueKey('home-loading-content')), findsNothing);
 
       pending.complete(refreshedSections);
       await tester.pump();
@@ -6861,7 +7003,7 @@ void main() {
     },
   );
 
-  testWidgets('home hides recommendations while loading and keeps local data', (
+  testWidgets('home shows loading placeholders while keeping local history', (
     tester,
   ) async {
     _configureMobileHomeViewport(tester);
@@ -6881,7 +7023,81 @@ void main() {
     await tester.pump(const Duration(seconds: 1));
 
     _expectLocalOnlyHome(tester);
+    expect(find.byKey(const ValueKey('home-loading-content')), findsOneWidget);
+
+    pending.complete([
+      HomeRecommendationSection(
+        title: 'Recomendaciones cargadas',
+        tracks: const [
+          TrackInfo(
+            id: 'loaded-home-track',
+            title: 'Cancion cargada',
+            artist: 'Artista',
+            url: 'https://www.youtube.com/watch?v=loadedhome1',
+          ),
+        ],
+      ),
+    ]);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 350));
+
+    expect(find.byKey(const ValueKey('home-loading-content')), findsNothing);
+    expect(
+      find.byKey(
+        const ValueKey('home-recommendations-section-Recomendaciones cargadas'),
+      ),
+      findsOneWidget,
+    );
+    expect(find.byKey(const ValueKey('home-recent-card')), findsOneWidget);
+    expect(tester.takeException(), isNull);
   });
+
+  testWidgets(
+    'home loading fits an empty compact home with large text and reduced motion',
+    (tester) async {
+      debugDefaultTargetPlatformOverride = TargetPlatform.android;
+      tester.view
+        ..physicalSize = const Size(320, 568)
+        ..devicePixelRatio = 1;
+      tester.platformDispatcher.textScaleFactorTestValue = 3;
+      tester.platformDispatcher.accessibilityFeaturesTestValue =
+          const FakeAccessibilityFeatures(disableAnimations: true);
+      final pending = Completer<List<HomeRecommendationSection>>();
+      addTearDown(() {
+        if (!pending.isCompleted) pending.complete(const []);
+        debugDefaultTargetPlatformOverride = null;
+        tester.view
+          ..resetPhysicalSize()
+          ..resetDevicePixelRatio();
+        tester.platformDispatcher.clearTextScaleFactorTestValue();
+        tester.platformDispatcher.clearAccessibilityFeaturesTestValue();
+      });
+
+      await tester.pumpWidget(
+        _testApp(
+          libraryRepository: _homeCardsRepository()..history.clear(),
+          homeRecommendations: pending.future,
+        ),
+      );
+      await tester.pump(const Duration(seconds: 1));
+
+      expect(
+        find.byKey(const ValueKey('home-loading-content')),
+        findsOneWidget,
+      );
+      expect(find.byKey(const ValueKey('home-recent-card')), findsNothing);
+      expect(find.text('Escuchado recientemente'), findsNothing);
+      expect(tester.takeException(), isNull);
+
+      pending.complete(const []);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 350));
+
+      expect(find.byKey(const ValueKey('home-loading-content')), findsNothing);
+      expect(tester.takeException(), isNull);
+      debugDefaultTargetPlatformOverride = null;
+    },
+  );
 
   testWidgets(
     'home hides failed recommendations and local playback still works',
@@ -6899,6 +7115,7 @@ void main() {
       await tester.pump(const Duration(seconds: 1));
 
       _expectLocalOnlyHome(tester);
+      expect(find.byKey(const ValueKey('home-loading-content')), findsNothing);
 
       await tester.tap(find.byKey(const ValueKey('home-recent-card')));
       await tester.pump();
@@ -6926,6 +7143,7 @@ void main() {
     await tester.pump(const Duration(seconds: 1));
 
     _expectLocalOnlyHome(tester);
+    expect(find.byKey(const ValueKey('home-loading-content')), findsNothing);
   });
 
   testWidgets('visible tab headings share the same themed foreground', (
@@ -7060,7 +7278,7 @@ void main() {
     final settingsSectionLeft = tester
         .getTopLeft(find.byKey(const ValueKey('settings-first-section-title')))
         .dx;
-    expect(settingsSectionLeft - settingsCardLeft, closeTo(10, 0.01));
+    expect(settingsSectionLeft - settingsCardLeft, closeTo(12, 0.01));
     final settingsRootPadding =
         tester
                 .widget<SliverPadding>(
@@ -7446,9 +7664,13 @@ void main() {
           .first,
     );
     await tester.ensureVisible(timerSwitch);
+    await tester.pumpAndSettle();
     await tester.tap(timerSwitch);
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Personalizar'));
+    final customize = find.text('Personalizar');
+    await tester.ensureVisible(customize);
+    await tester.pumpAndSettle();
+    await tester.tap(customize);
     await tester.pumpAndSettle();
     expect(find.text('Duración del temporizador'), findsOneWidget);
 
@@ -7570,12 +7792,15 @@ void main() {
     expect(find.text('Acerca de la aplicación'), findsOneWidget);
     expect(find.text('Versión, apoyo y repositorio'), findsOneWidget);
     expect(find.byKey(const ValueKey('settings-about-version')), findsNothing);
-    final cardMaterial = find
-        .descendant(of: card, matching: find.byType(Material))
-        .first;
+    final sectionPanel = find.ancestor(of: card, matching: find.byType(Card));
+    expect(sectionPanel, findsOneWidget);
     final shape =
-        tester.widget<Material>(cardMaterial).shape! as RoundedRectangleBorder;
-    expect(shape.borderRadius, BorderRadius.circular(6));
+        tester.widget<Card>(sectionPanel).shape! as RoundedRectangleBorder;
+    expect(shape.borderRadius, BorderRadius.circular(22));
+    expect(
+      find.descendant(of: card, matching: find.byType(Material)),
+      findsNothing,
+    );
 
     await tester.tap(card);
     await tester.pumpAndSettle();
@@ -7621,46 +7846,35 @@ void main() {
       findsOneWidget,
     );
     expect(
+      find.textContaining(
+        'optimizaron los diseños de los estilos del reproductor',
+      ),
+      findsOneWidget,
+    );
+    expect(
+      find.text('Se añadió el nuevo reproductor Spotify Style.'),
+      findsOneWidget,
+    );
+    expect(
+      find.textContaining('opciones de filtrado en la pestaña de música local'),
+      findsOneWidget,
+    );
+    expect(
+      find.textContaining('letras sincronizadas palabra por palabra'),
+      findsOneWidget,
+    );
+    expect(
+      find.text('Se mejoró el diseño de la pestaña de ajustes.'),
+      findsOneWidget,
+    );
+    expect(
+      find.text(
+        'Personaliza la portada de tus playlists con una imagen de tu galería.',
+      ),
+      findsOneWidget,
+    );
+    expect(
       find.textContaining('widget del reproductor para la pantalla de inicio'),
-      findsOneWidget,
-    );
-    expect(find.textContaining('imagen de tu galería'), findsOneWidget);
-    expect(
-      find.textContaining('cambiar la fuente de toda la aplicación'),
-      findsOneWidget,
-    );
-    expect(
-      find.textContaining('rendimiento de los artworks animados'),
-      findsOneWidget,
-    );
-    expect(
-      find.textContaining('álbumes, mixes y resultados de búsqueda'),
-      findsOneWidget,
-    );
-    expect(
-      find.textContaining(
-        'mejoras en la interfaz para ofrecer más rendimiento y fluidez',
-      ),
-      findsOneWidget,
-    );
-    expect(
-      find.textContaining('fondos de álbumes, mixes y artistas ahora heredan'),
-      findsOneWidget,
-    );
-    expect(
-      find.textContaining(
-        'compatible con portugués, francés, coreano, chino y japonés',
-      ),
-      findsOneWidget,
-    );
-    expect(
-      find.textContaining(
-        'Comparte hasta cinco líneas de una canción como imagen con portada',
-      ),
-      findsOneWidget,
-    );
-    expect(
-      find.textContaining('Se agregó el reproductor Vinilo Clásico'),
       findsNothing,
     );
     await tester.tap(
@@ -7771,8 +7985,8 @@ void main() {
           checkedVersions.add(currentVersion);
           return AppReleaseCheckResult(
             currentVersion: currentVersion,
-            latestVersion: '1.3.0',
-            releaseTag: 'v1.3.0',
+            latestVersion: '1.3.2',
+            releaseTag: 'v1.3.2',
           );
         },
       ),
@@ -7785,6 +7999,8 @@ void main() {
       350,
       scrollable: find.byType(Scrollable).first,
     );
+    await tester.ensureVisible(about);
+    await tester.pumpAndSettle();
     await tester.tap(about);
     await tester.pumpAndSettle();
     await tester.tap(find.byKey(const ValueKey('settings-about-version')));
@@ -7799,7 +8015,7 @@ void main() {
     expect(find.text('Nueva versión disponible'), findsOneWidget);
     expect(
       find.text(
-        'BStream Music 1.3.0 está disponible. Versión actual: ${AppConstants.appVersion}.',
+        'BStream Music 1.3.2 está disponible. Versión actual: ${AppConstants.appVersion}.',
       ),
       findsOneWidget,
     );
@@ -7868,6 +8084,8 @@ void main() {
       350,
       scrollable: find.byType(Scrollable).first,
     );
+    await tester.ensureVisible(about);
+    await tester.pumpAndSettle();
     await tester.tap(about);
     await tester.pumpAndSettle();
     await tester.tap(find.byKey(const ValueKey('settings-about-version')));
@@ -7974,8 +8192,13 @@ void main() {
     await tester.ensureVisible(card);
     await tester.pumpAndSettle();
     final cardRect = tester.getRect(card);
-    expect(cardRect.left, closeTo(6, 0.1));
-    expect(cardRect.right, closeTo(314, 0.1));
+    final panelRect = tester.getRect(
+      find.ancestor(of: card, matching: find.byType(Card)),
+    );
+    expect(panelRect.left, closeTo(6, 0.1));
+    expect(panelRect.right, closeTo(314, 0.1));
+    expect(cardRect.left - panelRect.left, closeTo(6, 0.1));
+    expect(panelRect.right - cardRect.right, closeTo(6, 0.1));
     expect(find.text('Información de la aplicación'), findsOneWidget);
     expect(tester.takeException(), isNull);
 
@@ -9184,7 +9407,7 @@ void main() {
     await tester.pump(const Duration(milliseconds: 330));
     expect(tester.takeException(), isNull);
 
-    expect(find.text('En reproducción'), findsOneWidget);
+    expect(find.text('En reproducción'), findsNothing);
     final largeArtwork = tester.getSize(
       find.byKey(const ValueKey('player-large-artwork')),
     );
@@ -9200,10 +9423,6 @@ void main() {
       find.byKey(const ValueKey('player-primary-control')),
     );
     final playerTheme = Theme.of(playerContext);
-    final playerTabTitle = tester.widget<Text>(
-      find.byKey(const ValueKey('player-tab-title')),
-    );
-    expect(playerTabTitle.style?.color, playerTheme.colorScheme.onSurface);
     final trackTitle = tester.widget<MarqueeText>(
       find.byKey(const ValueKey('player-track-title')),
     );
@@ -9254,14 +9473,18 @@ void main() {
     expect(find.byTooltip('Letras'), findsOneWidget);
     expect(find.byTooltip('Volumen'), findsOneWidget);
     final lyricsControl = find.byKey(const ValueKey('player-lyrics-control'));
+    final queueControl = find.byKey(const ValueKey('player-queue-toggle'));
+    final audioOutputControl = find.byKey(
+      const ValueKey('player-audio-output-control'),
+    );
     final shuffleControl = find.byKey(const ValueKey('player-shuffle-control'));
     final volumeControl = find.byKey(const ValueKey('player-volume-control'));
     final repeatControl = find.byKey(const ValueKey('player-repeat-control'));
-    final lyricsButton = tester.widget<TextButton>(
-      find.descendant(of: lyricsControl, matching: find.byType(TextButton)),
+    final lyricsButton = tester.widget<IconButton>(
+      find.descendant(of: lyricsControl, matching: find.byType(IconButton)),
     );
     expect(
-      lyricsButton.style?.foregroundColor?.resolve(<WidgetState>{}),
+      lyricsButton.color,
       AppColors.playbackControlForegroundFor(playerContext),
     );
     expect(playerTheme.brightness, Brightness.dark);
@@ -9279,7 +9502,7 @@ void main() {
     );
     expect(
       tester.getSize(lyricsControl).width,
-      greaterThan(tester.getSize(shuffleControl).width),
+      closeTo(tester.getSize(lyricsControl).height, 0.1),
     );
     expect(
       tester.getCenter(shuffleControl).dx,
@@ -9287,7 +9510,7 @@ void main() {
     );
     expect(
       tester.getCenter(volumeControl).dx,
-      greaterThan(
+      lessThan(
         tester
             .getCenter(find.byKey(const ValueKey('player-primary-control')))
             .dx,
@@ -9299,15 +9522,39 @@ void main() {
     );
     expect(
       tester.getSize(volumeControl).width,
-      greaterThan(tester.getSize(repeatControl).width),
+      closeTo(tester.getSize(volumeControl).height, 0.1),
+    );
+    expect(
+      find.byKey(const ValueKey('player-utility-controls')),
+      findsOneWidget,
+    );
+    expect(
+      tester.getCenter(lyricsControl).dx,
+      lessThan(tester.getCenter(volumeControl).dx),
+    );
+    expect(
+      tester.getCenter(volumeControl).dx,
+      lessThan(tester.getCenter(audioOutputControl).dx),
+    );
+    expect(
+      tester.getCenter(audioOutputControl).dx,
+      lessThan(tester.getCenter(queueControl).dx),
+    );
+    expect(
+      tester.getCenter(queueControl).dy,
+      closeTo(tester.getCenter(lyricsControl).dy, 0.1),
+    );
+    expect(
+      tester.getCenter(audioOutputControl).dy,
+      closeTo(tester.getCenter(lyricsControl).dy, 0.1),
     );
     expect(
       find.descendant(of: lyricsControl, matching: find.text('Letras')),
-      findsOneWidget,
+      findsNothing,
     );
     expect(
       find.descendant(of: volumeControl, matching: find.text('Volumen')),
-      findsOneWidget,
+      findsNothing,
     );
     expect(
       tester.getRect(volumeControl).bottom,
@@ -9353,7 +9600,11 @@ void main() {
     final volumeRect = tester.getRect(volumeControl);
     expect(popoverRect.width, lessThanOrEqualTo(244));
     expect(popoverRect.height, lessThanOrEqualTo(60));
-    expect(popoverRect.right, closeTo(volumeRect.right - 4, 0.01));
+    expect(popoverRect.left, greaterThanOrEqualTo(16));
+    expect(
+      popoverRect.right,
+      lessThanOrEqualTo(tester.view.physicalSize.width - 16),
+    );
     expect(popoverRect.center.dy, closeTo(volumeRect.center.dy, 0.01));
     expect(
       popoverRect.overlaps(
@@ -9528,11 +9779,11 @@ void main() {
     final lyricsControl = find.byKey(const ValueKey('player-lyrics-control'));
     final lyricsButton = find.descendant(
       of: lyricsControl,
-      matching: find.byType(TextButton),
+      matching: find.byType(IconButton),
     );
     await tester.ensureVisible(lyricsControl);
     await tester.pump(const Duration(milliseconds: 300));
-    expect(tester.widget<TextButton>(lyricsButton).onPressed, isNotNull);
+    expect(tester.widget<IconButton>(lyricsButton).onPressed, isNotNull);
     final retainedPlayerElement = tester.element(find.byType(PlayerPanel));
     await tester.tap(lyricsButton);
     // The synchronized lyrics page intentionally keeps an animation/ticker
@@ -9747,7 +9998,7 @@ void main() {
       );
       final titleText = find.byKey(const ValueKey('player-track-title'));
 
-      expect(find.text('En reproducción'), findsOneWidget);
+      expect(find.text('En reproducción'), findsNothing);
       expect(artwork, findsOneWidget);
       expect(titleText, findsOneWidget);
       expect(
@@ -9755,7 +10006,13 @@ void main() {
         lessThan(tester.getTopLeft(titleText).dy),
       );
       expect(find.byTooltip('Volumen'), findsOneWidget);
-      expect(find.byTooltip('Cola de reproducción'), findsOneWidget);
+      expect(
+        find.descendant(
+          of: find.byKey(const ValueKey('desktop-player-surface')),
+          matching: find.byTooltip('Cola de reproducción'),
+        ),
+        findsOneWidget,
+      );
       final lyricsControl = find.byKey(const ValueKey('player-lyrics-control'));
       expect(
         find.descendant(of: lyricsControl, matching: find.byTooltip('Letras')),
@@ -9766,31 +10023,39 @@ void main() {
       );
       final volumeControl = find.byKey(const ValueKey('player-volume-control'));
       final repeatControl = find.byKey(const ValueKey('player-repeat-control'));
+      final queueControl = find.byKey(const ValueKey('player-queue-toggle'));
+      final audioOutputControl = find.byKey(
+        const ValueKey('player-audio-output-control'),
+      );
       expect(
         tester.getCenter(lyricsControl).dx,
-        lessThan(tester.getCenter(shuffleControl).dx),
+        lessThan(tester.getCenter(volumeControl).dx),
       );
       expect(
         tester.getCenter(volumeControl).dx,
-        greaterThan(tester.getCenter(repeatControl).dx),
+        lessThan(tester.getCenter(audioOutputControl).dx),
+      );
+      expect(
+        tester.getCenter(audioOutputControl).dx,
+        lessThan(tester.getCenter(queueControl).dx),
       );
       expect(
         tester.getCenter(lyricsControl).dy,
-        closeTo(tester.getCenter(shuffleControl).dy, 0.1),
+        greaterThan(tester.getCenter(shuffleControl).dy),
       );
       expect(
         tester.getCenter(volumeControl).dy,
-        closeTo(tester.getCenter(repeatControl).dy, 0.1),
+        greaterThan(tester.getCenter(repeatControl).dy),
       );
       expect(find.text('No hay canciones en la cola actual.'), findsOneWidget);
 
-      await tester.tap(find.byTooltip('Cola de reproducción'));
+      await tester.tap(queueControl);
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 340));
       await tester.pump();
       expect(find.text('No hay canciones en la cola actual.'), findsNothing);
 
-      await tester.tap(find.byTooltip('Cola de reproducción'));
+      await tester.tap(queueControl);
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 340));
       await tester.pump();

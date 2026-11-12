@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'player_lyrics_icon.dart';
 import 'dart:io';
 
 import 'package:file_picker/file_picker.dart';
@@ -29,6 +30,7 @@ import 'library_csv_import_dialog.dart';
 import 'lyrics_animation_transition.dart';
 import 'live_widget_style_settings.dart';
 import 'scrolled_under_tab_frame.dart';
+import 'player_style_gallery.dart';
 import 'youtube_music_settings_account_card.dart';
 
 typedef DownloadDirectoryPicker =
@@ -137,6 +139,7 @@ final settingsSupportedLinksLauncherProvider =
 enum _SettingsRoute {
   root,
   appearance,
+  playerStyles,
   liveWidget,
   lyrics,
   lyricsProviders,
@@ -262,6 +265,7 @@ class _SettingsPanelState extends ConsumerState<SettingsPanel> {
         : const Duration(milliseconds: 220);
 
     Widget routeFrame(Widget body, {List<Widget>? rootSlivers}) {
+      if (_route == _SettingsRoute.playerStyles) return body;
       final header = _SettingsHeader(
         route: _route,
         title: _routeTitle(_route, strings),
@@ -394,7 +398,8 @@ class _SettingsPanelState extends ConsumerState<SettingsPanel> {
     }
     setState(() {
       _route = switch (_route) {
-        _SettingsRoute.liveWidget => _SettingsRoute.appearance,
+        _SettingsRoute.liveWidget ||
+        _SettingsRoute.playerStyles => _SettingsRoute.appearance,
         _SettingsRoute.lyricsProviders => _SettingsRoute.lyrics,
         _ => _SettingsRoute.root,
       };
@@ -406,6 +411,7 @@ class _SettingsPanelState extends ConsumerState<SettingsPanel> {
     return switch (route) {
       _SettingsRoute.root => strings.settings,
       _SettingsRoute.appearance => strings.appearance,
+      _SettingsRoute.playerStyles => strings.playerStyles,
       _SettingsRoute.liveWidget => strings.liveWidget,
       _SettingsRoute.lyrics => strings.lyricsAppearance,
       _SettingsRoute.lyricsProviders => strings.lyricsProviders,
@@ -459,8 +465,7 @@ class _SettingsPanelState extends ConsumerState<SettingsPanel> {
             .clearAppBackgroundPhoto(),
         onPlayerFontChanged: (font) =>
             ref.read(settingsControllerProvider.notifier).setPlayerFont(font),
-        onPlayerStyleChanged: (style) =>
-            ref.read(settingsControllerProvider.notifier).setPlayerStyle(style),
+        onOpenPlayerStyles: () => _openRoute(_SettingsRoute.playerStyles),
         onShowAudioQualityChanged: (enabled) => ref
             .read(settingsControllerProvider.notifier)
             .setShowAudioQuality(enabled),
@@ -482,6 +487,22 @@ class _SettingsPanelState extends ConsumerState<SettingsPanel> {
         onMiniPlayerBackgroundModeChanged: (mode) => ref
             .read(settingsControllerProvider.notifier)
             .setMiniPlayerBackgroundMode(mode),
+      ),
+      _SettingsRoute.playerStyles => PlayerStyleGalleryPage(
+        style: state.playerStyle,
+        strings: strings,
+        header: _SettingsHeader(
+          route: _SettingsRoute.playerStyles,
+          title: strings.playerStyles,
+          strings: strings,
+          onBack: _goBack,
+        ),
+        bottomContentPadding: widget.bottomContentPadding,
+        onChanged: (style) async {
+          await ref
+              .read(settingsControllerProvider.notifier)
+              .setPlayerStyle(style);
+        },
       ),
       _SettingsRoute.liveWidget => LiveWidgetStyleSettings(
         style: state.liveWidgetStyle,
@@ -590,7 +611,10 @@ class _SettingsPanelState extends ConsumerState<SettingsPanel> {
           children: [
             Padding(
               padding: const EdgeInsets.only(bottom: appSectionGap),
-              child: YouTubeMusicSettingsAccountCard(strings: strings),
+              child: YouTubeMusicSettingsAccountCard(
+                strings: strings,
+                active: widget.active,
+              ),
             ),
             _SettingsGroup(
               titleKey: const ValueKey('settings-first-section-title'),
@@ -624,7 +648,7 @@ class _SettingsPanelState extends ConsumerState<SettingsPanel> {
                 const SizedBox(height: appCardGap),
                 _SettingsEntryCard(
                   key: const ValueKey('settings-card-lyrics-appearance'),
-                  icon: Icons.lyrics_rounded,
+                  leading: const PlayerLyricsIcon(),
                   title: strings.lyrics,
                   subtitle:
                       '${strings.lyricsAnimationLabel(state.lyricsAnimationStyle)}'
@@ -1462,15 +1486,7 @@ class _SettingsEntryCard extends StatelessWidget {
     final desktopLayout =
         AppPlatform.isDesktop && theme.platform != TargetPlatform.android;
     final highlight = accent ?? colors.primary;
-    final card = Material(
-      color: AppColors.cardSurfaceFor(context),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(appCardRadius),
-        side: BorderSide(
-          color: AppColors.cardBorderFor(context, solidInLiquidGlass: true),
-        ),
-      ),
-      clipBehavior: Clip.antiAlias,
+    final card = _SettingsItemSurface(
       child: InkWell(
         onTap: onTap,
         child: ConstrainedBox(
@@ -1548,7 +1564,7 @@ class _SettingsEntryCard extends StatelessWidget {
       constraints: BoxConstraints(
         maxWidth: desktopLayout ? double.infinity : 760,
       ),
-      child: AppCardGradientBorder(solidInLiquidGlass: true, child: card),
+      child: card,
     );
   }
 }
@@ -1570,8 +1586,7 @@ class _AboutApplicationSettings extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+    return _SettingsSectionPanel(
       children: [
         _SettingsEntryCard(
           key: const ValueKey('settings-about-version'),
@@ -1591,14 +1606,8 @@ class _AboutApplicationSettings extends StatelessWidget {
         _SettingsEntryCard(
           key: const ValueKey('settings-about-whats-new'),
           icon: Icons.auto_awesome_rounded,
-          title: strings.choose(
-            'Novedades de ${AppConstants.appVersion}',
-            "What's new in ${AppConstants.appVersion}",
-          ),
-          subtitle: strings.choose(
-            'Widget, personalización, rendimiento, idiomas y más',
-            'Widget, customization, performance, languages, and more',
-          ),
+          title: strings.whatsNewTitle(AppConstants.appVersion),
+          subtitle: strings.whatsNewSummary,
           onTap: () => _showWhatsNew(context),
         ),
         const SizedBox(height: appCardGap),
@@ -1622,55 +1631,12 @@ class _AboutApplicationSettings extends StatelessWidget {
   }
 
   Future<void> _showWhatsNew(BuildContext context) async {
-    final legacyHighlights = strings.isEnglish
-        ? const <String>[
-            'The player widget is now available for your home screen.',
-            'Personalize the app background with an image from your gallery.',
-            'You can now change the font throughout the app.',
-            'Animated artwork performance has been optimized.',
-            'Select multiple songs in albums, mixes, and search results to add them to a playlist or download them.',
-            'Interface performance and smoothness have been improved.',
-            'Album, mix, and artist pages now inherit colors from their cover art.',
-            'Portuguese, French, Korean, Chinese, and Japanese are now supported.',
-            'Share up to five song lyric lines as an image with artwork, blur, gradient, or a photo from your gallery.',
-          ]
-        : const <String>[
-            'Ya está disponible el widget del reproductor para la pantalla de inicio.',
-            'Personaliza el fondo de la aplicación con una imagen de tu galería.',
-            'Ahora puedes cambiar la fuente de toda la aplicación.',
-            'Se optimizó el rendimiento de los artworks animados.',
-            'Selecciona varias canciones en álbumes, mixes y resultados de búsqueda para añadirlas a una playlist o descargarlas.',
-            'Se hicieron mejoras en la interfaz para ofrecer más rendimiento y fluidez.',
-            'Los fondos de álbumes, mixes y artistas ahora heredan los tonos de sus portadas.',
-            'La aplicación ahora es compatible con portugués, francés, coreano, chino y japonés.',
-            'Comparte hasta cinco líneas de una canción como imagen con portada, desenfoque, gradiente o una foto de tu galería.',
-          ];
-    const englishHighlights = <String>[
-      'The player widget is now available for your home screen.',
-      'Personalize the app background with an image from your gallery.',
-      'You can now change the font throughout the app.',
-      'Animated artwork performance has been optimized.',
-      'Select multiple songs in albums, mixes, and search results to add them to a playlist or download them.',
-      'Interface performance and smoothness have been improved.',
-      'Album, mix, and artist pages now inherit colors from their cover art.',
-      'Portuguese, French, Korean, Chinese, and Japanese are now supported.',
-      'Share up to five song lyric lines as an image with artwork, blur, gradient, or a photo from your gallery.',
-    ];
-    final highlights = List<String>.generate(
-      englishHighlights.length,
-      (index) =>
-          strings.choose(legacyHighlights[index], englishHighlights[index]),
-    );
+    final highlights = strings.whatsNewHighlights;
     await showAppDialog<void>(
       context: context,
       builder: (dialogContext) => AppAlertDialog(
         key: const ValueKey('settings-about-whats-new-dialog'),
-        title: Text(
-          strings.choose(
-            'Novedades de ${AppConstants.appVersion}',
-            "What's new in ${AppConstants.appVersion}",
-          ),
-        ),
+        title: Text(strings.whatsNewTitle(AppConstants.appVersion)),
         content: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 480),
           child: SingleChildScrollView(
@@ -1994,64 +1960,6 @@ class _PlayerFontOption extends StatelessWidget {
           ),
         ),
       ),
-    );
-  }
-}
-
-class _PlayerStyleSelectorDialog extends StatelessWidget {
-  const _PlayerStyleSelectorDialog({
-    required this.style,
-    required this.strings,
-  });
-
-  final PlayerStyle style;
-  final AppStrings strings;
-
-  @override
-  Widget build(BuildContext context) {
-    return AppAlertDialog(
-      key: const ValueKey('settings-player-style-dialog'),
-      scrollable: true,
-      insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
-      title: Text(strings.player),
-      content: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 420),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            _SettingsDialogOption(
-              key: const ValueKey('settings-player-style-option-bstream-music'),
-              selected: style == PlayerStyle.bstreamMusic,
-              icon: Icons.graphic_eq_rounded,
-              label: strings.playerStyleBStreamMusic,
-              onTap: () => Navigator.of(context).pop(PlayerStyle.bstreamMusic),
-            ),
-            const SizedBox(height: 8),
-            _SettingsDialogOption(
-              key: const ValueKey('settings-player-style-option-apple-music'),
-              selected: style == PlayerStyle.appleMusic,
-              icon: Icons.music_note_rounded,
-              label: strings.playerStyleAppleMusic,
-              onTap: () => Navigator.of(context).pop(PlayerStyle.appleMusic),
-            ),
-            const SizedBox(height: 8),
-            _SettingsDialogOption(
-              key: const ValueKey('settings-player-style-option-classic-vinyl'),
-              selected: style == PlayerStyle.classicVinyl,
-              icon: Icons.album_rounded,
-              label: strings.playerStyleClassicVinyl,
-              onTap: () => Navigator.of(context).pop(PlayerStyle.classicVinyl),
-            ),
-          ],
-        ),
-      ),
-      actions: [
-        TextButton(
-          key: const ValueKey('settings-player-style-cancel'),
-          onPressed: () => Navigator.of(context).pop(),
-          child: Text(strings.cancel),
-        ),
-      ],
     );
   }
 }
@@ -2391,7 +2299,7 @@ class _AppearanceSettings extends StatelessWidget {
     required this.onAppBackgroundPhotoSelected,
     required this.onAppBackgroundCleared,
     required this.onPlayerFontChanged,
-    required this.onPlayerStyleChanged,
+    required this.onOpenPlayerStyles,
     required this.onShowAudioQualityChanged,
     required this.onAnimatedArtworkEnabledChanged,
     required this.onPlayerArtworkStyleChanged,
@@ -2425,7 +2333,7 @@ class _AppearanceSettings extends StatelessWidget {
   final Future<void> Function(File) onAppBackgroundPhotoSelected;
   final Future<void> Function() onAppBackgroundCleared;
   final Future<void> Function(PlayerFont) onPlayerFontChanged;
-  final Future<void> Function(PlayerStyle) onPlayerStyleChanged;
+  final VoidCallback onOpenPlayerStyles;
   final Future<void> Function(bool) onShowAudioQualityChanged;
   final Future<void> Function(bool) onAnimatedArtworkEnabledChanged;
   final Future<void> Function(PlayerArtworkStyle) onPlayerArtworkStyleChanged;
@@ -2445,18 +2353,6 @@ class _AppearanceSettings extends StatelessWidget {
       return;
     }
     await onMiniPlayerModeChanged(selected);
-  }
-
-  Future<void> _choosePlayerStyle(BuildContext context) async {
-    final selected = await showAppDialog<PlayerStyle>(
-      context: context,
-      builder: (_) =>
-          _PlayerStyleSelectorDialog(style: playerStyle, strings: strings),
-    );
-    if (!context.mounted || selected == null || selected == playerStyle) {
-      return;
-    }
-    await onPlayerStyleChanged(selected);
   }
 
   Future<void> _choosePlayerFont(BuildContext context) async {
@@ -2553,268 +2449,278 @@ class _AppearanceSettings extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            strings.theme,
-            style: Theme.of(
-              context,
-            ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w800),
-          ),
-          const SizedBox(height: 10),
-          SegmentedButton<AppThemeMode>(
-            selected: {themeMode},
-            style: ButtonStyle(
-              minimumSize: WidgetStateProperty.all(const Size(0, 50)),
-              padding: WidgetStateProperty.all(
-                const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-              ),
-              textStyle: WidgetStateProperty.all(
-                Theme.of(
-                  context,
-                ).textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w800),
-              ),
-              iconSize: WidgetStateProperty.all(22),
-            ),
-            segments: [
-              ButtonSegment(
-                value: AppThemeMode.system,
-                icon: const Icon(Icons.settings_suggest_rounded),
-                label: Text(strings.themeSystem),
-              ),
-              ButtonSegment(
-                value: AppThemeMode.light,
-                icon: const Icon(Icons.light_mode_rounded),
-                label: Text(strings.themeLight),
-              ),
-              ButtonSegment(
-                value: AppThemeMode.dark,
-                icon: const Icon(Icons.dark_mode_rounded),
-                label: Text(strings.themeDark),
+          _SettingsSectionPanel(
+            title: strings.theme,
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(12, 6, 12, 12),
+                child: SegmentedButton<AppThemeMode>(
+                  selected: {themeMode},
+                  style: ButtonStyle(
+                    minimumSize: WidgetStateProperty.all(const Size(0, 50)),
+                    padding: WidgetStateProperty.all(
+                      const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                    ),
+                    textStyle: WidgetStateProperty.all(
+                      Theme.of(context).textTheme.labelLarge?.copyWith(
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    iconSize: WidgetStateProperty.all(22),
+                  ),
+                  segments: [
+                    ButtonSegment(
+                      value: AppThemeMode.system,
+                      icon: const Icon(Icons.settings_suggest_rounded),
+                      label: Text(strings.themeSystem),
+                    ),
+                    ButtonSegment(
+                      value: AppThemeMode.light,
+                      icon: const Icon(Icons.light_mode_rounded),
+                      label: Text(strings.themeLight),
+                    ),
+                    ButtonSegment(
+                      value: AppThemeMode.dark,
+                      icon: const Icon(Icons.dark_mode_rounded),
+                      label: Text(strings.themeDark),
+                    ),
+                  ],
+                  onSelectionChanged: (selection) =>
+                      onThemeModeChanged(selection.first),
+                ),
               ),
             ],
-            onSelectionChanged: (selection) =>
-                onThemeModeChanged(selection.first),
           ),
-          const SizedBox(height: 16),
-          Text(
-            strings.accentColor,
-            style: Theme.of(
-              context,
-            ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w800),
-          ),
-          const SizedBox(height: 10),
-          Align(
-            alignment: Alignment.centerLeft,
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 328),
-              child: LayoutBuilder(
-                builder: (context, constraints) {
-                  final columnCount = constraints.maxWidth < 328 ? 5 : 6;
-                  return GridView.builder(
-                    key: const ValueKey('accent-palette-grid'),
-                    shrinkWrap: true,
-                    primary: false,
-                    physics: const NeverScrollableScrollPhysics(),
-                    padding: EdgeInsets.zero,
-                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: columnCount,
-                      crossAxisSpacing: 8,
-                      mainAxisSpacing: 8,
+          const SizedBox(height: appSectionGap),
+          _SettingsSectionPanel(
+            title: strings.accentColor,
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(12, 6, 12, 12),
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 328),
+                    child: LayoutBuilder(
+                      builder: (context, constraints) {
+                        final columnCount = ((constraints.maxWidth + 8) / 56)
+                            .floor()
+                            .clamp(1, 6);
+                        return GridView.builder(
+                          key: const ValueKey('accent-palette-grid'),
+                          shrinkWrap: true,
+                          primary: false,
+                          physics: const NeverScrollableScrollPhysics(),
+                          padding: EdgeInsets.zero,
+                          gridDelegate:
+                              SliverGridDelegateWithFixedCrossAxisCount(
+                                crossAxisCount: columnCount,
+                                crossAxisSpacing: 8,
+                                mainAxisSpacing: 8,
+                              ),
+                          itemCount: AppAccent.values.length,
+                          itemBuilder: (context, index) {
+                            final option = AppAccent.values[index];
+                            return _AccentSwatch(
+                              accent: option,
+                              selected: option == accent,
+                              label: strings.accentLabel(option),
+                              onTap: () => onAccentChanged(option),
+                            );
+                          },
+                        );
+                      },
                     ),
-                    itemCount: AppAccent.values.length,
-                    itemBuilder: (context, index) {
-                      final option = AppAccent.values[index];
-                      return _AccentSwatch(
-                        accent: option,
-                        selected: option == accent,
-                        label: strings.accentLabel(option),
-                        onTap: () => onAccentChanged(option),
-                      );
-                    },
-                  );
-                },
-              ),
-            ),
-          ),
-          const SizedBox(height: 24),
-          Text(
-            strings.surfaceEffects,
-            style: Theme.of(
-              context,
-            ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w800),
-          ),
-          const SizedBox(height: 10),
-          _SettingsEntryCard(
-            key: const ValueKey('surface-background-selector'),
-            icon: switch (surfaceBackgroundMode) {
-              SurfaceBackgroundMode.accent => Icons.format_color_fill_rounded,
-              SurfaceBackgroundMode.transparent => Icons.blur_on_rounded,
-              SurfaceBackgroundMode.liquidGlass => Icons.water_drop_rounded,
-            },
-            title: strings.surfaceBackground,
-            subtitle: strings.surfaceBackgroundModeLabel(surfaceBackgroundMode),
-            onTap: () => _chooseSurfaceBackgroundMode(context),
-          ),
-          const SizedBox(height: appCardGap),
-          _SettingsEntryCard(
-            key: const ValueKey('app-background-selector'),
-            icon: Icons.wallpaper_rounded,
-            title: strings.appBackground,
-            subtitle: appBackgroundPath == null
-                ? strings.appBackgroundNone
-                : strings.appBackgroundCustom,
-            onTap: () => _chooseAppBackground(context),
-          ),
-          const SizedBox(height: appCardGap),
-          _SettingsEntryCard(
-            key: const ValueKey('player-font-selector'),
-            icon: Icons.text_fields_rounded,
-            title: strings.playerFont,
-            subtitle: strings.playerFontLabel(playerFont),
-            onTap: () => _choosePlayerFont(context),
-          ),
-          const SizedBox(height: 24),
-          Text(
-            strings.player,
-            style: Theme.of(
-              context,
-            ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w800),
-          ),
-          const SizedBox(height: 10),
-          _SettingsEntryCard(
-            key: const ValueKey('player-style-selector'),
-            icon: switch (playerStyle) {
-              PlayerStyle.bstreamMusic => Icons.graphic_eq_rounded,
-              PlayerStyle.appleMusic => Icons.music_note_rounded,
-              PlayerStyle.classicVinyl => Icons.album_rounded,
-            },
-            title: strings.playerStyle,
-            subtitle: strings.playerStyleLabel(playerStyle),
-            onTap: () => _choosePlayerStyle(context),
-          ),
-          const SizedBox(height: appCardGap),
-          _SettingsEntryCard(
-            key: const ValueKey('show-audio-quality-toggle'),
-            icon: Icons.high_quality_rounded,
-            title: strings.showAudioQuality,
-            subtitle: strings.showAudioQualityDescription,
-            onTap: () => onShowAudioQualityChanged(!showAudioQuality),
-            trailing: Switch.adaptive(
-              key: const ValueKey('show-audio-quality-switch'),
-              value: showAudioQuality,
-              onChanged: onShowAudioQualityChanged,
-            ),
-          ),
-          const SizedBox(height: appCardGap),
-          _SettingsEntryCard(
-            key: const ValueKey('animated-artwork-toggle'),
-            icon: Icons.motion_photos_auto_rounded,
-            title: strings.animatedArtwork,
-            subtitle: strings.animatedArtworkDescription,
-            onTap: () =>
-                onAnimatedArtworkEnabledChanged(!animatedArtworkEnabled),
-            trailing: Switch.adaptive(
-              key: const ValueKey('animated-artwork-switch'),
-              value: animatedArtworkEnabled,
-              onChanged: onAnimatedArtworkEnabledChanged,
-            ),
-          ),
-          const SizedBox(height: appCardGap),
-          _SettingsEntryCard(
-            key: const ValueKey('player-artwork-style-selector'),
-            icon: switch (playerArtworkStyle) {
-              PlayerArtworkStyle.classic => Icons.crop_square_rounded,
-              PlayerArtworkStyle.expanded => Icons.aspect_ratio_rounded,
-            },
-            title: strings.playerArtworkStyle,
-            subtitle: strings.playerArtworkStyleLabel(playerArtworkStyle),
-            onTap: () => _choosePlayerArtworkStyle(context),
-          ),
-          const SizedBox(height: appCardGap),
-          _SettingsEntryCard(
-            key: const ValueKey('apple-animated-artwork-toggle'),
-            icon: Icons.live_tv_rounded,
-            title: strings.appleAnimatedArtwork,
-            subtitle: AppPlatform.current == AppPlatformType.linux
-                ? strings.spotifyCanvasUnavailable
-                : strings.appleAnimatedArtworkDescription,
-            onTap: AppPlatform.current == AppPlatformType.linux
-                ? null
-                : () => onAppleAnimatedArtworkEnabledChanged(
-                    !appleAnimatedArtworkEnabled,
                   ),
-            trailing: Switch.adaptive(
-              key: const ValueKey('apple-animated-artwork-switch'),
-              value:
-                  AppPlatform.current != AppPlatformType.linux &&
-                  appleAnimatedArtworkEnabled,
-              onChanged: AppPlatform.current == AppPlatformType.linux
-                  ? null
-                  : onAppleAnimatedArtworkEnabledChanged,
-            ),
+                ),
+              ),
+            ],
           ),
-          const SizedBox(height: appCardGap),
-          _SettingsEntryCard(
-            key: const ValueKey('spotify-canvas-toggle'),
-            icon: Icons.movie_filter_rounded,
-            title: strings.spotifyCanvas,
-            subtitle: AppPlatform.current == AppPlatformType.linux
-                ? strings.spotifyCanvasUnavailable
-                : strings.spotifyCanvasDescription,
-            onTap: AppPlatform.current == AppPlatformType.linux
-                ? null
-                : () => onSpotifyCanvasEnabledChanged(!spotifyCanvasEnabled),
-            trailing: Switch.adaptive(
-              key: const ValueKey('spotify-canvas-switch'),
-              value:
-                  AppPlatform.current != AppPlatformType.linux &&
-                  spotifyCanvasEnabled,
-              onChanged: AppPlatform.current == AppPlatformType.linux
-                  ? null
-                  : onSpotifyCanvasEnabledChanged,
-            ),
+          const SizedBox(height: appSectionGap),
+          _SettingsSectionPanel(
+            title: strings.surfaceEffects,
+            children: [
+              _SettingsEntryCard(
+                key: const ValueKey('surface-background-selector'),
+                icon: switch (surfaceBackgroundMode) {
+                  SurfaceBackgroundMode.accent =>
+                    Icons.format_color_fill_rounded,
+                  SurfaceBackgroundMode.transparent => Icons.blur_on_rounded,
+                  SurfaceBackgroundMode.liquidGlass => Icons.water_drop_rounded,
+                },
+                title: strings.surfaceBackground,
+                subtitle: strings.surfaceBackgroundModeLabel(
+                  surfaceBackgroundMode,
+                ),
+                onTap: () => _chooseSurfaceBackgroundMode(context),
+              ),
+              const SizedBox(height: appCardGap),
+              _SettingsEntryCard(
+                key: const ValueKey('app-background-selector'),
+                icon: Icons.wallpaper_rounded,
+                title: strings.appBackground,
+                subtitle: appBackgroundPath == null
+                    ? strings.appBackgroundNone
+                    : strings.appBackgroundCustom,
+                onTap: () => _chooseAppBackground(context),
+              ),
+              const SizedBox(height: appCardGap),
+              _SettingsEntryCard(
+                key: const ValueKey('player-font-selector'),
+                icon: Icons.text_fields_rounded,
+                title: strings.playerFont,
+                subtitle: strings.playerFontLabel(playerFont),
+                onTap: () => _choosePlayerFont(context),
+              ),
+            ],
           ),
-          const SizedBox(height: 24),
-          Text(
-            strings.miniPlayer,
-            style: Theme.of(
-              context,
-            ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w800),
+          const SizedBox(height: appSectionGap),
+          _SettingsSectionPanel(
+            title: strings.player,
+            children: [
+              _SettingsEntryCard(
+                key: const ValueKey('player-style-selector'),
+                icon: switch (playerStyle) {
+                  PlayerStyle.bstreamMusic => Icons.graphic_eq_rounded,
+                  PlayerStyle.appleMusic => Icons.music_note_rounded,
+                  PlayerStyle.classicVinyl => Icons.album_rounded,
+                  PlayerStyle.spotifyMusic => Icons.play_circle_rounded,
+                },
+                title: strings.playerStyle,
+                subtitle: strings.playerStyleLabel(playerStyle),
+                onTap: onOpenPlayerStyles,
+              ),
+              const SizedBox(height: appCardGap),
+              _SettingsEntryCard(
+                key: const ValueKey('show-audio-quality-toggle'),
+                icon: Icons.high_quality_rounded,
+                title: strings.showAudioQuality,
+                subtitle: strings.showAudioQualityDescription,
+                onTap: () => onShowAudioQualityChanged(!showAudioQuality),
+                trailing: Switch.adaptive(
+                  key: const ValueKey('show-audio-quality-switch'),
+                  value: showAudioQuality,
+                  onChanged: onShowAudioQualityChanged,
+                ),
+              ),
+              const SizedBox(height: appCardGap),
+              _SettingsEntryCard(
+                key: const ValueKey('animated-artwork-toggle'),
+                icon: Icons.motion_photos_auto_rounded,
+                title: strings.animatedArtwork,
+                subtitle: strings.animatedArtworkDescription,
+                onTap: () =>
+                    onAnimatedArtworkEnabledChanged(!animatedArtworkEnabled),
+                trailing: Switch.adaptive(
+                  key: const ValueKey('animated-artwork-switch'),
+                  value: animatedArtworkEnabled,
+                  onChanged: onAnimatedArtworkEnabledChanged,
+                ),
+              ),
+              const SizedBox(height: appCardGap),
+              _SettingsEntryCard(
+                key: const ValueKey('player-artwork-style-selector'),
+                icon: switch (playerArtworkStyle) {
+                  PlayerArtworkStyle.classic => Icons.crop_square_rounded,
+                  PlayerArtworkStyle.expanded => Icons.aspect_ratio_rounded,
+                },
+                title: strings.playerArtworkStyle,
+                subtitle: strings.playerArtworkStyleLabel(playerArtworkStyle),
+                onTap: () => _choosePlayerArtworkStyle(context),
+              ),
+              const SizedBox(height: appCardGap),
+              _SettingsEntryCard(
+                key: const ValueKey('apple-animated-artwork-toggle'),
+                icon: Icons.live_tv_rounded,
+                title: strings.appleAnimatedArtwork,
+                subtitle: AppPlatform.current == AppPlatformType.linux
+                    ? strings.spotifyCanvasUnavailable
+                    : strings.appleAnimatedArtworkDescription,
+                onTap: AppPlatform.current == AppPlatformType.linux
+                    ? null
+                    : () => onAppleAnimatedArtworkEnabledChanged(
+                        !appleAnimatedArtworkEnabled,
+                      ),
+                trailing: Switch.adaptive(
+                  key: const ValueKey('apple-animated-artwork-switch'),
+                  value:
+                      AppPlatform.current != AppPlatformType.linux &&
+                      appleAnimatedArtworkEnabled,
+                  onChanged: AppPlatform.current == AppPlatformType.linux
+                      ? null
+                      : onAppleAnimatedArtworkEnabledChanged,
+                ),
+              ),
+              const SizedBox(height: appCardGap),
+              _SettingsEntryCard(
+                key: const ValueKey('spotify-canvas-toggle'),
+                icon: Icons.movie_filter_rounded,
+                title: strings.spotifyCanvas,
+                subtitle: AppPlatform.current == AppPlatformType.linux
+                    ? strings.spotifyCanvasUnavailable
+                    : strings.spotifyCanvasDescription,
+                onTap: AppPlatform.current == AppPlatformType.linux
+                    ? null
+                    : () =>
+                          onSpotifyCanvasEnabledChanged(!spotifyCanvasEnabled),
+                trailing: Switch.adaptive(
+                  key: const ValueKey('spotify-canvas-switch'),
+                  value:
+                      AppPlatform.current != AppPlatformType.linux &&
+                      spotifyCanvasEnabled,
+                  onChanged: AppPlatform.current == AppPlatformType.linux
+                      ? null
+                      : onSpotifyCanvasEnabledChanged,
+                ),
+              ),
+            ],
           ),
-          const SizedBox(height: 10),
-          _SettingsEntryCard(
-            key: const ValueKey('mini-player-mode-selector'),
-            leading: _MiniPlayerStyleIcon(
-              key: const ValueKey('mini-player-mode-selector-icon'),
-              mode: miniPlayerMode,
-            ),
-            title: strings.miniPlayerStyle,
-            subtitle: strings.miniPlayerModeLabel(miniPlayerMode),
-            onTap: () => _chooseMiniPlayerMode(context),
+          const SizedBox(height: appSectionGap),
+          _SettingsSectionPanel(
+            title: strings.miniPlayer,
+            children: [
+              _SettingsEntryCard(
+                key: const ValueKey('mini-player-mode-selector'),
+                leading: _MiniPlayerStyleIcon(
+                  key: const ValueKey('mini-player-mode-selector-icon'),
+                  mode: miniPlayerMode,
+                ),
+                title: strings.miniPlayerStyle,
+                subtitle: strings.miniPlayerModeLabel(miniPlayerMode),
+                onTap: () => _chooseMiniPlayerMode(context),
+              ),
+              const SizedBox(height: appCardGap),
+              _SettingsEntryCard(
+                key: const ValueKey('mini-player-background-selector'),
+                icon: switch (miniPlayerBackgroundMode) {
+                  MiniPlayerBackgroundMode.accent =>
+                    Icons.format_color_fill_rounded,
+                  MiniPlayerBackgroundMode.artwork => Icons.image_rounded,
+                  MiniPlayerBackgroundMode.transparent => Icons.blur_on_rounded,
+                  MiniPlayerBackgroundMode.liquidGlass =>
+                    Icons.water_drop_rounded,
+                },
+                title: strings.miniPlayerBackground,
+                subtitle: strings.miniPlayerBackgroundModeLabel(
+                  miniPlayerBackgroundMode,
+                ),
+                onTap: () => _chooseMiniPlayerBackgroundMode(context),
+              ),
+            ],
           ),
-          const SizedBox(height: appCardGap),
-          _SettingsEntryCard(
-            key: const ValueKey('mini-player-background-selector'),
-            icon: switch (miniPlayerBackgroundMode) {
-              MiniPlayerBackgroundMode.accent =>
-                Icons.format_color_fill_rounded,
-              MiniPlayerBackgroundMode.artwork => Icons.image_rounded,
-              MiniPlayerBackgroundMode.transparent => Icons.blur_on_rounded,
-              MiniPlayerBackgroundMode.liquidGlass => Icons.water_drop_rounded,
-            },
-            title: strings.miniPlayerBackground,
-            subtitle: strings.miniPlayerBackgroundModeLabel(
-              miniPlayerBackgroundMode,
-            ),
-            onTap: () => _chooseMiniPlayerBackgroundMode(context),
-          ),
+          const SizedBox(height: appSectionGap),
           if (onOpenLiveWidget != null) ...[
-            const SizedBox(height: 24),
-            _SettingsEntryCard(
-              key: const ValueKey('live-widget-style-selector'),
-              icon: Icons.live_tv_rounded,
+            _SettingsSectionPanel(
               title: strings.liveWidget,
-              subtitle: strings.liveWidgetStyleLabel(liveWidgetStyle),
-              onTap: onOpenLiveWidget,
+              children: [
+                _SettingsEntryCard(
+                  key: const ValueKey('live-widget-style-selector'),
+                  icon: Icons.live_tv_rounded,
+                  title: strings.liveWidget,
+                  subtitle: strings.liveWidgetStyleLabel(liveWidgetStyle),
+                  onTap: onOpenLiveWidget,
+                ),
+              ],
             ),
           ],
         ],
@@ -2949,175 +2855,181 @@ class _LyricsAppearanceSettings extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _SettingsEntryCard(
-            key: const ValueKey('settings-card-lyrics-providers'),
-            icon: Icons.library_music_rounded,
-            title: strings.lyricsProviders,
-            subtitle: enabledProviders.isEmpty
-                ? strings.noLyricsProvidersEnabled
-                : LyricsProvider.values
-                      .where(enabledProviders.contains)
-                      .map((provider) => provider.label)
-                      .join(' · '),
-            onTap: onOpenProviders,
-          ),
-          const SizedBox(height: 22),
-          Text(
-            strings.lyricsAnimation,
-            style: Theme.of(
-              context,
-            ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w800),
-          ),
-          const SizedBox(height: 10),
-          Wrap(
-            key: const ValueKey('lyrics-animation-options'),
-            spacing: 8,
-            runSpacing: 8,
+          _SettingsSectionPanel(
             children: [
-              for (final option in LyricsAnimationStyle.values)
-                ChoiceChip(
-                  key: ValueKey('lyrics-animation-option-${option.code}'),
-                  selected: animationStyle == option,
-                  showCheckmark: true,
-                  avatar: Icon(_lyricsAnimationIcon(option), size: 18),
-                  label: Text(strings.lyricsAnimationLabel(option)),
-                  onSelected: (_) => onAnimationChanged(option),
-                ),
+              _SettingsEntryCard(
+                key: const ValueKey('settings-card-lyrics-providers'),
+                icon: Icons.library_music_rounded,
+                title: strings.lyricsProviders,
+                subtitle: enabledProviders.isEmpty
+                    ? strings.noLyricsProvidersEnabled
+                    : LyricsProvider.values
+                          .where(enabledProviders.contains)
+                          .map((provider) => provider.label)
+                          .join(' · '),
+                onTap: onOpenProviders,
+              ),
             ],
           ),
-          const SizedBox(height: 22),
-          Text(
-            strings.lyricsAlignment,
-            style: Theme.of(
-              context,
-            ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w800),
-          ),
-          const SizedBox(height: 10),
-          SizedBox(
-            width: double.infinity,
-            child: SegmentedButton<LyricsTextAlignment>(
-              key: const ValueKey('lyrics-alignment-options'),
-              selected: {alignment},
-              segments: [
-                ButtonSegment(
-                  value: LyricsTextAlignment.normal,
-                  icon: const Icon(Icons.format_align_left_rounded),
-                  label: Text(strings.normalLyricsAlignment),
+          const SizedBox(height: appSectionGap),
+          _SettingsSectionPanel(
+            title: strings.lyricsAnimation,
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(12, 6, 12, 12),
+                child: Wrap(
+                  key: const ValueKey('lyrics-animation-options'),
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    for (final option in LyricsAnimationStyle.values)
+                      ChoiceChip(
+                        key: ValueKey('lyrics-animation-option-${option.code}'),
+                        selected: animationStyle == option,
+                        showCheckmark: true,
+                        avatar: Icon(_lyricsAnimationIcon(option), size: 18),
+                        label: Text(strings.lyricsAnimationLabel(option)),
+                        onSelected: (_) => onAnimationChanged(option),
+                      ),
+                  ],
                 ),
-                ButtonSegment(
-                  value: LyricsTextAlignment.centered,
-                  icon: const Icon(Icons.format_align_center_rounded),
-                  label: Text(strings.centeredLyricsAlignment),
-                ),
-              ],
-              onSelectionChanged: (selection) =>
-                  onAlignmentChanged(selection.first),
-            ),
+              ),
+            ],
           ),
-          const SizedBox(height: 22),
-          Text(
-            strings.lyricsRomanization,
-            style: Theme.of(
-              context,
-            ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w800),
-          ),
-          const SizedBox(height: 10),
-          Material(
-            key: const ValueKey('lyrics-romanization-card'),
-            color: AppColors.neutralSurfaceFor(context),
-            borderRadius: BorderRadius.circular(appCardRadius),
-            clipBehavior: Clip.antiAlias,
-            child: Column(
-              children: [
-                SwitchListTile.adaptive(
-                  key: const ValueKey('lyrics-romanization-toggle'),
-                  value: romanizationEnabled,
-                  title: Text(strings.romanizeLyrics),
-                  subtitle: Text(
-                    strings.romanizeLyricsSummary,
-                    style: appListCardSubtitleStyle(context),
+          const SizedBox(height: appSectionGap),
+          _SettingsSectionPanel(
+            title: strings.lyricsAlignment,
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(12, 6, 12, 12),
+                child: SizedBox(
+                  width: double.infinity,
+                  child: SegmentedButton<LyricsTextAlignment>(
+                    key: const ValueKey('lyrics-alignment-options'),
+                    selected: {alignment},
+                    segments: [
+                      ButtonSegment(
+                        value: LyricsTextAlignment.normal,
+                        icon: const Icon(Icons.format_align_left_rounded),
+                        label: Text(strings.normalLyricsAlignment),
+                      ),
+                      ButtonSegment(
+                        value: LyricsTextAlignment.centered,
+                        icon: const Icon(Icons.format_align_center_rounded),
+                        label: Text(strings.centeredLyricsAlignment),
+                      ),
+                    ],
+                    onSelectionChanged: (selection) =>
+                        onAlignmentChanged(selection.first),
                   ),
-                  secondary: const Icon(Icons.translate_rounded),
-                  onChanged: onRomanizationEnabledChanged,
                 ),
-                if (romanizationEnabled) ...[
-                  const Divider(height: 1),
-                  Padding(
-                    key: const ValueKey('lyrics-romanization-languages'),
-                    padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Align(
-                          alignment: Alignment.centerLeft,
-                          child: Text(
-                            strings.romanizationLanguages,
-                            style: Theme.of(context).textTheme.labelLarge
-                                ?.copyWith(fontWeight: FontWeight.w800),
-                          ),
-                        ),
-                        const SizedBox(height: 10),
-                        Align(
-                          alignment: Alignment.centerLeft,
-                          child: Wrap(
-                            spacing: 8,
-                            runSpacing: 8,
-                            children: [
-                              for (final language
-                                  in LyricsRomanizationLanguage.values)
-                                FilterChip(
-                                  key: ValueKey(
-                                    'lyrics-romanization-language-'
-                                    '${language.code}',
-                                  ),
-                                  selected: romanizationLanguages.contains(
-                                    language,
-                                  ),
-                                  showCheckmark: true,
-                                  label: Text(
-                                    strings.romanizationLanguageLabel(language),
-                                  ),
-                                  onSelected:
-                                      romanizationLanguages.contains(
-                                            language,
-                                          ) &&
-                                          romanizationLanguages.length == 1
-                                      ? null
-                                      : (selected) {
-                                          final next = romanizationLanguages
-                                              .toSet();
-                                          if (selected) {
-                                            next.add(language);
-                                          } else {
-                                            next.remove(language);
-                                          }
-                                          onRomanizationLanguagesChanged(next);
-                                        },
-                                ),
-                            ],
-                          ),
-                        ),
-                      ],
+              ),
+            ],
+          ),
+          const SizedBox(height: appSectionGap),
+          _SettingsSectionPanel(
+            title: strings.lyricsRomanization,
+            children: [
+              _SettingsItemSurface(
+                key: const ValueKey('lyrics-romanization-card'),
+                child: Column(
+                  children: [
+                    SwitchListTile.adaptive(
+                      key: const ValueKey('lyrics-romanization-toggle'),
+                      value: romanizationEnabled,
+                      title: Text(strings.romanizeLyrics),
+                      subtitle: Text(
+                        strings.romanizeLyricsSummary,
+                        style: appListCardSubtitleStyle(context),
+                      ),
+                      secondary: const Icon(Icons.translate_rounded),
+                      onChanged: onRomanizationEnabledChanged,
                     ),
-                  ),
-                ],
-              ],
-            ),
+                    if (romanizationEnabled) ...[
+                      const Divider(height: 1),
+                      Padding(
+                        key: const ValueKey('lyrics-romanization-languages'),
+                        padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Align(
+                              alignment: Alignment.centerLeft,
+                              child: Text(
+                                strings.romanizationLanguages,
+                                style: Theme.of(context).textTheme.labelLarge
+                                    ?.copyWith(fontWeight: FontWeight.w800),
+                              ),
+                            ),
+                            const SizedBox(height: 10),
+                            Align(
+                              alignment: Alignment.centerLeft,
+                              child: Wrap(
+                                spacing: 8,
+                                runSpacing: 8,
+                                children: [
+                                  for (final language
+                                      in LyricsRomanizationLanguage.values)
+                                    FilterChip(
+                                      key: ValueKey(
+                                        'lyrics-romanization-language-'
+                                        '${language.code}',
+                                      ),
+                                      selected: romanizationLanguages.contains(
+                                        language,
+                                      ),
+                                      showCheckmark: true,
+                                      label: Text(
+                                        strings.romanizationLanguageLabel(
+                                          language,
+                                        ),
+                                      ),
+                                      onSelected:
+                                          romanizationLanguages.contains(
+                                                language,
+                                              ) &&
+                                              romanizationLanguages.length == 1
+                                          ? null
+                                          : (selected) {
+                                              final next = romanizationLanguages
+                                                  .toSet();
+                                              if (selected) {
+                                                next.add(language);
+                                              } else {
+                                                next.remove(language);
+                                              }
+                                              onRomanizationLanguagesChanged(
+                                                next,
+                                              );
+                                            },
+                                    ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ],
           ),
-          const SizedBox(height: 22),
-          Text(
-            strings.lyricsPreview,
-            style: Theme.of(
-              context,
-            ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w800),
-          ),
-          const SizedBox(height: 10),
-          _LyricsAnimationPreview(
-            animationStyle: animationStyle,
-            alignment: alignment,
-            romanizationEnabled: romanizationEnabled,
-            romanizationLanguages: romanizationLanguages,
-            strings: strings,
+          const SizedBox(height: appSectionGap),
+          _SettingsSectionPanel(
+            title: strings.lyricsPreview,
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(12, 6, 12, 12),
+                child: _LyricsAnimationPreview(
+                  animationStyle: animationStyle,
+                  alignment: alignment,
+                  romanizationEnabled: romanizationEnabled,
+                  romanizationLanguages: romanizationLanguages,
+                  strings: strings,
+                ),
+              ),
+            ],
           ),
         ],
       ),
@@ -3142,27 +3054,18 @@ class _LyricsProvidersSettings extends StatelessWidget {
       constraints: BoxConstraints(
         maxWidth: _settingsContentMaxWidth(context, 520),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
+      child: _SettingsSectionPanel(
         children: [
-          Text(
-            strings.lyricsProvidersHint,
-            style: appListCardSubtitleStyle(context),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(12, 6, 12, 0),
+            child: Text(
+              strings.lyricsProvidersHint,
+              style: appListCardSubtitleStyle(context),
+            ),
           ),
           const SizedBox(height: 16),
-          Material(
+          _SettingsItemSurface(
             key: const ValueKey('lyrics-providers-card'),
-            color: AppColors.cardSurfaceFor(context),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(appCardRadius),
-              side: BorderSide(
-                color: AppColors.cardBorderFor(
-                  context,
-                  solidInLiquidGlass: true,
-                ),
-              ),
-            ),
-            clipBehavior: Clip.antiAlias,
             child: Column(
               children: [
                 for (final provider in LyricsProvider.values) ...[
@@ -3185,12 +3088,15 @@ class _LyricsProvidersSettings extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 16),
-          Text(
-            enabledProviders.isEmpty
-                ? strings.lyricsProvidersDisabledHint
-                : strings.lyricsProvidersFallbackHint,
-            key: const ValueKey('lyrics-providers-status'),
-            style: appListCardSubtitleStyle(context),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+            child: Text(
+              enabledProviders.isEmpty
+                  ? strings.lyricsProvidersDisabledHint
+                  : strings.lyricsProvidersFallbackHint,
+              key: const ValueKey('lyrics-providers-status'),
+              style: appListCardSubtitleStyle(context),
+            ),
           ),
         ],
       ),
@@ -3662,83 +3568,72 @@ class _SleepTimerSettings extends StatelessWidget {
     final customSelected = !_presets.contains(state.selectedDuration);
     return ConstrainedBox(
       constraints: const BoxConstraints(maxWidth: 520),
-      child: AppCardGradientBorder(
-        solidInLiquidGlass: true,
-        child: Material(
-          color: AppColors.cardSurfaceFor(context),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(appCardRadius),
-            side: BorderSide(
-              color: AppColors.cardBorderFor(context, solidInLiquidGlass: true),
+      child: _SettingsItemSurface(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            SwitchListTile.adaptive(
+              value: state.isActive,
+              onChanged: onEnabledChanged,
+              secondary: const Icon(Icons.bedtime_rounded),
+              title: Text(
+                strings.automaticShutdown,
+                style: const TextStyle(fontWeight: FontWeight.w800),
+              ),
+              subtitle: Text(
+                state.isActive
+                    ? strings.sleepTimerRemaining(state.remaining)
+                    : strings.sleepTimerOff,
+                style: appListCardSubtitleStyle(context),
+              ),
             ),
-          ),
-          clipBehavior: Clip.antiAlias,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              SwitchListTile.adaptive(
-                value: state.isActive,
-                onChanged: onEnabledChanged,
-                secondary: const Icon(Icons.bedtime_rounded),
-                title: Text(
-                  strings.automaticShutdown,
-                  style: const TextStyle(fontWeight: FontWeight.w800),
-                ),
-                subtitle: Text(
-                  state.isActive
-                      ? strings.sleepTimerRemaining(state.remaining)
-                      : strings.sleepTimerOff,
-                  style: appListCardSubtitleStyle(context),
-                ),
-              ),
-              AnimatedSize(
-                duration: const Duration(milliseconds: 240),
-                curve: Curves.easeOutCubic,
-                alignment: Alignment.topCenter,
-                child: state.isActive
-                    ? Padding(
-                        padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            Row(
-                              children: [
-                                for (
-                                  var index = 0;
-                                  index < _presets.length;
-                                  index++
-                                ) ...[
-                                  if (index > 0) const SizedBox(width: 8),
-                                  Expanded(
-                                    child: _PlaybackOptionButton(
-                                      selected:
-                                          state.selectedDuration ==
-                                          _presets[index],
-                                      inactiveIcon: Icons.schedule_rounded,
-                                      label: strings.timerMinutes(
-                                        _presets[index].inMinutes,
-                                      ),
-                                      onTap: () =>
-                                          onDurationSelected(_presets[index]),
+            AnimatedSize(
+              duration: const Duration(milliseconds: 240),
+              curve: Curves.easeOutCubic,
+              alignment: Alignment.topCenter,
+              child: state.isActive
+                  ? Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          Row(
+                            children: [
+                              for (
+                                var index = 0;
+                                index < _presets.length;
+                                index++
+                              ) ...[
+                                if (index > 0) const SizedBox(width: 8),
+                                Expanded(
+                                  child: _PlaybackOptionButton(
+                                    selected:
+                                        state.selectedDuration ==
+                                        _presets[index],
+                                    inactiveIcon: Icons.schedule_rounded,
+                                    label: strings.timerMinutes(
+                                      _presets[index].inMinutes,
                                     ),
+                                    onTap: () =>
+                                        onDurationSelected(_presets[index]),
                                   ),
-                                ],
+                                ),
                               ],
-                            ),
-                            const SizedBox(height: 10),
-                            _PlaybackOptionButton(
-                              selected: customSelected,
-                              inactiveIcon: Icons.tune_rounded,
-                              label: strings.customDuration,
-                              onTap: onCustomDuration,
-                            ),
-                          ],
-                        ),
-                      )
-                    : const SizedBox.shrink(),
-              ),
-            ],
-          ),
+                            ],
+                          ),
+                          const SizedBox(height: 10),
+                          _PlaybackOptionButton(
+                            selected: customSelected,
+                            inactiveIcon: Icons.tune_rounded,
+                            label: strings.customDuration,
+                            onTap: onCustomDuration,
+                          ),
+                        ],
+                      ),
+                    )
+                  : const SizedBox.shrink(),
+            ),
+          ],
         ),
       ),
     );
@@ -3770,67 +3665,56 @@ class _CrossfadeSettings extends StatelessWidget {
       constraints: BoxConstraints(
         maxWidth: desktopLayout ? double.infinity : 520,
       ),
-      child: AppCardGradientBorder(
-        solidInLiquidGlass: true,
-        child: Material(
-          color: AppColors.cardSurfaceFor(context),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(appCardRadius),
-            side: BorderSide(
-              color: AppColors.cardBorderFor(context, solidInLiquidGlass: true),
+      child: _SettingsItemSurface(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            SwitchListTile.adaptive(
+              key: const ValueKey('settings-crossfade-switch'),
+              value: enabled,
+              onChanged: onEnabledChanged,
+              secondary: const Icon(Icons.multitrack_audio_rounded),
+              title: Text(
+                strings.crossfade,
+                style: const TextStyle(fontWeight: FontWeight.w800),
+              ),
+              subtitle: Text(
+                strings.crossfadeSummary,
+                style: appListCardSubtitleStyle(context),
+              ),
             ),
-          ),
-          clipBehavior: Clip.antiAlias,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              SwitchListTile.adaptive(
-                key: const ValueKey('settings-crossfade-switch'),
-                value: enabled,
-                onChanged: onEnabledChanged,
-                secondary: const Icon(Icons.multitrack_audio_rounded),
-                title: Text(
-                  strings.crossfade,
-                  style: const TextStyle(fontWeight: FontWeight.w800),
-                ),
-                subtitle: Text(
-                  strings.crossfadeSummary,
-                  style: appListCardSubtitleStyle(context),
+            AnimatedSwitcher(
+              key: const ValueKey('settings-crossfade-options-transition'),
+              duration: MediaQuery.disableAnimationsOf(context)
+                  ? Duration.zero
+                  : const Duration(milliseconds: 180),
+              reverseDuration: MediaQuery.disableAnimationsOf(context)
+                  ? Duration.zero
+                  : const Duration(milliseconds: 140),
+              switchInCurve: Curves.easeOutCubic,
+              switchOutCurve: Curves.easeInCubic,
+              transitionBuilder: (child, animation) => ClipRect(
+                child: SizeTransition(
+                  sizeFactor: animation,
+                  alignment: Alignment.topCenter,
+                  child: FadeTransition(opacity: animation, child: child),
                 ),
               ),
-              AnimatedSwitcher(
-                key: const ValueKey('settings-crossfade-options-transition'),
-                duration: MediaQuery.disableAnimationsOf(context)
-                    ? Duration.zero
-                    : const Duration(milliseconds: 180),
-                reverseDuration: MediaQuery.disableAnimationsOf(context)
-                    ? Duration.zero
-                    : const Duration(milliseconds: 140),
-                switchInCurve: Curves.easeOutCubic,
-                switchOutCurve: Curves.easeInCubic,
-                transitionBuilder: (child, animation) => ClipRect(
-                  child: SizeTransition(
-                    sizeFactor: animation,
-                    alignment: Alignment.topCenter,
-                    child: FadeTransition(opacity: animation, child: child),
-                  ),
-                ),
-                child: enabled
-                    ? Padding(
-                        key: const ValueKey('settings-crossfade-options'),
-                        padding: const EdgeInsets.fromLTRB(16, 0, 16, 14),
-                        child: _CrossfadeDurationSlider(
-                          duration: duration,
-                          strings: strings,
-                          onDurationSelected: onDurationSelected,
-                        ),
-                      )
-                    : const SizedBox.shrink(
-                        key: ValueKey('settings-crossfade-options-hidden'),
+              child: enabled
+                  ? Padding(
+                      key: const ValueKey('settings-crossfade-options'),
+                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 14),
+                      child: _CrossfadeDurationSlider(
+                        duration: duration,
+                        strings: strings,
+                        onDurationSelected: onDurationSelected,
                       ),
-              ),
-            ],
-          ),
+                    )
+                  : const SizedBox.shrink(
+                      key: ValueKey('settings-crossfade-options-hidden'),
+                    ),
+            ),
+          ],
         ),
       ),
     );
@@ -3858,30 +3742,19 @@ class _SkipSilenceSettings extends StatelessWidget {
       constraints: BoxConstraints(
         maxWidth: desktopLayout ? double.infinity : 520,
       ),
-      child: AppCardGradientBorder(
-        solidInLiquidGlass: true,
-        child: Material(
-          color: AppColors.cardSurfaceFor(context),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(appCardRadius),
-            side: BorderSide(
-              color: AppColors.cardBorderFor(context, solidInLiquidGlass: true),
-            ),
+      child: _SettingsItemSurface(
+        child: SwitchListTile.adaptive(
+          key: const ValueKey('settings-skip-silence-switch'),
+          value: enabled,
+          onChanged: onEnabledChanged,
+          secondary: const Icon(Icons.fast_forward_rounded),
+          title: Text(
+            strings.skipSilence,
+            style: const TextStyle(fontWeight: FontWeight.w800),
           ),
-          clipBehavior: Clip.antiAlias,
-          child: SwitchListTile.adaptive(
-            key: const ValueKey('settings-skip-silence-switch'),
-            value: enabled,
-            onChanged: onEnabledChanged,
-            secondary: const Icon(Icons.fast_forward_rounded),
-            title: Text(
-              strings.skipSilence,
-              style: const TextStyle(fontWeight: FontWeight.w800),
-            ),
-            subtitle: Text(
-              strings.skipSilenceSummary,
-              style: appListCardSubtitleStyle(context),
-            ),
+          subtitle: Text(
+            strings.skipSilenceSummary,
+            style: appListCardSubtitleStyle(context),
           ),
         ),
       ),
@@ -4363,24 +4236,108 @@ class _SettingsGroup extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.only(bottom: appSectionGap),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Padding(
-            padding: const EdgeInsets.symmetric(
-              horizontal:
-                  appTabTitleHorizontalPadding -
-                  _settingsRootCardHorizontalPadding,
-            ),
-            child: Text(
-              title,
-              key: titleKey,
-              style: appSectionTitleStyle(context),
+      child: _SettingsSectionPanel(
+        title: title,
+        titleKey: titleKey,
+        children: children,
+      ),
+    );
+  }
+}
+
+/// Shares a single, inexpensive painted surface between related settings.
+/// Rows use this Material for their ink response instead of adding individual
+/// cards, borders, blur filters, or composited opacity layers.
+class _SettingsSectionPanel extends StatelessWidget {
+  const _SettingsSectionPanel({
+    this.title,
+    this.titleKey,
+    required this.children,
+  });
+
+  final String? title;
+  final Key? titleKey;
+  final List<Widget> children;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    return SizedBox(
+      width: double.infinity,
+      child: Card(
+        key: title == null ? null : ValueKey('settings-section-panel-$title'),
+        margin: EdgeInsets.zero,
+        elevation: 0,
+        color: colors.surfaceContainerLow.withValues(alpha: 0.88),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(22),
+          side: BorderSide(color: colors.outlineVariant.withValues(alpha: 0.5)),
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: _SettingsSectionScope(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(6, 6, 6, 6),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (title != null) ...[
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(12, 10, 12, 6),
+                    child: Text(
+                      title!,
+                      key: titleKey,
+                      style: appSectionTitleStyle(context),
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                ],
+                for (final child in children)
+                  if (child is SizedBox &&
+                      child.child == null &&
+                      child.height == appCardGap)
+                    const Divider(height: 1, indent: 16, endIndent: 16)
+                  else
+                    child,
+              ],
             ),
           ),
-          const SizedBox(height: appGroupHeadingGap),
-          ...children,
-        ],
+        ),
+      ),
+    );
+  }
+}
+
+class _SettingsSectionScope extends InheritedWidget {
+  const _SettingsSectionScope({required super.child});
+
+  static bool contains(BuildContext context) =>
+      context.dependOnInheritedWidgetOfExactType<_SettingsSectionScope>() !=
+      null;
+
+  @override
+  bool updateShouldNotify(_SettingsSectionScope oldWidget) => false;
+}
+
+class _SettingsItemSurface extends StatelessWidget {
+  const _SettingsItemSurface({required this.child, super.key});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    if (_SettingsSectionScope.contains(context)) return child;
+    return AppCardGradientBorder(
+      solidInLiquidGlass: true,
+      child: Material(
+        color: AppColors.cardSurfaceFor(context),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(appCardRadius),
+          side: BorderSide(
+            color: AppColors.cardBorderFor(context, solidInLiquidGlass: true),
+          ),
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: child,
       ),
     );
   }
@@ -4417,15 +4374,21 @@ class _StorageSettings extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         if (canChangeDownloadDirectory) ...[
-          Text(strings.downloads, style: appSectionTitleStyle(context)),
-          const SizedBox(height: 8),
-          _PathField(
-            controller: downloadPathController,
-            focusNode: downloadPathFocusNode,
-            label: strings.folder,
-            icon: Icons.folder_rounded,
-            browseTooltip: strings.browseFolder,
-            onBrowse: onBrowse,
+          _SettingsSectionPanel(
+            title: strings.downloads,
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(12, 6, 12, 12),
+                child: _PathField(
+                  controller: downloadPathController,
+                  focusNode: downloadPathFocusNode,
+                  label: strings.folder,
+                  icon: Icons.folder_rounded,
+                  browseTooltip: strings.browseFolder,
+                  onBrowse: onBrowse,
+                ),
+              ),
+            ],
           ),
           const SizedBox(height: appSectionGap),
         ],
@@ -4648,14 +4611,7 @@ class _StorageTransferSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(title, style: appSectionTitleStyle(context)),
-        const SizedBox(height: appGroupHeadingGap),
-        ...children,
-      ],
-    );
+    return _SettingsSectionPanel(title: title, children: children);
   }
 }
 

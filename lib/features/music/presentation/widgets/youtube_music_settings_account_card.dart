@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -11,9 +13,14 @@ import 'youtube_music_account_button.dart'
 import 'youtube_music_login_disclosure_dialog.dart';
 
 class YouTubeMusicSettingsAccountCard extends ConsumerStatefulWidget {
-  const YouTubeMusicSettingsAccountCard({required this.strings, super.key});
+  const YouTubeMusicSettingsAccountCard({
+    required this.strings,
+    this.active = true,
+    super.key,
+  });
 
   final AppStrings strings;
+  final bool active;
 
   @override
   ConsumerState<YouTubeMusicSettingsAccountCard> createState() =>
@@ -23,6 +30,30 @@ class YouTubeMusicSettingsAccountCard extends ConsumerStatefulWidget {
 class _YouTubeMusicSettingsAccountCardState
     extends ConsumerState<YouTubeMusicSettingsAccountCard> {
   var _actionBusy = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _refreshVisibleProfile();
+  }
+
+  @override
+  void didUpdateWidget(covariant YouTubeMusicSettingsAccountCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (!oldWidget.active && widget.active) _refreshVisibleProfile();
+  }
+
+  void _refreshVisibleProfile() {
+    if (!widget.active) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || !widget.active) return;
+      unawaited(
+        ref
+            .read(youtubeMusicAuthControllerProvider.notifier)
+            .refreshProfile(force: true),
+      );
+    });
+  }
 
   @override
   Widget build(BuildContext context) {

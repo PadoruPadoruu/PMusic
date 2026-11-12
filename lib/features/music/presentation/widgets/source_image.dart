@@ -46,6 +46,7 @@ class SourceImage extends StatefulWidget {
     this.cacheWidth = _maximumDecodedDimension,
     this.filterQuality = FilterQuality.medium,
     this.opacity = 1,
+    this.imageBuilder,
     super.key,
   }) : assert(opacity >= 0 && opacity <= 1);
 
@@ -58,6 +59,11 @@ class SourceImage extends StatefulWidget {
   /// Applied by the image paint itself, without an offscreen Opacity layer.
   final double opacity;
   final Widget fallback;
+
+  /// Custom painting of the already decoded native image. Loading, fallbacks
+  /// and ImageCache remain owned here; the builder must not dispose the image.
+  /// Browser images without a RawImage keep their normal rendering.
+  final Widget Function(BuildContext context, RawImage image)? imageBuilder;
 
   // Artwork is displayed in bounded cards and player surfaces. Keep the
   // decoder bounded for long listening sessions, while matching YouTube's
@@ -98,6 +104,19 @@ class _SourceImageState extends State<SourceImage> {
         ? null
         : AlwaysStoppedAnimation<double>(widget.opacity);
   }
+
+  Widget _paintImage(BuildContext context, Widget child) {
+    final builder = widget.imageBuilder;
+    if (builder == null || child is! RawImage || child.image == null) {
+      return child;
+    }
+    return builder(context, child);
+  }
+
+  ImageFrameBuilder? get _customFrameBuilder => widget.imageBuilder == null
+      ? null
+      : (context, child, frame, synchronouslyLoaded) =>
+            _paintImage(context, child);
 
   void _prepareLocalSource() {
     final normalized = widget.source?.trim();
@@ -148,21 +167,25 @@ class _SourceImageState extends State<SourceImage> {
         }
         return Image.file(
           File(cachedPath),
+          excludeFromSemantics: widget.imageBuilder != null,
           fit: widget.fit,
           filterQuality: widget.filterQuality,
           opacity: _imageOpacity,
           cacheWidth: widget.cacheWidth,
           gaplessPlayback: true,
           frameBuilder: (context, child, frame, wasSynchronouslyLoaded) {
+            final paintedImage = _paintImage(context, child);
             if (wasSynchronouslyLoaded || frame != null) {
               _decodedPlaybackSource = normalized;
-              return child;
+              return paintedImage;
             }
             // A better rendition changes the file-provider key, but gapless
             // playback still has the previous decoded rendition of this same
             // cover. Keep those pixels rather than briefly downgrading to the
             // mini player's 256 px preview while the new file decodes.
-            return _decodedPlaybackSource == normalized ? child : preview;
+            return _decodedPlaybackSource == normalized
+                ? paintedImage
+                : preview;
           },
           errorBuilder: (_, _, _) {
             _decodedPlaybackSource = null;
@@ -186,6 +209,7 @@ class _SourceImageState extends State<SourceImage> {
       if (playbackCache?.useMiniArtworkPreview == true &&
           widget.cacheWidth > 256) {
         final preview = Image(
+          excludeFromSemantics: widget.imageBuilder != null,
           image: DeviceAudioArtworkImageProvider(
             audioUri: deviceAudioUri,
             targetWidth: 256,
@@ -195,10 +219,13 @@ class _SourceImageState extends State<SourceImage> {
           opacity: _imageOpacity,
           gaplessPlayback: true,
           frameBuilder: (context, child, frame, wasSynchronouslyLoaded) =>
-              wasSynchronouslyLoaded || frame != null ? child : fallback,
+              wasSynchronouslyLoaded || frame != null
+              ? _paintImage(context, child)
+              : fallback,
           errorBuilder: (_, _, _) => fallback,
         );
         return Image(
+          excludeFromSemantics: widget.imageBuilder != null,
           image: DeviceAudioArtworkImageProvider(
             audioUri: deviceAudioUri,
             targetWidth: widget.cacheWidth,
@@ -208,11 +235,14 @@ class _SourceImageState extends State<SourceImage> {
           opacity: _imageOpacity,
           gaplessPlayback: true,
           frameBuilder: (context, child, frame, wasSynchronouslyLoaded) =>
-              wasSynchronouslyLoaded || frame != null ? child : preview,
+              wasSynchronouslyLoaded || frame != null
+              ? _paintImage(context, child)
+              : preview,
           errorBuilder: (_, _, _) => preview,
         );
       }
       return Image(
+        excludeFromSemantics: widget.imageBuilder != null,
         image: DeviceAudioArtworkImageProvider(
           audioUri: deviceAudioUri,
           targetWidth: widget.cacheWidth,
@@ -221,6 +251,7 @@ class _SourceImageState extends State<SourceImage> {
         filterQuality: widget.filterQuality,
         opacity: _imageOpacity,
         gaplessPlayback: true,
+        frameBuilder: _customFrameBuilder,
         errorBuilder: (_, _, _) => fallback,
       );
     }
@@ -234,24 +265,30 @@ class _SourceImageState extends State<SourceImage> {
         widget.cacheWidth > 256) {
       final preview = Image.file(
         file,
+        excludeFromSemantics: widget.imageBuilder != null,
         fit: widget.fit,
         filterQuality: widget.filterQuality,
         opacity: _imageOpacity,
         gaplessPlayback: true,
         cacheWidth: 256,
         frameBuilder: (context, child, frame, wasSynchronouslyLoaded) =>
-            wasSynchronouslyLoaded || frame != null ? child : fallback,
+            wasSynchronouslyLoaded || frame != null
+            ? _paintImage(context, child)
+            : fallback,
         errorBuilder: (_, _, _) => fallback,
       );
       return Image.file(
         file,
+        excludeFromSemantics: widget.imageBuilder != null,
         fit: widget.fit,
         filterQuality: widget.filterQuality,
         opacity: _imageOpacity,
         gaplessPlayback: true,
         cacheWidth: widget.cacheWidth,
         frameBuilder: (context, child, frame, wasSynchronouslyLoaded) =>
-            wasSynchronouslyLoaded || frame != null ? child : preview,
+            wasSynchronouslyLoaded || frame != null
+            ? _paintImage(context, child)
+            : preview,
         errorBuilder: (_, _, _) => preview,
       );
     }
@@ -270,11 +307,13 @@ class _SourceImageState extends State<SourceImage> {
         }
         return Image.file(
           file,
+          excludeFromSemantics: widget.imageBuilder != null,
           fit: widget.fit,
           filterQuality: widget.filterQuality,
           opacity: _imageOpacity,
           gaplessPlayback: true,
           cacheWidth: widget.cacheWidth,
+          frameBuilder: _customFrameBuilder,
           errorBuilder: (_, _, _) => fallback,
         );
       },
@@ -302,6 +341,7 @@ class _SourceImageState extends State<SourceImage> {
       cacheWidth: widget.cacheWidth,
       filterQuality: widget.filterQuality,
       opacity: widget.opacity,
+      imageBuilder: widget.imageBuilder,
       fallback: widget.fallback,
     );
   }
@@ -318,6 +358,7 @@ class _SourceImageState extends State<SourceImage> {
         return fallback;
       }
       return Image(
+        excludeFromSemantics: widget.imageBuilder != null,
         image: ResizeImage(
           CachedArtworkImageProvider(candidates[index]),
           width: cacheWidth ?? widget.cacheWidth,
@@ -334,10 +375,10 @@ class _SourceImageState extends State<SourceImage> {
                       ? Duration.zero
                       : const Duration(milliseconds: 180),
                   curve: Curves.easeOutCubic,
-                  child: child,
+                  child: _paintImage(context, child),
                 );
               }
-            : null,
+            : _customFrameBuilder,
         errorBuilder: (_, _, _) => buildCandidate(index + 1),
       );
     }

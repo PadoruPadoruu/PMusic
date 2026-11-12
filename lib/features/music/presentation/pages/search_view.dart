@@ -1727,7 +1727,8 @@ class _SearchCategoryResultsBody extends ConsumerWidget {
               onOpenPlayer: onOpenPlayer,
               onAddToPlaylist: onAddToPlaylist,
             ),
-            if (index < page.albums.length - 1) const SizedBox(height: 6),
+            if (index < page.albums.length - 1)
+              const SizedBox(height: appTrackRowGap),
           ],
         ],
       );
@@ -1758,7 +1759,7 @@ class _SearchCategoryResultsBody extends ConsumerWidget {
                 state.selectedCategory != SearchCategory.videos,
             onOpenPlayer: onOpenPlayer,
           ),
-          if (index < tracks.length - 1) const SizedBox(height: 6),
+          if (index < tracks.length - 1) const SizedBox(height: appTrackRowGap),
         ],
       ],
     );

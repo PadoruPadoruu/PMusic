@@ -31,11 +31,14 @@ import '../../domain/entities/local_track.dart';
 import '../../domain/entities/track_info.dart';
 import '../../domain/usecases/get_track_info.dart';
 import '../providers/music_providers.dart';
+import '../providers/local_track_index_provider.dart';
 import '../providers/track_selection_controller.dart';
+import '../providers/youtube_music_auth_controller.dart';
 import '../providers/player/related_radio_queue_extender.dart';
 import '../widgets/app_update_dialog.dart';
 import '../widgets/bstream_logo.dart';
 import '../widgets/favorite_star_badge.dart';
+import '../widgets/home_loading_content.dart';
 import '../widgets/library_panel.dart';
 import '../widgets/library_csv_import_dialog.dart';
 import '../widgets/local_music_panel.dart';
@@ -61,6 +64,42 @@ double _shellSystemBottomInset(BuildContext context) {
     MediaQuery.viewPaddingOf(context).bottom,
     MediaQuery.paddingOf(context).bottom,
   );
+}
+
+/// The shell supplies a fallback status-bar style for browsing pages without
+/// an AppBar. A player foreground uses the same region so its transparent bar
+/// wins over any browsing AppBar retained beneath its entrance animation.
+class _MobilePlaybackSystemBars extends StatelessWidget {
+  const _MobilePlaybackSystemBars({
+    required this.playerVisible,
+    required this.child,
+    this.regionKey,
+  });
+
+  final bool playerVisible;
+  final Widget child;
+  final Key? regionKey;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    if (!AppPlatform.isMobileTargetPlatform(theme.platform)) return child;
+    final lightIcons = playerVisible || theme.brightness == Brightness.dark;
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      key: regionKey,
+      value: SystemUiOverlayStyle(
+        statusBarColor: playerVisible
+            ? Colors.transparent
+            : theme.scaffoldBackgroundColor,
+        statusBarIconBrightness: lightIcons
+            ? Brightness.light
+            : Brightness.dark,
+        statusBarBrightness: lightIcons ? Brightness.dark : Brightness.light,
+        systemStatusBarContrastEnforced: !playerVisible,
+      ),
+      child: child,
+    );
+  }
 }
 
 bool _supportsNavigationHover(BuildContext context) =>
@@ -704,6 +743,11 @@ class _HomePageState extends ConsumerState<HomePage>
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     _appForeground = state == AppLifecycleState.resumed;
+    if (_appForeground) {
+      unawaited(
+        ref.read(youtubeMusicAuthControllerProvider.notifier).refreshProfile(),
+      );
+    }
     ref
         .read(homeFeedActivityProvider.notifier)
         .setVisible(
@@ -1470,262 +1514,273 @@ class _HomePageState extends ConsumerState<HomePage>
         },
         child: LiquidGlassEffectsScope(
           enabled: _keyboardGlassEffectsEnabled,
-          child: Scaffold(
-            // Keep the body edge-to-edge on Android. The bottom chrome is hosted
-            // inside the body so its animation cannot resize the Scaffold.
-            extendBody: !useSideNavigation && _usesMobileNavigation,
-            body: SafeArea(
-              bottom: false,
-              // BrowsingTabBackground always starts with its own opaque base,
-              // including the photo path. Painting another full-window gradient
-              // below it only adds overdraw and cannot affect the visible result.
-              child: Stack(
-                key: const ValueKey('shell-content-stack'),
-                fit: StackFit.expand,
-                children: [
-                  SizedBox.expand(
-                    key: const ValueKey('shell-background-browsing'),
-                    child: BrowsingTabBackground(
-                      showCustomPhoto:
-                          _selectedIndex == _homeIndex ||
-                          _selectedIndex == _searchIndex ||
-                          _selectedIndex == _localIndex ||
-                          _selectedIndex == _libraryIndex ||
-                          _selectedIndex == _settingsIndex,
+          child: _MobilePlaybackSystemBars(
+            playerVisible: _isPlayerSelected || _playerTransitionActive,
+            regionKey: const ValueKey('shell-status-bar-style'),
+            child: Scaffold(
+              // Keep the body edge-to-edge on Android. The bottom chrome is hosted
+              // inside the body so its animation cannot resize the Scaffold.
+              extendBody: !useSideNavigation && _usesMobileNavigation,
+              body: SafeArea(
+                top: !AppPlatform.isMobileTargetPlatform(
+                  Theme.of(context).platform,
+                ),
+                bottom: false,
+                // BrowsingTabBackground always starts with its own opaque base,
+                // including the photo path. Painting another full-window gradient
+                // below it only adds overdraw and cannot affect the visible result.
+                child: Stack(
+                  key: const ValueKey('shell-content-stack'),
+                  fit: StackFit.expand,
+                  children: [
+                    SizedBox.expand(
+                      key: const ValueKey('shell-background-browsing'),
+                      child: BrowsingTabBackground(
+                        showCustomPhoto:
+                            _selectedIndex == _homeIndex ||
+                            _selectedIndex == _searchIndex ||
+                            _selectedIndex == _localIndex ||
+                            _selectedIndex == _libraryIndex ||
+                            _selectedIndex == _settingsIndex,
+                      ),
                     ),
-                  ),
-                  PlaybackPageVisibilityTransition(
-                    fadeKey: const ValueKey(
-                      'shell-player-background-fade-transition',
+                    PlaybackPageVisibilityTransition(
+                      fadeKey: const ValueKey(
+                        'shell-player-background-fade-transition',
+                      ),
+                      slideKey: const ValueKey(
+                        'shell-player-background-slide-transition',
+                      ),
+                      repaintBoundaryKey: const ValueKey(
+                        'shell-player-background-repaint-boundary',
+                      ),
+                      visible: _isPlayerSelected,
+                      duration: playerTransitionDuration,
+                      reverseDuration: playerReverseTransitionDuration,
+                      animateInitialEntry: false,
+                      // The browsing background below this layer already fills
+                      // the shell. Keep only the transition marker here: a
+                      // second identical gradient forced an unnecessary
+                      // full-screen paint during every player entrance.
+                      child: const SizedBox.expand(
+                        key: ValueKey('shell-background-player'),
+                      ),
                     ),
-                    slideKey: const ValueKey(
-                      'shell-player-background-slide-transition',
-                    ),
-                    repaintBoundaryKey: const ValueKey(
-                      'shell-player-background-repaint-boundary',
-                    ),
-                    visible: _isPlayerSelected,
-                    duration: playerTransitionDuration,
-                    reverseDuration: playerReverseTransitionDuration,
-                    animateInitialEntry: false,
-                    // The browsing background below this layer already fills
-                    // the shell. Keep only the transition marker here: a
-                    // second identical gradient forced an unnecessary
-                    // full-screen paint during every player entrance.
-                    child: const SizedBox.expand(
-                      key: ValueKey('shell-background-player'),
-                    ),
-                  ),
-                  SafeArea(
-                    top: false,
-                    bottom: false,
-                    child: Row(
-                      children: [
-                        if (useSideNavigation)
-                          _SideNavigation(
-                            selectedIndex: _selectedIndex,
-                            dimPlaybackBackground: _isPlayerSelected,
-                            transitionDuration: shellTransitionDuration,
-                            onSelected: _selectIndex,
-                            destinations: destinations,
-                          ),
-                        Expanded(
-                          child: ClipRect(
-                            child: Stack(
-                              fit: StackFit.expand,
-                              children: [
-                                Positioned.fill(
-                                  child:
-                                      NotificationListener<ScrollNotification>(
-                                        onNotification: _handleBrowsingScroll,
-                                        // Chrome compacts at the start of a
-                                        // scroll gesture. Reuse the browsing
-                                        // subtree when none of its inputs
-                                        // changed: rebuilding every retained
-                                        // tab here also rebuilt offscreen Home
-                                        // shelves inside the scroll's layout.
-                                        child: _retainCurrentViews(
-                                          _PersistentCurrentViews(
-                                            selectedIndex: _selectedIndex,
-                                            homeIndex: _homeIndex,
-                                            searchIndex: _searchIndex,
-                                            localIndex: _localIndex,
-                                            playerIndex: _playerIndex,
-                                            libraryIndex: _libraryIndex,
-                                            settingsIndex: _settingsIndex,
-                                            viewportBottomPadding:
-                                                browsingViewportBottomPadding,
-                                            contentBottomPadding:
-                                                browsingContentBottomPadding,
-                                            playerTransitionDuration:
-                                                playerTransitionDuration,
-                                            playerReverseTransitionDuration:
-                                                playerReverseTransitionDuration,
-                                            playerTransitionActive:
-                                                _playerTransitionActive,
-                                            libraryNavigationController:
-                                                _libraryNavigationController,
-                                            localMusicNavigationController:
-                                                _localMusicNavigationController,
-                                            settingsNavigationController:
-                                                _settingsNavigationController,
-                                            playerStyle: playerStyle,
-                                            playerArtworkStyle:
-                                                playerArtworkStyle,
-                                            animatedArtworkEnabled:
-                                                animatedArtworkEnabled,
-                                            spotifyCanvasEnabled:
-                                                spotifyCanvasEnabled,
-                                            appleAnimatedArtworkEnabled:
-                                                appleAnimatedArtworkEnabled,
-                                            onOpenPlayer: _openPlayer,
-                                            onCollapsePlayer: _handleSystemBack,
-                                            onOpenSearch: _openSearch,
-                                            onAddRemoteTracksToPlaylist:
-                                                _addRemoteTracksToPlaylist,
-                                          ),
+                    SafeArea(
+                      top: false,
+                      bottom: false,
+                      child: Row(
+                        children: [
+                          if (useSideNavigation)
+                            _SideNavigation(
+                              selectedIndex: _selectedIndex,
+                              dimPlaybackBackground: _isPlayerSelected,
+                              transitionDuration: shellTransitionDuration,
+                              onSelected: _selectIndex,
+                              destinations: destinations,
+                            ),
+                          Expanded(
+                            child: ClipRect(
+                              child: Stack(
+                                fit: StackFit.expand,
+                                children: [
+                                  Positioned.fill(
+                                    child: NotificationListener<ScrollNotification>(
+                                      onNotification: _handleBrowsingScroll,
+                                      // Chrome compacts at the start of a
+                                      // scroll gesture. Reuse the browsing
+                                      // subtree when none of its inputs
+                                      // changed: rebuilding every retained
+                                      // tab here also rebuilt offscreen Home
+                                      // shelves inside the scroll's layout.
+                                      child: _retainCurrentViews(
+                                        _PersistentCurrentViews(
+                                          selectedIndex: _selectedIndex,
+                                          homeIndex: _homeIndex,
+                                          searchIndex: _searchIndex,
+                                          localIndex: _localIndex,
+                                          playerIndex: _playerIndex,
+                                          libraryIndex: _libraryIndex,
+                                          settingsIndex: _settingsIndex,
+                                          viewportBottomPadding:
+                                              browsingViewportBottomPadding,
+                                          contentBottomPadding:
+                                              browsingContentBottomPadding,
+                                          playerTransitionDuration:
+                                              playerTransitionDuration,
+                                          playerReverseTransitionDuration:
+                                              playerReverseTransitionDuration,
+                                          playerTransitionActive:
+                                              _playerTransitionActive,
+                                          libraryNavigationController:
+                                              _libraryNavigationController,
+                                          localMusicNavigationController:
+                                              _localMusicNavigationController,
+                                          settingsNavigationController:
+                                              _settingsNavigationController,
+                                          playerStyle: playerStyle,
+                                          playerArtworkStyle:
+                                              playerArtworkStyle,
+                                          animatedArtworkEnabled:
+                                              animatedArtworkEnabled,
+                                          spotifyCanvasEnabled:
+                                              spotifyCanvasEnabled,
+                                          appleAnimatedArtworkEnabled:
+                                              appleAnimatedArtworkEnabled,
+                                          onOpenPlayer: _openPlayer,
+                                          onCollapsePlayer: _handleSystemBack,
+                                          onOpenSearch: _openSearch,
+                                          onAddRemoteTracksToPlaylist:
+                                              _addRemoteTracksToPlaylist,
                                         ),
-                                      ),
-                                ),
-                                if (!useSideNavigation)
-                                  Positioned(
-                                    left: 0,
-                                    right: 0,
-                                    bottom: 0,
-                                    child: _ShellVisibilityTransition(
-                                      key: const ValueKey(
-                                        'bottom-navigation-shell-transition',
-                                      ),
-                                      clipKey: const ValueKey(
-                                        'bottom-navigation-shell-clip',
-                                      ),
-                                      opacityKey: const ValueKey(
-                                        'bottom-navigation-shell-opacity',
-                                      ),
-                                      visible: bottomNavigationVisible,
-                                      suspended: _keyboardVisible,
-                                      duration: chromeVisibilityDuration,
-                                      hiddenTranslation: Offset(
-                                        0,
-                                        useLiquidBottomNavigation ? 1.2 : 1,
-                                      ),
-                                      clipTopOutset: useLiquidBottomNavigation
-                                          ? 10
-                                          : 0,
-                                      preserveBackdropMaterial:
-                                          useLiquidBottomNavigation,
-                                      child: _BottomNavigation(
-                                        selectedIndex: _selectedIndex,
-                                        onDestinationSelected:
-                                            selectBottomNavigationDestination,
-                                        onExpandLiquidNavigation: () =>
-                                            _setBottomNavigationRevealed(true),
-                                        destinations:
-                                            bottomNavigationDestinations,
-                                        detachedSearchDestination:
-                                            detachedSearchDestination,
-                                        liquidGlass: useLiquidBottomNavigation,
-                                        liquidCollapsed:
-                                            liquidBottomNavigationCollapsed,
-                                        backdropGroupKey:
-                                            _liquidGlassChromeBackdropKey,
-                                        backdropMotion:
-                                            _liquidGlassChromeMoving,
-                                        transitionDuration:
-                                            shellTransitionDuration,
-                                        glassyCompact: _usesMobileNavigation,
-                                        systemBottomInset: systemBottomInset,
                                       ),
                                     ),
                                   ),
-                              ],
+                                  if (!useSideNavigation)
+                                    Positioned(
+                                      left: 0,
+                                      right: 0,
+                                      bottom: 0,
+                                      child: _ShellVisibilityTransition(
+                                        key: const ValueKey(
+                                          'bottom-navigation-shell-transition',
+                                        ),
+                                        clipKey: const ValueKey(
+                                          'bottom-navigation-shell-clip',
+                                        ),
+                                        opacityKey: const ValueKey(
+                                          'bottom-navigation-shell-opacity',
+                                        ),
+                                        visible: bottomNavigationVisible,
+                                        suspended: _keyboardVisible,
+                                        duration: chromeVisibilityDuration,
+                                        hiddenTranslation: Offset(
+                                          0,
+                                          useLiquidBottomNavigation ? 1.2 : 1,
+                                        ),
+                                        clipTopOutset: useLiquidBottomNavigation
+                                            ? 10
+                                            : 0,
+                                        preserveBackdropMaterial:
+                                            useLiquidBottomNavigation,
+                                        child: _BottomNavigation(
+                                          selectedIndex: _selectedIndex,
+                                          onDestinationSelected:
+                                              selectBottomNavigationDestination,
+                                          onExpandLiquidNavigation: () =>
+                                              _setBottomNavigationRevealed(
+                                                true,
+                                              ),
+                                          destinations:
+                                              bottomNavigationDestinations,
+                                          detachedSearchDestination:
+                                              detachedSearchDestination,
+                                          liquidGlass:
+                                              useLiquidBottomNavigation,
+                                          liquidCollapsed:
+                                              liquidBottomNavigationCollapsed,
+                                          backdropGroupKey:
+                                              _liquidGlassChromeBackdropKey,
+                                          backdropMotion:
+                                              _liquidGlassChromeMoving,
+                                          transitionDuration:
+                                              shellTransitionDuration,
+                                          glassyCompact: _usesMobileNavigation,
+                                          systemBottomInset: systemBottomInset,
+                                        ),
+                                      ),
+                                    ),
+                                ],
+                              ),
                             ),
                           ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  Positioned(
-                    left: 0,
-                    right: 0,
-                    // Keep the layout bounds around the complete vertical
-                    // travel. A paint-only translation outside a box whose
-                    // bottom stayed above the navigation looked correct, but
-                    // taps on the compact mini player were rejected by that
-                    // ancestor and reached the browsing content underneath.
-                    bottom: bottomNavigationHeight - bottomNavigationBaseHeight,
-                    child: AnimatedPadding(
-                      key: const ValueKey('mini-player-horizontal-inset'),
-                      padding: EdgeInsets.symmetric(
-                        horizontal: collapsedMiniPlayerHorizontalInset,
+                        ],
                       ),
-                      duration: shellTransitionDuration,
-                      curve: Curves.easeOutCubic,
-                      child: SizedBox(
-                        height: miniPlayerHeight + bottomNavigationBaseHeight,
-                        child: Align(
-                          alignment: Alignment.topCenter,
-                          child: TweenAnimationBuilder<double>(
-                            key: const ValueKey(
-                              'mini-player-navigation-offset',
-                            ),
-                            tween: Tween<double>(
-                              end: miniPlayerNavigationOffset,
-                            ),
-                            duration: shellTransitionDuration,
-                            curve: Curves.easeOutCubic,
-                            builder: (context, offset, child) =>
-                                Transform.translate(
-                                  key: const ValueKey(
-                                    'mini-player-shell-position',
-                                  ),
-                                  offset: Offset(0, offset),
-                                  child: child,
-                                ),
-                            child: _ShellVisibilityTransition(
+                    ),
+                    Positioned(
+                      left: 0,
+                      right: 0,
+                      // Keep the layout bounds around the complete vertical
+                      // travel. A paint-only translation outside a box whose
+                      // bottom stayed above the navigation looked correct, but
+                      // taps on the compact mini player were rejected by that
+                      // ancestor and reached the browsing content underneath.
+                      bottom:
+                          bottomNavigationHeight - bottomNavigationBaseHeight,
+                      child: AnimatedPadding(
+                        key: const ValueKey('mini-player-horizontal-inset'),
+                        padding: EdgeInsets.symmetric(
+                          horizontal: collapsedMiniPlayerHorizontalInset,
+                        ),
+                        duration: shellTransitionDuration,
+                        curve: Curves.easeOutCubic,
+                        child: SizedBox(
+                          height: miniPlayerHeight + bottomNavigationBaseHeight,
+                          child: Align(
+                            alignment: Alignment.topCenter,
+                            child: TweenAnimationBuilder<double>(
                               key: const ValueKey(
-                                'mini-player-shell-transition',
+                                'mini-player-navigation-offset',
                               ),
-                              clipKey: const ValueKey('mini-player-shell-clip'),
-                              opacityKey: const ValueKey(
-                                'mini-player-shell-opacity',
+                              tween: Tween<double>(
+                                end: miniPlayerNavigationOffset,
                               ),
-                              visible: !_isPlayerSelected,
-                              suspended: _keyboardVisible,
-                              duration: chromeVisibilityDuration,
-                              hiddenTranslation:
-                                  miniPlayerAppearance
-                                      .backgroundMode
-                                      .isLiquidGlass
-                                  ? const Offset(0, 1)
-                                  : const Offset(0, 0.36),
-                              hiddenScale: 0.94,
-                              preserveBackdropMaterial: miniPlayerAppearance
-                                  .backgroundMode
-                                  .isLiquidGlass,
-                              fixedHorizontalClipWidth: stableMiniGlassEnvelope
-                                  ? width
-                                  : null,
-                              translationKey: const ValueKey(
-                                'mini-player-shell-translation',
-                              ),
-                              scaleKey: const ValueKey(
-                                'mini-player-shell-scale',
-                              ),
-                              child: SizedBox(
-                                height: miniPlayerHeight,
-                                child: MiniPlayer(
-                                  mode: miniPlayerMode,
-                                  backgroundMode:
-                                      miniPlayerAppearance.backgroundMode,
-                                  liquidGlassBackdropGroupKey:
-                                      _liquidGlassMiniPlayerBackdropKey,
-                                  liquidGlassBackdropMotion:
-                                      _liquidGlassChromeMoving,
-                                  liquidGlassBackdropEnvelopeWidth:
-                                      stableMiniGlassEnvelope ? width : null,
-                                  onOpenPlayer: _openPlayer,
-                                  onOpenLyrics: _openLyrics,
+                              duration: shellTransitionDuration,
+                              curve: Curves.easeOutCubic,
+                              builder: (context, offset, child) =>
+                                  Transform.translate(
+                                    key: const ValueKey(
+                                      'mini-player-shell-position',
+                                    ),
+                                    offset: Offset(0, offset),
+                                    child: child,
+                                  ),
+                              child: _ShellVisibilityTransition(
+                                key: const ValueKey(
+                                  'mini-player-shell-transition',
+                                ),
+                                clipKey: const ValueKey(
+                                  'mini-player-shell-clip',
+                                ),
+                                opacityKey: const ValueKey(
+                                  'mini-player-shell-opacity',
+                                ),
+                                visible: !_isPlayerSelected,
+                                suspended: _keyboardVisible,
+                                duration: chromeVisibilityDuration,
+                                hiddenTranslation:
+                                    miniPlayerAppearance
+                                        .backgroundMode
+                                        .isLiquidGlass
+                                    ? const Offset(0, 1)
+                                    : const Offset(0, 0.36),
+                                hiddenScale: 0.94,
+                                preserveBackdropMaterial: miniPlayerAppearance
+                                    .backgroundMode
+                                    .isLiquidGlass,
+                                fixedHorizontalClipWidth:
+                                    stableMiniGlassEnvelope ? width : null,
+                                translationKey: const ValueKey(
+                                  'mini-player-shell-translation',
+                                ),
+                                scaleKey: const ValueKey(
+                                  'mini-player-shell-scale',
+                                ),
+                                child: SizedBox(
+                                  height: miniPlayerHeight,
+                                  child: MiniPlayer(
+                                    mode: miniPlayerMode,
+                                    backgroundMode:
+                                        miniPlayerAppearance.backgroundMode,
+                                    liquidGlassBackdropGroupKey:
+                                        _liquidGlassMiniPlayerBackdropKey,
+                                    liquidGlassBackdropMotion:
+                                        _liquidGlassChromeMoving,
+                                    liquidGlassBackdropEnvelopeWidth:
+                                        stableMiniGlassEnvelope ? width : null,
+                                    onOpenPlayer: _openPlayer,
+                                    onOpenLyrics: _openLyrics,
+                                  ),
                                 ),
                               ),
                             ),
@@ -1733,8 +1788,8 @@ class _HomePageState extends ConsumerState<HomePage>
                         ),
                       ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
           ),
@@ -3406,23 +3461,27 @@ class _PersistentCurrentViewsState extends State<_PersistentCurrentViews> {
             reverseTransitionDuration: widget.playerReverseTransitionDuration,
             keepTickerEnabled: widget.playerTransitionActive,
             animateInitialEntry: !_playerWasInitialDestination,
-            child: PlayerPanel(
-              active:
-                  widget.selectedIndex == widget.playerIndex ||
-                  widget.playerTransitionActive,
-              onOpenSearch: widget.onOpenSearch,
-              onCollapse: widget.onCollapsePlayer,
-              // Keep the dark artwork backdrop scoped to the player. The
-              // navigation and queue remain on the surrounding app theme.
-              drawBackground: true,
-              style: widget.playerStyle,
-              artworkStyle: widget.playerArtworkStyle,
-              animatedArtworkEnabled: widget.animatedArtworkEnabled,
-              spotifyCanvasEnabled: widget.spotifyCanvasEnabled,
-              appleAnimatedArtworkEnabled: widget.appleAnimatedArtworkEnabled,
-              trackTransitionsEnabled:
-                  widget.selectedIndex == widget.playerIndex ||
-                  widget.playerTransitionActive,
+            child: _MobilePlaybackSystemBars(
+              playerVisible: true,
+              regionKey: const ValueKey('player-status-bar-style'),
+              child: PlayerPanel(
+                active:
+                    widget.selectedIndex == widget.playerIndex ||
+                    widget.playerTransitionActive,
+                onOpenSearch: widget.onOpenSearch,
+                onCollapse: widget.onCollapsePlayer,
+                // Keep the dark artwork backdrop scoped to the player. The
+                // navigation and queue remain on the surrounding app theme.
+                drawBackground: true,
+                style: widget.playerStyle,
+                artworkStyle: widget.playerArtworkStyle,
+                animatedArtworkEnabled: widget.animatedArtworkEnabled,
+                spotifyCanvasEnabled: widget.spotifyCanvasEnabled,
+                appleAnimatedArtworkEnabled: widget.appleAnimatedArtworkEnabled,
+                trackTransitionsEnabled:
+                    widget.selectedIndex == widget.playerIndex ||
+                    widget.playerTransitionActive,
+              ),
             ),
           ),
       ],
@@ -3538,7 +3597,16 @@ class _PersistentViewSlotState extends State<_PersistentViewSlot> {
         widget.transitionStyle == _PersistentViewTransitionStyle.player;
     final tickerContent = TickerMode(
       enabled: widget.selected || widget.keepTickerEnabled,
-      child: widget.child,
+      // Browsing pages keep their original safe viewport throughout player
+      // transitions. The full player owns only its controls' inset, allowing
+      // its artwork background to paint behind the system status bar.
+      child: SafeArea(
+        top: !playerTransition,
+        left: false,
+        right: false,
+        bottom: false,
+        child: widget.child,
+      ),
     );
     final transitionedContent = playerTransition
         // Use exactly the same maintained-page motion as Lyrics: the artwork,
@@ -3618,8 +3686,7 @@ class _HomeView extends ConsumerWidget {
       (section) => section.isContinueListening,
     );
     final showLegacyHistory = hasHistory && !hasPersonalizedContinue;
-    final libraryTracks =
-        ref.watch(libraryTracksProvider).value ?? const <LocalTrack>[];
+    final localTrackIndex = ref.watch(localTrackIndexProvider);
 
     return ScrolledUnderTabFrame(
       surfaceKey: const ValueKey('home-tab-header-surface'),
@@ -3686,11 +3753,18 @@ class _HomeView extends ConsumerWidget {
           ),
         if (recommendations.isNotEmpty && showLegacyHistory)
           const SliverToBoxAdapter(child: SizedBox(height: 12)),
+        if (recommendationsState.isLoading && recommendations.isEmpty)
+          SliverToBoxAdapter(
+            child: HomeLoadingContent(
+              key: const ValueKey('home-loading-content'),
+              label: strings.loadingHomeRecommendations,
+            ),
+          ),
         for (final section in recommendations)
           SliverToBoxAdapter(
             child: _HomeRemoteRecommendationSection(
               section: section,
-              libraryTracks: libraryTracks,
+              localTrackIndex: localTrackIndex,
               onOpenPlayer: onOpenPlayer,
               onAddRemoteTracksToPlaylist: onAddRemoteTracksToPlaylist,
             ),
@@ -3709,13 +3783,13 @@ class _HomeView extends ConsumerWidget {
 class _HomeRemoteRecommendationSection extends ConsumerWidget {
   const _HomeRemoteRecommendationSection({
     required this.section,
-    required this.libraryTracks,
+    required this.localTrackIndex,
     required this.onOpenPlayer,
     required this.onAddRemoteTracksToPlaylist,
   });
 
   final HomeRecommendationSection section;
-  final List<LocalTrack> libraryTracks;
+  final LocalTrackIndex localTrackIndex;
   final VoidCallback onOpenPlayer;
   final AddRemoteTracksToPlaylist onAddRemoteTracksToPlaylist;
 
@@ -3959,18 +4033,10 @@ class _HomeRemoteRecommendationSection extends ConsumerWidget {
   }
 
   LocalTrack? _localTrackForRecommendation(HomeRecommendationTrackItem item) {
-    final localTrackId = item.localTrackId?.trim();
-    final recommendationId = item.track.id.trim();
-    for (final track in libraryTracks) {
-      final sourceId = track.sourceId?.trim();
-      if ((localTrackId != null &&
-              localTrackId.isNotEmpty &&
-              track.id == localTrackId) ||
-          (recommendationId.isNotEmpty && sourceId == recommendationId)) {
-        return track;
-      }
-    }
-    return null;
+    return localTrackIndex.firstMatching(
+      localId: item.localTrackId,
+      sourceId: item.track.id,
+    );
   }
 
   String? _fallbackArtworkSourceForRecommendation(

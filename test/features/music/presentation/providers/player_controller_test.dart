@@ -1302,6 +1302,136 @@ void main() {
   );
 
   test(
+    'manual remote selection silences the outgoing source before resolution',
+    () async {
+      final player = _IntentAwareRemotePlayerService();
+      final resolver = _ControlledAudioResolver();
+      final container = _container(player, audioResolver: resolver);
+      addTearDown(container.dispose);
+      await container.read(playerControllerProvider.future);
+      final controller = container.read(playerControllerProvider.notifier);
+      final first = _queuedRemoteTrack('audible-outgoing');
+      final selected = _unresolvedRemoteTrack('pending-selected');
+      await controller.playRemote(first);
+      await _flushCompletion();
+      expect(player.physicallyPlaying, isTrue);
+      final stopsBeforeSelection = player.stopCalls;
+
+      final replacement = controller.playRemote(selected);
+      await _waitUntil(() => resolver.resolveCalls == 1);
+      expect(player.pauseCalls, 1);
+      expect(player.physicallyPlaying, isFalse);
+      expect(player.currentSnapshot.wantsToPlay, isFalse);
+      expect(player.stopCalls, stopsBeforeSelection);
+      expect(
+        container.read(playerControllerProvider).value?.trackId,
+        selected.id,
+      );
+      expect(
+        container.read(playerControllerProvider).value?.status,
+        PlayerStatus.loading,
+      );
+      expect(
+        container.read(playerControllerProvider).value?.wantsToPlay,
+        isTrue,
+      );
+
+      resolver.complete(_primaryInnerTubeResolution(selected.id));
+      await replacement;
+      await _flushCompletion();
+      expect(player.playedRemote.map((track) => track.id), [
+        first.id,
+        selected.id,
+      ]);
+      expect(player.physicallyPlaying, isTrue);
+      expect(
+        container.read(playerControllerProvider).value?.status,
+        PlayerStatus.playing,
+      );
+    },
+  );
+
+  test(
+    'an outgoing failed load completing during the next resolution stays silent',
+    () async {
+      final player = _IntentAwareRemotePlayerService();
+      final resolver = _ControlledAudioResolver();
+      final first = _queuedRemoteTrack('late-outgoing');
+      final selected = _unresolvedRemoteTrack('late-selected');
+      player.block(first.id);
+      final container = _container(player, audioResolver: resolver);
+      addTearDown(container.dispose);
+      addTearDown(() => player.release(first.id));
+      await container.read(playerControllerProvider.future);
+      final controller = container.read(playerControllerProvider.notifier);
+      final abandoned = controller.playRemote(first);
+      await _waitUntil(() => player.started.contains(first.id));
+      final replacement = controller.playRemote(selected);
+      await _waitUntil(() => resolver.resolveCalls == 1);
+      expect(player.pauseCalls, 1);
+      player.emit(
+        player.currentSnapshot.copyWith(
+          status: PlayerStatus.failed,
+          errorMessage: 'Connection aborted',
+        ),
+      );
+      player.release(first.id);
+      await abandoned;
+      await _flushCompletion();
+      expect(player.physicallyPlaying, isFalse);
+      expect(player.playedRemote, isEmpty);
+      expect(
+        container.read(playerControllerProvider).value?.trackId,
+        selected.id,
+      );
+      expect(
+        container.read(playerControllerProvider).value?.status,
+        PlayerStatus.loading,
+      );
+      expect(
+        container.read(playerControllerProvider).value?.wantsToPlay,
+        isTrue,
+      );
+
+      resolver.complete(_primaryInnerTubeResolution(selected.id));
+      await replacement;
+      await _flushCompletion();
+      expect(player.playedRemote.map((track) => track.id), [selected.id]);
+      expect(player.physicallyPlaying, isTrue);
+    },
+  );
+
+  test(
+    'technical pause of the same remote identity does not cancel re-selection',
+    () async {
+      final player = _IntentAwareRemotePlayerService();
+      final container = _container(player);
+      addTearDown(container.dispose);
+      await container.read(playerControllerProvider.future);
+      final controller = container.read(playerControllerProvider.notifier);
+      final track = _queuedRemoteTrack('same-identity');
+      await controller.playRemote(track);
+      await _flushCompletion();
+      await controller.playRemote(track);
+      await _flushCompletion();
+      expect(player.pauseCalls, 1);
+      expect(player.playedRemote.map((track) => track.id), [
+        track.id,
+        track.id,
+      ]);
+      expect(player.physicallyPlaying, isTrue);
+      expect(
+        container.read(playerControllerProvider).value?.status,
+        PlayerStatus.playing,
+      );
+      expect(
+        container.read(playerControllerProvider).value?.wantsToPlay,
+        isTrue,
+      );
+    },
+  );
+
+  test(
     'a stale outgoing snapshot cannot cancel a manual remote Next transition',
     () async {
       final player = _StaleOutgoingRemotePlayerService();
@@ -6674,6 +6804,58 @@ class _DelayedLocalPlayerService extends _FakePlayerService {
       return;
     }
     await super.playLocal(track);
+  }
+}
+
+/// Models the native intent independently from the controller's selected
+/// metadata, including a load which finishes after a different song was picked.
+class _IntentAwareRemotePlayerService extends _FakePlayerService {
+  bool physicallyPlaying = false;
+  bool _playWhenReady = false;
+  final List<String> started = [];
+  final Map<String, Completer<void>> _loads = {};
+
+  void block(String id) => _loads[id] = Completer<void>();
+
+  void release(String id) {
+    final load = _loads[id];
+    if (load != null && !load.isCompleted) load.complete();
+  }
+
+  @override
+  Future<void> pause() async {
+    pauseCalls++;
+    _playWhenReady = false;
+    physicallyPlaying = false;
+    emit(
+      currentSnapshot.copyWith(
+        status: PlayerStatus.paused,
+        playWhenReady: false,
+      ),
+    );
+  }
+
+  @override
+  Future<void> playRemote(TrackInfo track) async {
+    started.add(track.id);
+    _playWhenReady = true;
+    emit(
+      PlayerSnapshot(
+        status: PlayerStatus.loading,
+        playWhenReady: true,
+        trackId: track.id,
+        title: track.title,
+        artist: track.artist,
+        sourceUrl: track.url,
+        isRemote: true,
+      ),
+    );
+    final load = _loads[track.id];
+    if (load != null) await load.future;
+    if (!_playWhenReady) return;
+    physicallyPlaying = true;
+    await super.playRemote(track);
+    emit(currentSnapshot.copyWith(playWhenReady: true));
   }
 }
 

@@ -77,6 +77,18 @@ class AppStrings {
   }
 
   String get audioOutput => choose('Salida Multimedia', 'Media output');
+  String get playerAudioOutput => choose('Salida de audio', 'Audio output');
+  String get playerAudioOutputHint => choose(
+    'Elige dónde escuchar BStream. Solo afecta al audio del reproductor.',
+    'Choose where to listen to BStream. Only the player audio is affected.',
+  );
+  String get systemDefaultAudioOutput =>
+      choose('Predeterminada del sistema', 'System default');
+  String get playerVolume => choose('Volumen del reproductor', 'Player volume');
+  String get playerAudioControlFailed => choose(
+    'No se pudo actualizar el audio del reproductor.',
+    'Could not update the player audio.',
+  );
   String get thisPhone => choose('Este teléfono', 'This phone');
   String get castTo => choose('Transmitir a', 'Cast to');
   String get mediaVolume => choose('Volumen multimedia', 'Media volume');
@@ -121,6 +133,8 @@ class AppStrings {
       choose('Refrescar recomendaciones', 'Refresh recommendations');
   String get refreshingHomeRecommendations =>
       choose('Refrescando recomendaciones', 'Refreshing recommendations');
+  String get loadingHomeRecommendations =>
+      choose('Cargando recomendaciones', 'Loading recommendations');
   String get popularArtists => choose('Artistas populares', 'Popular artists');
   String get recommendedArtists =>
       choose('Artistas recomendados', 'Recommended artists');
@@ -818,6 +832,16 @@ class AppStrings {
       choose('Pausa la canción LIVE actual.', 'Pauses the current LIVE song.');
   String get reusedDownload => choose('Ya descargada', 'Already downloaded');
   String get playlist => choose('Playlist', 'Playlist');
+  String get playlistArtworkTitle =>
+      choose('Portada de la playlist', 'Playlist artwork');
+  String get playlistArtworkRandom => choose('Aleatorio', 'Random');
+  String get playlistArtworkCustom => choose('Personalizada', 'Custom');
+  String get playlistArtworkEdit =>
+      choose('Cambiar portada de la playlist', 'Change playlist artwork');
+  String get playlistArtworkSaveFailed => choose(
+    'No se pudo actualizar la portada de la playlist.',
+    'Could not update the playlist artwork.',
+  );
   String get newPlaylist => choose('Nueva playlist', 'New playlist');
   String get createPlaylist => choose('Crear playlist', 'Create playlist');
   String get create => choose('Crear', 'Create');
@@ -1092,6 +1116,12 @@ class AppStrings {
   String get playerFontFredokaDescription =>
       choose('Redondeada y alegre', 'Rounded and playful');
   String get playerStyle => choose('Estilo', 'Style');
+  String get playerStyles => choose('Estilos del reproductor', 'Player styles');
+  String get playerStylePreview => choose('Vista previa', 'Preview');
+  String get playerStyleGalleryHint => choose(
+    'Elige un diseño para usarlo al instante.',
+    'Choose a design to use it immediately.',
+  );
   String get showAudioQuality =>
       choose('Mostrar códec y calidad', 'Show codec and quality');
   String get showAudioQualityDescription => choose(
@@ -1104,6 +1134,7 @@ class AppStrings {
       choose('$channels canales', '$channels channels');
   String get playerStyleBStreamMusic => 'BStream Music';
   String get playerStyleAppleMusic => 'Apple Music Style';
+  String get playerStyleSpotifyMusic => 'Spotify Style';
   String get playerStyleClassicVinyl =>
       choose('Vinilo Clásico', 'Classic Vinyl');
   String get animatedArtwork =>
@@ -1455,6 +1486,7 @@ class AppStrings {
     PlayerStyle.bstreamMusic => playerStyleBStreamMusic,
     PlayerStyle.appleMusic => playerStyleAppleMusic,
     PlayerStyle.classicVinyl => playerStyleClassicVinyl,
+    PlayerStyle.spotifyMusic => playerStyleSpotifyMusic,
   };
   String playerFontLabel(PlayerFont font) => switch (font) {
     PlayerFont.current => playerFontCurrent,
@@ -1527,6 +1559,38 @@ class AppStrings {
     'Version, support, and repository',
   );
   String get versionLabel => choose('Versión', 'Version');
+  String whatsNewTitle(String version) =>
+      choose('Novedades de $version', 'What’s new in $version');
+  String get whatsNewSummary => choose(
+    'Estilos del reproductor, filtros de música local, letras y ajustes',
+    'Player styles, local music filters, lyrics, and settings',
+  );
+  List<String> get whatsNewHighlights => [
+    choose(
+      'Se mejoraron y optimizaron los diseños de los estilos del reproductor.',
+      'Improved and optimized player style layouts.',
+    ),
+    choose(
+      'Se añadió el nuevo reproductor Spotify Style.',
+      'Added the new Spotify Style player.',
+    ),
+    choose(
+      'Se añadieron opciones de filtrado en la pestaña de música local.',
+      'Added filtering options to the Local music tab.',
+    ),
+    choose(
+      'Se añadió compatibilidad con letras sincronizadas palabra por palabra cuando están disponibles los tiempos de sincronización.',
+      'Added word-by-word synchronized lyrics when timing is available.',
+    ),
+    choose(
+      'Se mejoró el diseño de la pestaña de ajustes.',
+      'Improved the Settings tab layout.',
+    ),
+    choose(
+      'Personaliza la portada de tus playlists con una imagen de tu galería.',
+      'Customize playlist artwork with an image from your gallery.',
+    ),
+  ];
   String get updateAvailableTitle =>
       choose('Nueva versión disponible', 'New version available');
   String updateAvailableMessage({

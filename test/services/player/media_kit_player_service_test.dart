@@ -3,11 +3,190 @@ import 'dart:async';
 import 'package:bstream_music/core/errors/app_exception.dart';
 import 'package:bstream_music/features/music/domain/entities/track_info.dart';
 import 'package:bstream_music/services/player/media_kit_player_service.dart';
+import 'package:bstream_music/services/player/player_audio_output.dart';
 import 'package:bstream_music/services/player/player_service.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:media_kit/media_kit.dart';
 
 void main() {
+  group('player audio output', () {
+    test(
+      'selects only the player route and preserves playback and volume',
+      () async {
+        final backend = _AudioOutputBackend();
+        final service = MediaKitPlayerService(backend: backend);
+        addTearDown(service.dispose);
+        await _playAndComplete(service, backend, 'route');
+        await service.setVolume(.4);
+        backend.emitPosition(const Duration(seconds: 12));
+        await _drainEvents();
+
+        await service.selectAudioOutput('usb');
+
+        expect(backend.selectedDeviceId, 'usb');
+        expect(service.audioOutputState.selectedDeviceId, 'usb');
+        expect(service.currentSnapshot.trackId, 'route');
+        expect(service.currentSnapshot.position, const Duration(seconds: 12));
+        expect(service.currentSnapshot.volume, .4);
+        expect(backend.openCalls, hasLength(1));
+        expect(backend.pauseCalls, 0);
+        expect(backend.stopCalls, 0);
+      },
+    );
+
+    test(
+      'rejects an unavailable route without changing the selection',
+      () async {
+        final backend = _AudioOutputBackend();
+        final service = MediaKitPlayerService(backend: backend);
+        addTearDown(service.dispose);
+
+        await expectLater(
+          service.selectAudioOutput('missing'),
+          throwsArgumentError,
+        );
+
+        expect(backend.routeCalls, isEmpty);
+        expect(
+          service.audioOutputState.selectedDeviceId,
+          systemDefaultAudioDeviceId,
+        );
+      },
+    );
+
+    test(
+      'a hung route write is isolated and does not block later selections',
+      () async {
+        final backend = _AudioOutputBackend()
+          ..blockedRoute = 'usb'
+          ..releaseRoute = Completer<void>();
+        final service = MediaKitPlayerService(
+          backend: backend,
+          operationTimeout: const Duration(milliseconds: 30),
+        );
+        addTearDown(service.dispose);
+
+        await expectLater(
+          service.selectAudioOutput('usb'),
+          throwsA(isA<TimeoutException>()),
+        );
+        expect(backend.abandonCalls, 1);
+        expect(service.currentSnapshot.status, PlayerStatus.failed);
+        await service.selectAudioOutput('headphones');
+        backend.releaseRoute!.complete();
+        await _drainEvents();
+
+        expect(backend.selectedDeviceId, 'headphones');
+        expect(service.audioOutputState.selectedDeviceId, 'headphones');
+      },
+    );
+
+    test(
+      'routes a new crossfade deck before open and retains route on promotion',
+      () async {
+        final active = _AudioOutputBackend();
+        final standby = _AudioOutputBackend();
+        final service = MediaKitPlayerService(
+          backend: active,
+          backendFactory: () => standby,
+        );
+        addTearDown(service.dispose);
+        await service.selectAudioOutput('usb');
+        await _playAndComplete(service, active, 'a');
+        await service.configureCrossfade(
+          enabled: true,
+          duration: const Duration(milliseconds: 400),
+        );
+        await _prepareAndComplete(service, standby, 'b');
+        expect(standby.routesAtOpen, ['usb']);
+        active
+          ..emitDuration(const Duration(seconds: 2))
+          ..emitPosition(const Duration(milliseconds: 1600));
+        await _waitUntil(() => service.currentSnapshot.trackId == 'b');
+
+        expect(service.audioOutputState.selectedDeviceId, 'usb');
+        await service.selectAudioOutput('headphones');
+        expect(active.selectedDeviceId, 'headphones');
+        expect(standby.selectedDeviceId, 'headphones');
+      },
+    );
+
+    test('rolls back both decks if a standby route write fails', () async {
+      final active = _AudioOutputBackend();
+      final standby = _AudioOutputBackend();
+      final service = MediaKitPlayerService(
+        backend: active,
+        backendFactory: () => standby,
+      );
+      addTearDown(service.dispose);
+      await _playAndComplete(service, active, 'a');
+      await service.configureCrossfade(
+        enabled: true,
+        duration: const Duration(milliseconds: 400),
+      );
+      await _prepareAndComplete(service, standby, 'b');
+      standby.failRoute = 'usb';
+
+      await expectLater(service.selectAudioOutput('usb'), throwsStateError);
+
+      expect(active.selectedDeviceId, systemDefaultAudioDeviceId);
+      expect(standby.selectedDeviceId, systemDefaultAudioDeviceId);
+      expect(
+        service.audioOutputState.selectedDeviceId,
+        systemDefaultAudioDeviceId,
+      );
+    });
+
+    test(
+      'falls back after unplug even without an output menu listener',
+      () async {
+        final backend = _AudioOutputBackend();
+        final service = MediaKitPlayerService(backend: backend);
+        addTearDown(service.dispose);
+        await service.selectAudioOutput('usb');
+
+        backend.updateDevices(const []);
+        await Future<void>.delayed(const Duration(milliseconds: 700));
+
+        expect(backend.selectedDeviceId, systemDefaultAudioDeviceId);
+        expect(
+          service.audioOutputState.selectedDeviceId,
+          systemDefaultAudioDeviceId,
+        );
+      },
+    );
+
+    test(
+      'ignores a transient empty device list during native startup',
+      () async {
+        final backend = _AudioOutputBackend();
+        final service = MediaKitPlayerService(backend: backend);
+        addTearDown(service.dispose);
+        await service.selectAudioOutput('usb');
+        backend.updateDevices(const []);
+        await _drainEvents();
+        backend.updateDevices(_AudioOutputBackend.availableDevices);
+        await Future<void>.delayed(const Duration(milliseconds: 700));
+
+        expect(service.audioOutputState.selectedDeviceId, 'usb');
+        expect(backend.routeCalls, ['usb']);
+      },
+    );
+
+    test(
+      'a backend without the optional capability stays unsupported',
+      () async {
+        final service = MediaKitPlayerService(backend: _FakeMediaKitBackend());
+        addTearDown(service.dispose);
+        expect(service.audioOutputState.supported, false);
+        await expectLater(
+          service.selectAudioOutput('auto'),
+          throwsArgumentError,
+        );
+      },
+    );
+  });
+
   for (final playingFirst in [true, false]) {
     test(
       'native EOF never publishes pause (${playingFirst ? 'playing' : 'completed'} first)',
@@ -963,6 +1142,60 @@ class _OpenCall {
   final int session;
   final bool play;
   final completer = Completer<void>();
+}
+
+class _AudioOutputBackend extends _FakeMediaKitBackend
+    implements PlayerAudioOutput {
+  static const availableDevices = [
+    PlayerAudioDevice(id: 'usb', name: 'USB speakers'),
+    PlayerAudioDevice(id: 'headphones', name: 'Headphones'),
+  ];
+  final outputs = StreamController<PlayerAudioOutputState>.broadcast();
+  List<PlayerAudioDevice> devices = availableDevices;
+  String selectedDeviceId = systemDefaultAudioDeviceId;
+  String? failRoute;
+  String? blockedRoute;
+  Completer<void>? releaseRoute;
+  final routeCalls = <String>[];
+  final routesAtOpen = <String>[];
+
+  @override
+  PlayerAudioOutputState get audioOutputState => PlayerAudioOutputState(
+    supported: true,
+    devices: devices,
+    selectedDeviceId: selectedDeviceId,
+  );
+
+  @override
+  Stream<PlayerAudioOutputState> get audioOutputStream => outputs.stream;
+
+  @override
+  Future<void> selectAudioOutput(String deviceId) async {
+    routeCalls.add(deviceId);
+    final requestSession = session;
+    if (deviceId == blockedRoute) await releaseRoute!.future;
+    if (requestSession != session) throw StateError('Route request cancelled');
+    if (deviceId == failRoute) throw StateError('Injected output failure');
+    selectedDeviceId = deviceId;
+    outputs.add(audioOutputState);
+  }
+
+  void updateDevices(List<PlayerAudioDevice> value) {
+    devices = value;
+    outputs.add(audioOutputState);
+  }
+
+  @override
+  Future<void> open(Media media, {required bool play}) {
+    routesAtOpen.add(selectedDeviceId);
+    return super.open(media, play: play);
+  }
+
+  @override
+  Future<void> dispose() async {
+    await outputs.close();
+    await super.dispose();
+  }
 }
 
 class _FakeMediaKitBackend implements MediaKitPlayerBackend {

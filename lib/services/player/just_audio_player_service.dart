@@ -31,6 +31,10 @@ class JustAudioPlayerService
   static const _crossfadeShutdownGrace = Duration(seconds: 2);
   static const _crossfadeRetirementGrace = Duration(milliseconds: 250);
   static const _backgroundPositionSnapshotInterval = Duration(seconds: 1);
+  // just_audio reserves this code for an interrupted native load. Android
+  // also publishes it on errorStream after updating the playlist index, so it
+  // cannot be attributed to the replacement song as a playback failure.
+  static const _interruptedLoadErrorCode = 10000000;
   static const _androidAudioLoadConfiguration = AudioLoadConfiguration(
     androidLoadControl: AndroidLoadControl(
       // Keep enough encoded audio ahead for the native PCM detector to scan a
@@ -224,6 +228,7 @@ class JustAudioPlayerService
         if (!identical(player, _player)) {
           return;
         }
+        if (error.code == _interruptedLoadErrorCode) return;
         final sequenceTags = player.sequence
             .map((source) => source.tag)
             .toList(growable: false);

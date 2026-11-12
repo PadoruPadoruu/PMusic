@@ -53,40 +53,54 @@ class DesktopDeviceAudioCatalog implements DeviceAudioCatalog {
   Future<List<DeviceAudioTrack>> _rawCatalog({
     required String? bstreamRoot,
     bool forceRefresh = false,
-  }) async {
+  }) {
     final rootIdentity = _pathIdentityOrNull(bstreamRoot);
     final cached = _rawTracks;
     if (!forceRefresh && cached != null && _rawBstreamRoot == rootIdentity) {
-      return cached;
+      return Future.value(cached);
     }
     final active = _scanInFlight;
     if (active != null && _scanInFlightRoot == rootIdentity) {
       return active;
     }
     if (active != null) {
-      await active;
+      // Another exclusion root needs its own snapshot. Recheck after waiting:
+      // multiple callers waiting for it must still share that next scan.
+      return active.then(
+        (_) =>
+            _rawCatalog(bstreamRoot: bstreamRoot, forceRefresh: forceRefresh),
+      );
     }
+
+    // Reserve the whole operation before resolving the roots. A second load
+    // can arrive while that asynchronous lookup is still pending.
+    late final Future<List<DeviceAudioTrack>> request;
+    request = _scanCatalog(bstreamRoot, rootIdentity).whenComplete(() {
+      if (identical(_scanInFlight, request)) {
+        _scanInFlight = null;
+        _scanInFlightRoot = null;
+      }
+    });
+    _scanInFlight = request;
+    _scanInFlightRoot = rootIdentity;
+    return request;
+  }
+
+  Future<List<DeviceAudioTrack>> _scanCatalog(
+    String? bstreamRoot,
+    String? rootIdentity,
+  ) async {
     final roots = await _rootsProvider();
     final rootPaths = roots
         .map((directory) => directory.absolute.path)
         .toSet()
         .toList(growable: false);
-    final request = Isolate.run(
-      () => _scanDesktopAudio(rootPaths, bstreamRoot),
+    final tracks = List<DeviceAudioTrack>.unmodifiable(
+      await Isolate.run(() => _scanDesktopAudio(rootPaths, bstreamRoot)),
     );
-    _scanInFlight = request;
-    _scanInFlightRoot = rootIdentity;
-    try {
-      final tracks = List<DeviceAudioTrack>.unmodifiable(await request);
-      _rawTracks = tracks;
-      _rawBstreamRoot = rootIdentity;
-      return tracks;
-    } finally {
-      if (identical(_scanInFlight, request)) {
-        _scanInFlight = null;
-        _scanInFlightRoot = null;
-      }
-    }
+    _rawTracks = tracks;
+    _rawBstreamRoot = rootIdentity;
+    return tracks;
   }
 }
 

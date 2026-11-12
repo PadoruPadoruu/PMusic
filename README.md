@@ -2,13 +2,13 @@
 
 ![Flutter 3.47.9](https://img.shields.io/badge/Flutter-3.47.9-02569B?logo=flutter&logoColor=white)
 ![Platform](https://img.shields.io/badge/platform-Android%20%7C%20iOS%20%7C%20Windows%20%7C%20Linux%20%7C%20macOS-blue)
-![Version](https://img.shields.io/badge/version-1.2.9%2B129-brightgreen)
+![Version](https://img.shields.io/badge/version-1.3.1%2B131-brightgreen)
 ![Build](https://github.com/BryamContreras/BStream-Music/actions/workflows/desktop-builds.yml/badge.svg?branch=main)
 ![License](https://img.shields.io/badge/license-BSD--2--Clause-green)
 
 BStream Music is a cross-platform music player and library manager built with Flutter. It lets you search for music, play and download tracks, organize a local library, and manage playlists on Android, iOS, Windows, Linux, and macOS.
 
-Current version: **1.2.9+129**.
+Current version: **1.3.1+131**.
 
 > The repository does not store media content. YouTube search, playback, and
 > downloads use BStream's self-contained Dart InnerTube pipeline. Supported
@@ -17,16 +17,14 @@ Current version: **1.2.9+129**.
 
 <img width="1221" height="840" alt="{3AC80665-A6EC-436D-9C87-A1413432F0E3}" src="https://github.com/user-attachments/assets/8c918bae-6f84-46fa-8923-24ea68b6f8a4" />
 
-## What's new in 1.2.9
+## What's new in 1.3.1
 
-- Added a home-screen player widget.
-- Personalize the app background with an image from your gallery.
-- Change the font throughout the app.
-- Optimized animated artwork performance.
-- Select multiple songs in albums, mixes, and search results to add them to a
-  playlist or download them.
-- Share up to five song lyric lines as an image with artwork, blur, gradient,
-  or a photo from your gallery.
+- Improved and optimized the layouts of the player styles.
+- Added the new Spotify Style player.
+- Added filtering options in the Local music tab.
+- Added support for word-synchronized lyrics when word timing is available.
+- Improved the design of the Settings tab.
+- Customize playlist artwork with an image from your gallery.
 
 ## Main features
 
@@ -72,7 +70,12 @@ Current version: **1.2.9+129**.
 - SQLite-backed local library.
 - Reuse of downloaded tracks to avoid duplicate downloads.
 - Filtering, renaming, and deletion of saved tracks.
+- The Local music header's More menu provides the same filtering options as
+  the library, and local song cards include a dedicated Play/Pause control.
 - Playlist creation, renaming, and deletion.
+- Tap a saved playlist's cover to keep its random song-artwork mosaic or choose
+  a custom image. Gallery photos use the same crop editor as lyric sharing,
+  fixed to a square; custom covers follow media-folder moves and ZIP backups.
 - Playlist and downloaded-song headers show both song count and total duration.
 - Dedicated **Favorites** playlist with accent-colored hearts on favorited
   tracks.
@@ -87,10 +90,11 @@ Current version: **1.2.9+129**.
 ### Player
 
 - Play, pause, previous, next, repeat, and shuffle controls.
-- Mobile Lyrics and Volume controls use labeled buttons beneath Shuffle and
-  Repeat, while an accent-colored heart beside the title toggles Favorites on
-  every platform.
-- The Share button beside Favorites sends one canonical HTTPS URL that chat
+- Shared Lyrics, Queue, Audio output, and Volume icons keep controls consistent
+  across the app. Full-player utility rows adapt their spacing to each style.
+  A heart beside the track metadata toggles Favorites, with More options
+  beside it.
+- Share in the player's More menu sends one canonical HTTPS URL that chat
   applications can recognize: YouTube Music when the track came from the
   InnerTube catalog, otherwise the regular YouTube watch URL. Local-only files
   without a YouTube identity are intentionally not shared.
@@ -101,9 +105,10 @@ Current version: **1.2.9+129**.
 - Lyrics offer three persistent animation styles (Smooth by default),
   Normal/Centered alignment, optional per-script romanization, and a live
   preview in Appearance settings.
-- Appearance offers BStream Music, Apple Music Style, and Classic Vinyl full
-  players. Their controls and artwork adapt to portrait, compact landscape,
-  large phones, and desktop windows.
+- Appearance opens a dedicated gallery with responsive previews of BStream
+  Music, Apple Music Style, Classic Vinyl, and Spotify Style. Selecting a style
+  applies it immediately. Their controls and artwork adapt to portrait,
+  compact landscape, large phones, and desktop windows.
 - Crossfade uses coordinated playback decks and supports every whole-second
   duration from 1 through 15 seconds on Android and desktop.
 - Android can conservatively shorten confirmed prolonged silence in streaming
@@ -112,7 +117,8 @@ Current version: **1.2.9+129**.
 - Playback queue synchronized with playlists and the library.
 - On mobile, swipe the mini player left for Next or right for Previous; short
   drags return to place without changing the song.
-- Queue side panel on Windows and a dedicated queue view on Android.
+- The desktop mini player opens the queue from any tab. Mobile provides a
+  dedicated queue view.
 - Change tracks directly from the queue and reorder them with a long press.
 - Android keeps a rolling native queue for remote playback, with up to three
   upcoming tracks prepared sequentially so locked-screen transitions do not
@@ -128,14 +134,18 @@ Current version: **1.2.9+129**.
   player running, while closing the application exits playback.
 - The active track is highlighted with a segmented 13-bar equalizer.
 - Theme-aware dynamic background derived from the track artwork.
-- Animated progress bar with waves and the selected accent color.
-- Direct volume control beside the repeat button.
+- Animated progress waves use the current artwork's color, with a smooth color
+  transition and an accent-color fallback when artwork is unavailable.
+- Volume is available directly in the player controls.
+- On Windows, Linux, and macOS, choose BStream's audio output device from the
+  player's More menu, with independent player volume and crossfade support.
 - On desktop, Space toggles Play/Pause from the mini or full player unless an
   editable text field such as Search currently has focus.
-- Synchronized lyrics powered by LRCLIB, with plain-lyrics fallback, automatic
-  scrolling, tap-to-seek, and a manual timing offset from `-10` to `+10` seconds
-  in `0.50`-second steps. Timed instrumental passages use a filling wave line
-  before the next lyric.
+- Synchronized lyrics from Better Lyrics, LyricsPlus, and LRCLIB, with automatic
+  word/syllable highlighting when valid timing is supplied and line-by-line or
+  plain-lyrics fallback. Supports automatic scrolling, tap-to-seek, and a manual
+  timing offset from `-10` to `+10` seconds in `0.50`-second steps. Timed
+  instrumental passages respect sustained words before showing a filling wave.
 - Sleep timer with quick durations and a custom duration.
 - Native system media integration: Android media notifications, iOS and macOS
   Now Playing, Windows SMTC, and Linux MPRIS.
@@ -150,9 +160,10 @@ Current version: **1.2.9+129**.
 
 - Responsive mobile and desktop layouts with bounded artwork decoding,
   lazy library lists, 48 dp touch targets, and large-text adaptation.
-- System, Light, and Dark themes with eighteen persistent accent palettes. The
-  full player and Lyrics use a consistent dark playback surface while browsing,
-  queues, menus, and settings retain the selected application theme.
+- System, Light, and Dark themes with eighteen persistent accent palettes.
+  Lyrics and the mobile full player use a consistent dark playback surface;
+  the desktop full player, browsing, queues, menus, and settings follow the
+  selected application theme.
 - Navigation remembers only the two most recent views.
 - Returning from the player restores the previously opened playlist or section.
 - Home displays up to 10 recently played items and 10 playlists. Recent items
@@ -167,7 +178,8 @@ Current version: **1.2.9+129**.
   cleared from Privacy settings without removing downloads, favorites, or
   playlists.
 - Subtle gradients, translucent cards, and shared visual controls.
-- Spanish and English selectable from Settings.
+- Spanish, English, Portuguese, French, Korean, Simplified Chinese, and Japanese
+  selectable from Settings, including localized release highlights.
 - An Application information section in Settings opens an organized About the
   app detail with the current version, optional Ko-fi development support, and
   the official GitHub repository; BStream Music remains free.
@@ -311,10 +323,12 @@ executables. Desktop playback still relies on the codec libraries included by
 `media_kit`/libmpv; those libraries decode M4A, Opus, and other formats during
 playback, but they are not a transcoding or download post-processing step.
 
-Lyrics are requested from [LRCLIB](https://lrclib.net) only when the lyrics
-view is opened. BStream sends the current title, artist, duration, and album
-when available, identifies itself with the required client header, and keeps a
-15-minute in-memory cache of at most 24 songs to avoid duplicate requests.
+Lyrics are requested from the selected Better Lyrics, LyricsPlus, and
+[LRCLIB](https://lrclib.net) providers when the lyrics view is opened. BStream
+sends the current title, artist, duration, and album when available, identifies
+itself with the required client header, and keeps bounded 15-minute in-memory
+caches of at most 24 songs per provider to avoid duplicate requests. Word timing
+from TTML, LyricsPlus words/syllables, and Enhanced LRC is retained in that cache.
 Lyrics are not embedded in downloaded audio files, and this cache disappears
 when the app process closes.
 

@@ -1234,7 +1234,7 @@ void main() {
             find.descendant(of: volume, matching: find.byType(Icon)),
           )
           .size,
-      22,
+      closeTo(25.3, 0.001),
     );
     await tester.tap(find.byKey(const ValueKey('mini-player-primary-control')));
     await tester.pump();

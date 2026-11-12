@@ -1,4 +1,6 @@
 import 'dart:async';
+import 'dart:io';
+import 'dart:ui' as ui;
 
 import 'package:bstream_music/core/theme/app_colors.dart';
 import 'package:bstream_music/core/theme/app_theme.dart';
@@ -11,7 +13,7 @@ import 'package:bstream_music/features/music/presentation/providers/music_provid
 import 'package:bstream_music/features/music/presentation/providers/local_audio_quality_provider.dart';
 import 'package:bstream_music/features/music/presentation/widgets/animated_artwork_motion.dart';
 import 'package:bstream_music/features/music/presentation/widgets/player_panel.dart';
-import 'package:bstream_music/features/music/presentation/widgets/playback_menu_bottom_sheet.dart';
+import 'package:bstream_music/features/music/presentation/widgets/player_dismiss_region.dart';
 import 'package:bstream_music/features/music/presentation/widgets/playback_gradient_background.dart';
 import 'package:bstream_music/features/music/presentation/providers/artwork_progress_color_provider.dart';
 import 'package:bstream_music/features/music/presentation/widgets/source_image.dart';
@@ -23,6 +25,7 @@ import 'package:bstream_music/services/sharing/track_share_service.dart';
 import 'package:bstream_music/services/youtube_music/innertube_search_service.dart';
 import 'package:flutter/foundation.dart' show ValueListenable, ValueNotifier;
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -43,6 +46,341 @@ void main() {
     duration: Duration(minutes: 3),
     volume: 0.72,
   );
+
+  testWidgets(
+    'Spotify Style uses circular playback actions and opens the mobile queue',
+    (tester) async {
+      _configureView(tester, const Size(390, 820));
+      final controller = _TestPlayerController(snapshot);
+      await tester.pumpWidget(
+        _playerHarness(
+          platform: TargetPlatform.android,
+          snapshot: snapshot,
+          localTrack: localTrack,
+          playlists: _TestPlaylistsController(),
+          playerController: controller,
+          style: PlayerStyle.spotifyMusic,
+          playbackQueue: const PlaybackQueueState(),
+        ),
+      );
+      await tester.pump(const Duration(milliseconds: 500));
+      final primary = find.byKey(const ValueKey('player-primary-control'));
+      expect(
+        find.byKey(const ValueKey('player-utility-capsule')),
+        findsNothing,
+      );
+      expect(
+        find.byKey(const ValueKey('player-utility-controls')),
+        findsOneWidget,
+      );
+      final primaryButton = tester.widget<IconButton>(primary);
+      expect(primaryButton.style!.shape!.resolve({}), isA<CircleBorder>());
+      expect(
+        primaryButton.style!.backgroundColor!.resolve({}),
+        isNot(Colors.transparent),
+      );
+      await tester.tap(primary);
+      await tester.pump();
+      expect(controller.togglePlayPauseCalls, 1);
+      await tester.tap(find.byKey(const ValueKey('player-next-control')));
+      await tester.pump();
+      expect(controller.playNextCalls, 1);
+      await tester.tap(find.byKey(const ValueKey('player-queue-toggle')));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 500));
+      expect(find.byKey(const ValueKey('queue-close')), findsOneWidget);
+      await tester.tap(find.byKey(const ValueKey('queue-close')));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 700));
+      expect(
+        find.byKey(const ValueKey('spotify-player-layout')),
+        findsOneWidget,
+      );
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  for (final platform in [TargetPlatform.android, TargetPlatform.iOS]) {
+    for (final frame in const [
+      (size: Size(390, 820), topPadding: 44.0),
+      (size: Size(320, 568), topPadding: 56.0),
+    ]) {
+      testWidgets(
+        '$platform Spotify expands its cover under the status bar over a full viewport backdrop at ${frame.size.width.toInt()}px',
+        (tester) async {
+          const bottomPadding = 24.0;
+          _configureView(
+            tester,
+            frame.size,
+            topPadding: frame.topPadding,
+            bottomPadding: bottomPadding,
+          );
+          final trackWithArtwork = LocalTrack(
+            id: trackId,
+            title: 'Cancion de prueba',
+            artist: 'BStream Music',
+            filePath: '/tmp/player-controls-track.m4a',
+            thumbnailPath: '/tmp/spotify-expanded-cover.jpg',
+            addedAt: DateTime(2026),
+          );
+          final measurements =
+              <
+                PlayerArtworkStyle,
+                ({Rect artwork, Rect title, Rect primary})
+              >{};
+
+          for (final artworkStyle in PlayerArtworkStyle.values) {
+            await tester.pumpWidget(
+              _playerHarness(
+                key: ValueKey('spotify-$platform-${frame.size}-$artworkStyle'),
+                platform: platform,
+                snapshot: snapshot,
+                localTrack: trackWithArtwork,
+                playlists: _TestPlaylistsController(),
+                style: PlayerStyle.spotifyMusic,
+                artworkStyle: artworkStyle,
+                drawBackground: true,
+                disableAnimations: true,
+                brightness: Brightness.light,
+                onCollapse: () {},
+              ),
+            );
+            await tester.pump();
+            await tester.pump(const Duration(milliseconds: 500));
+
+            final artwork = find.byKey(const ValueKey('player-large-artwork'));
+            final primary = find.byKey(
+              const ValueKey('player-primary-control'),
+            );
+            measurements[artworkStyle] = (
+              artwork: tester.getRect(artwork),
+              title: tester.getRect(
+                find.byKey(const ValueKey('player-track-title')),
+              ),
+              primary: tester.getRect(primary),
+            );
+            final hero = find.byKey(
+              const ValueKey('player-expanded-artwork-hero'),
+            );
+            final backdrop = find.byType(PlaybackArtworkBackdrop);
+            final backdropWidget = tester.widget<PlaybackArtworkBackdrop>(
+              backdrop,
+            );
+            if (artworkStyle == PlayerArtworkStyle.classic) {
+              expect(hero, findsNothing);
+              expect(backdropWidget.reflectionArtworkRect, isNull);
+              expect(tester.getRect(artwork).left, greaterThan(0));
+              expect(tester.getRect(artwork).right, lessThan(frame.size.width));
+            } else {
+              expect(hero, findsOneWidget);
+              final heroRect = tester.getRect(hero);
+              expect(heroRect.left, closeTo(0, 0.001));
+              expect(heroRect.right, closeTo(frame.size.width, 0.001));
+              expect(heroRect.top, closeTo(frame.topPadding - 24, 0.001));
+              expect(heroRect.bottom, lessThanOrEqualTo(frame.size.height));
+              final focusedImageRect = tester.getRect(
+                find.byKey(
+                  const ValueKey('player-expanded-artwork-focused-image'),
+                ),
+              );
+              expect(focusedImageRect.width, greaterThan(frame.size.width));
+              expect(
+                focusedImageRect.width,
+                closeTo(focusedImageRect.height, 0.001),
+              );
+              expect(
+                focusedImageRect.top,
+                closeTo(frame.topPadding - 24, 0.001),
+              );
+              expect(backdropWidget.reflectionArtworkRect, isNotNull);
+              final reflectedImageRect = backdropWidget.reflectionArtworkRect!
+                  .shift(tester.getRect(backdrop).topLeft);
+              for (final edges in [
+                (reflectedImageRect.left, focusedImageRect.left),
+                (reflectedImageRect.top, focusedImageRect.top),
+                (reflectedImageRect.right, focusedImageRect.right),
+                (reflectedImageRect.bottom, focusedImageRect.bottom),
+              ]) {
+                expect(edges.$1, closeTo(edges.$2, 0.001));
+              }
+              expect(
+                find.byKey(const ValueKey('player-expanded-artwork-blur')),
+                findsNothing,
+              );
+              expect(
+                find.byKey(const ValueKey('player-artwork-presentation-scale')),
+                findsNothing,
+              );
+            }
+
+            expect(
+              tester
+                  .getRect(find.byKey(const ValueKey('spotify-player-grabber')))
+                  .top,
+              greaterThanOrEqualTo(frame.topPadding),
+            );
+            expect(
+              Theme.of(tester.element(primary)).brightness,
+              Brightness.dark,
+            );
+            expect(
+              tester.widget<IconButton>(primary).style!.shape!.resolve({}),
+              isA<CircleBorder>(),
+            );
+            expect(
+              find.byKey(const ValueKey('player-utility-capsule')),
+              findsNothing,
+            );
+            for (final key in [
+              'player-primary-control',
+              'player-utility-controls',
+            ]) {
+              final control = find.byKey(ValueKey(key));
+              await tester.ensureVisible(control);
+              await tester.pump();
+              final rect = tester.getRect(control);
+              expect(rect.top, greaterThanOrEqualTo(frame.topPadding));
+              expect(
+                rect.bottom,
+                lessThanOrEqualTo(frame.size.height - bottomPadding + 0.1),
+              );
+            }
+            expect(tester.takeException(), isNull);
+          }
+
+          final classic = measurements[PlayerArtworkStyle.classic]!;
+          final expanded = measurements[PlayerArtworkStyle.expanded]!;
+          expect(expanded.artwork, classic.artwork);
+          expect(expanded.title, classic.title);
+          expect(expanded.primary, classic.primary);
+        },
+      );
+    }
+  }
+
+  testWidgets('Spotify keeps expanded artwork bounded outside phone portrait', (
+    tester,
+  ) async {
+    _configureView(tester, const Size(820, 390));
+    final trackWithArtwork = LocalTrack(
+      id: trackId,
+      title: 'Cancion de prueba',
+      artist: 'BStream Music',
+      filePath: '/tmp/player-controls-track.m4a',
+      thumbnailPath: '/tmp/spotify-expanded-bounded-cover.jpg',
+      addedAt: DateTime(2026),
+    );
+
+    for (final scenario in const [
+      (platform: TargetPlatform.android, size: Size(820, 390)),
+      (platform: TargetPlatform.android, size: Size(768, 1024)),
+      (platform: TargetPlatform.windows, size: Size(1280, 900)),
+      (platform: TargetPlatform.windows, size: Size(720, 1100)),
+    ]) {
+      tester.view.physicalSize = scenario.size;
+      await tester.pumpWidget(
+        _playerHarness(
+          key: ValueKey('spotify-expanded-bounded-$scenario'),
+          platform: scenario.platform,
+          snapshot: snapshot,
+          localTrack: trackWithArtwork,
+          playlists: _TestPlaylistsController(),
+          style: PlayerStyle.spotifyMusic,
+          artworkStyle: PlayerArtworkStyle.expanded,
+          drawBackground: true,
+          disableAnimations: true,
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 500));
+
+      final layout = find.byKey(const ValueKey('spotify-player-layout'));
+      expect(layout, findsOneWidget);
+      expect(
+        find.descendant(
+          of: layout,
+          matching: find.byKey(const ValueKey('player-expanded-artwork-hero')),
+        ),
+        findsNothing,
+      );
+      expect(
+        tester
+            .widget<PlaybackArtworkBackdrop>(
+              find.descendant(
+                of: layout,
+                matching: find.byType(PlaybackArtworkBackdrop),
+              ),
+            )
+            .reflectionArtworkRect,
+        isNull,
+      );
+      final scaleFinder = find.descendant(
+        of: layout,
+        matching: find.byKey(
+          const ValueKey('player-artwork-presentation-scale'),
+        ),
+      );
+      final scale = tester
+          .widget<Transform>(scaleFinder)
+          .transform
+          .getMaxScaleOnAxis();
+      expect(scale, inInclusiveRange(1.0, 1.181));
+      final artworkRect = tester.getRect(scaleFinder);
+      expect(artworkRect.left, greaterThanOrEqualTo(0));
+      expect(artworkRect.top, greaterThanOrEqualTo(0));
+      expect(artworkRect.right, lessThanOrEqualTo(scenario.size.width));
+      expect(artworkRect.bottom, lessThanOrEqualTo(scenario.size.height));
+      for (final key in ['player-primary-control', 'player-utility-controls']) {
+        final control = find.byKey(ValueKey(key));
+        await tester.ensureVisible(control);
+        await tester.pump();
+        final rect = tester.getRect(control);
+        expect(rect.top, greaterThanOrEqualTo(0));
+        expect(rect.bottom, lessThanOrEqualTo(scenario.size.height));
+      }
+      expect(tester.takeException(), isNull, reason: '$scenario');
+    }
+  });
+
+  for (final brightness in Brightness.values) {
+    testWidgets(
+      'Spotify seek thumb stays visible and commits a drag once in $brightness',
+      (tester) async {
+        _configureView(tester, const Size(390, 820));
+        final controller = _TestPlayerController(snapshot);
+        await tester.pumpWidget(
+          _playerHarness(
+            platform: TargetPlatform.android,
+            snapshot: snapshot,
+            localTrack: localTrack,
+            playlists: _TestPlaylistsController(),
+            playerController: controller,
+            style: PlayerStyle.spotifyMusic,
+            brightness: brightness,
+          ),
+        );
+        await tester.pump(const Duration(milliseconds: 500));
+        final seek = find.byKey(const ValueKey('spotify-player-linear-seek'));
+        final theme = SliderTheme.of(tester.element(seek));
+        final thumb = theme.thumbShape! as RoundSliderThumbShape;
+        expect(thumb.enabledThumbRadius, greaterThan(0));
+        expect(theme.thumbColor!.a, 1);
+        final rect = tester.getRect(seek);
+        final gesture = await tester.startGesture(
+          Offset(rect.left + 12, rect.center.dy),
+        );
+        await gesture.moveTo(Offset(rect.center.dx, rect.center.dy));
+        await tester.pump();
+        expect(controller.seekCalls, 0);
+        await gesture.up();
+        await tester.pump();
+        expect(controller.seekCalls, 1);
+        expect(controller.lastSeek, isNotNull);
+        expect(controller.lastSeek!, greaterThan(Duration.zero));
+        expect(tester.takeException(), isNull);
+      },
+    );
+  }
 
   const qualityTrack = TrackInfo(
     id: 'quality0001',
@@ -67,6 +405,264 @@ void main() {
     isRemote: true,
   );
   const stereoQuality = 'Opus \u00b7 48 kHz \u00b7 141 kbps - Est\u00e9reo';
+
+  for (final variant in const [
+    (platform: TargetPlatform.android, size: Size(390, 820)),
+    (platform: TargetPlatform.android, size: Size(360, 640)),
+    (platform: TargetPlatform.iOS, size: Size(820, 390)),
+    (platform: TargetPlatform.windows, size: Size(960, 600)),
+  ]) {
+    testWidgets(
+      '${variant.platform} ${variant.size} player styles share Apple metadata sizing and aligned margins',
+      (tester) async {
+        _configureView(tester, variant.size);
+        double? referenceTitleSize;
+        double? referenceArtistSize;
+        FontWeight? referenceTitleWeight;
+        FontWeight? referenceArtistWeight;
+
+        for (final style in const [
+          PlayerStyle.appleMusic,
+          PlayerStyle.bstreamMusic,
+          PlayerStyle.classicVinyl,
+        ]) {
+          await tester.pumpWidget(
+            _playerHarness(
+              key: ValueKey('metadata-margins-${variant.platform}-$style'),
+              platform: variant.platform,
+              snapshot: snapshot.copyWith(
+                title:
+                    'Una canción con un nombre largo para comprobar sus márgenes',
+                artist: 'Artista principal, Artista invitado y otro artista',
+              ),
+              localTrack: localTrack,
+              playlists: _TestPlaylistsController(),
+              style: style,
+            ),
+          );
+          await tester.pump(const Duration(milliseconds: 500));
+          await tester.pump();
+
+          final titleFinder = find.byKey(const ValueKey('player-track-title'));
+          final artistFinder = find.byKey(
+            const ValueKey('player-track-artist'),
+          );
+          final title = tester.widget<MarqueeText>(titleFinder);
+          final artist = tester.widget<Text>(artistFinder);
+          if (style == PlayerStyle.appleMusic) {
+            referenceTitleSize = title.style!.fontSize!;
+            referenceArtistSize = artist.style!.fontSize!;
+            referenceTitleWeight = title.style!.fontWeight;
+            referenceArtistWeight = artist.style!.fontWeight;
+          } else {
+            expect(
+              title.style!.fontSize,
+              closeTo(referenceTitleSize!, 0.01),
+              reason: '$style should use the same title scale as Apple Music.',
+            );
+            expect(
+              artist.style!.fontSize,
+              closeTo(referenceArtistSize!, 0.01),
+              reason: '$style should use the same artist scale as Apple Music.',
+            );
+            expect(title.style!.fontWeight, referenceTitleWeight);
+            expect(artist.style!.fontWeight, referenceArtistWeight);
+          }
+
+          final timeline = tester.getRect(
+            find.byKey(
+              ValueKey(switch (style) {
+                PlayerStyle.appleMusic => 'apple-player-timeline',
+                PlayerStyle.bstreamMusic => 'player-timeline',
+                PlayerStyle.classicVinyl => 'classic-vinyl-player-timeline',
+                PlayerStyle.spotifyMusic => 'apple-player-timeline',
+              }),
+            ),
+          );
+          final titleRect = tester.getRect(titleFinder);
+          final artistRect = tester.getRect(artistFinder);
+          expect(titleRect.left, closeTo(timeline.left, 0.1), reason: '$style');
+          expect(
+            artistRect.left,
+            closeTo(timeline.left, 0.1),
+            reason: '$style',
+          );
+          expect(titleRect.right, lessThanOrEqualTo(timeline.right + 0.1));
+          expect(artistRect.right, lessThanOrEqualTo(timeline.right + 0.1));
+          expect(timeline.left, greaterThan(0));
+          expect(timeline.right, lessThan(variant.size.width));
+          if (style != PlayerStyle.appleMusic) {
+            final inset = tester.getRect(
+              find.byKey(
+                ValueKey(
+                  style == PlayerStyle.bstreamMusic
+                      ? 'bstream-player-controls-inset'
+                      : 'classic-vinyl-player-controls-inset',
+                ),
+              ),
+            );
+            final mobileLandscape =
+                variant.platform != TargetPlatform.windows &&
+                variant.size.width > variant.size.height;
+            final expectedInset = mobileLandscape ? 6.0 : 8.0;
+            expect(timeline.left - inset.left, closeTo(expectedInset, 0.1));
+            expect(inset.right - timeline.right, closeTo(expectedInset, 0.1));
+          }
+          expect(
+            tester.takeException(),
+            isNull,
+            reason: '$style ${variant.size}',
+          );
+        }
+      },
+    );
+  }
+
+  for (final style in PlayerStyle.values) {
+    for (final platform in [TargetPlatform.android, TargetPlatform.iOS]) {
+      for (final viewport in const [Size(390, 820), Size(820, 390)]) {
+        testWidgets(
+          '${style.name} $platform $viewport top handle taps and drags back without changing playback',
+          (tester) async {
+            _configureView(tester, viewport);
+            var collapses = 0;
+            var controller = _TestPlayerController(snapshot);
+
+            Future<void> showPlayer(String operation) async {
+              controller = _TestPlayerController(snapshot);
+              await tester.pumpWidget(
+                _playerHarness(
+                  key: ValueKey(
+                    'collapse-$style-$platform-$viewport-$operation',
+                  ),
+                  platform: platform,
+                  snapshot: snapshot,
+                  localTrack: localTrack,
+                  playlists: _TestPlaylistsController(),
+                  playerController: controller,
+                  style: style,
+                  onCollapse: () => collapses++,
+                ),
+              );
+              await tester.pump(const Duration(milliseconds: 500));
+              await tester.pump();
+            }
+
+            final handle = find.byType(PlayerCollapseHandle);
+            await showPlayer('tap');
+            expect(handle, findsOneWidget);
+            final handleRect = tester.getRect(handle);
+            expect(handleRect.center.dx, closeTo(viewport.width / 2, 0.1));
+            expect(handleRect.top, greaterThanOrEqualTo(0));
+            expect(handleRect.bottom, lessThanOrEqualTo(60));
+
+            await tester.tap(handle);
+            await tester.pump();
+            expect(collapses, 1);
+            expect(controller.togglePlayPauseCalls, 0);
+            expect(controller.playNextCalls, 0);
+            expect(controller.seekCalls, 0);
+            expect(controller.volumeCalls, 0);
+
+            await showPlayer('drag');
+            expect(handle, findsOneWidget);
+            final gesture = await tester.startGesture(tester.getCenter(handle));
+            await gesture.moveBy(const Offset(0, 40));
+            await tester.pump(const Duration(milliseconds: 300));
+            await gesture.moveBy(const Offset(0, 40));
+            await tester.pump(const Duration(milliseconds: 300));
+            final translation = tester.widget<Transform>(
+              find.byKey(const ValueKey('player-dismiss-translation')),
+            );
+            expect(translation.transform.getTranslation().y, greaterThan(64));
+            expect(collapses, 1, reason: 'Only releasing the drag returns.');
+            await gesture.up();
+            await tester.pump();
+            expect(
+              collapses,
+              2,
+              reason: 'A slow drag must not require a fling.',
+            );
+            expect(controller.togglePlayPauseCalls, 0);
+            expect(controller.playNextCalls, 0);
+            expect(controller.seekCalls, 0);
+            expect(controller.volumeCalls, 0);
+            expect(tester.takeException(), isNull);
+          },
+        );
+      }
+    }
+
+    testWidgets(
+      '${style.name} short top drag returns to its original position',
+      (tester) async {
+        _configureView(tester, const Size(390, 820));
+        var collapses = 0;
+        await tester.pumpWidget(
+          _playerHarness(
+            platform: TargetPlatform.android,
+            snapshot: snapshot,
+            localTrack: localTrack,
+            playlists: _TestPlaylistsController(),
+            style: style,
+            onCollapse: () => collapses++,
+          ),
+        );
+        await tester.pump(const Duration(milliseconds: 500));
+        final handle = find.byType(PlayerCollapseHandle);
+        final originalRect = tester.getRect(handle);
+        final gesture = await tester.startGesture(originalRect.center);
+        await gesture.moveBy(const Offset(0, 28));
+        await tester.pump(const Duration(milliseconds: 300));
+        expect(tester.getRect(handle).top, greaterThan(originalRect.top));
+        await gesture.up();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 250));
+        await tester.pump();
+        expect(collapses, 0);
+        expect(tester.getRect(handle), originalRect);
+        expect(
+          tester
+              .widget<Transform>(
+                find.byKey(const ValueKey('player-dismiss-translation')),
+              )
+              .transform
+              .getTranslation()
+              .y,
+          closeTo(0, 0.001),
+        );
+        expect(tester.takeException(), isNull);
+      },
+    );
+
+    testWidgets(
+      '${style.name} top handle remains decorative without a return callback',
+      (tester) async {
+        _configureView(tester, const Size(390, 820));
+        final controller = _TestPlayerController(snapshot);
+        await tester.pumpWidget(
+          _playerHarness(
+            platform: TargetPlatform.android,
+            snapshot: snapshot,
+            localTrack: localTrack,
+            playlists: _TestPlaylistsController(),
+            playerController: controller,
+            style: style,
+          ),
+        );
+        await tester.pump(const Duration(milliseconds: 500));
+        final handle = find.byType(PlayerCollapseHandle);
+        expect(handle, findsOneWidget);
+        expect(
+          find.descendant(of: handle, matching: find.byType(GestureDetector)),
+          findsNothing,
+        );
+        expect(controller.togglePlayPauseCalls, 0);
+        expect(controller.playNextCalls, 0);
+        expect(tester.takeException(), isNull);
+      },
+    );
+  }
 
   for (final style in PlayerStyle.values) {
     testWidgets('$style quality uses player text color and only tiny shadows', (
@@ -98,9 +694,10 @@ void main() {
           final textStyle = tester.widget<Text>(quality).style!;
           expect(
             textStyle.color,
-            AppColors.playbackSecondaryControlForegroundFor(
-              tester.element(quality),
-            ),
+            ColorScheme.fromSeed(
+              seedColor: accent.seedColor,
+              brightness: Brightness.dark,
+            ).onSurfaceVariant,
           );
           expect(textStyle.color, isNot(accent.seedColor));
           final shadows = textStyle.shadows!;
@@ -689,6 +1286,126 @@ void main() {
     PlayerStyle.bstreamMusic,
     PlayerStyle.appleMusic,
   ]) {
+    for (final viewport in const [Size(320, 568), Size(390, 820)]) {
+      testWidgets(
+        '${style.name} reflects the actual expanded cover crop at ${viewport.width.toInt()}px',
+        (tester) async {
+          _configureView(tester, viewport);
+          final trackWithArtwork = LocalTrack(
+            id: trackId,
+            title: 'Cancion de prueba',
+            artist: 'BStream Music',
+            filePath: '/tmp/player-controls-track.m4a',
+            thumbnailPath: '/tmp/player-reflection-cover.jpg',
+            addedAt: DateTime(2026),
+          );
+          await tester.pumpWidget(
+            _playerHarness(
+              platform: TargetPlatform.android,
+              snapshot: snapshot,
+              localTrack: trackWithArtwork,
+              playlists: _TestPlaylistsController(),
+              style: style,
+              artworkStyle: PlayerArtworkStyle.expanded,
+              drawBackground: true,
+              disableAnimations: true,
+            ),
+          );
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 500));
+
+          final backdropFinder = find.byType(PlaybackArtworkBackdrop);
+          expect(backdropFinder, findsOneWidget);
+          final backdrop = tester.widget<PlaybackArtworkBackdrop>(
+            backdropFinder,
+          );
+          final backdropRect = tester.getRect(backdropFinder);
+          final actualCoverRect = tester.getRect(
+            find.byKey(const ValueKey('player-expanded-artwork-focused-image')),
+          );
+          expect(backdrop.reflectionArtworkRect, isNotNull);
+          final reflectedCoverRect = backdrop.reflectionArtworkRect!.shift(
+            backdropRect.topLeft,
+          );
+
+          // Match the real overscanned cover extending under the system bar. A
+          // full-screen flip has a different crop and cannot join its bottom.
+          expect(reflectedCoverRect.left, closeTo(actualCoverRect.left, 0.001));
+          expect(reflectedCoverRect.top, closeTo(actualCoverRect.top, 0.001));
+          expect(
+            reflectedCoverRect.right,
+            closeTo(actualCoverRect.right, 0.001),
+          );
+          expect(
+            reflectedCoverRect.bottom,
+            closeTo(actualCoverRect.bottom, 0.001),
+          );
+          expect(backdropRect.top, closeTo(0, 0.001));
+          expect(actualCoverRect.top, closeTo(0, 0.001));
+          expect(actualCoverRect.width, greaterThan(backdropRect.width));
+          expect(actualCoverRect.width, closeTo(actualCoverRect.height, 0.001));
+          expect(actualCoverRect.bottom, lessThan(backdropRect.bottom));
+          expect(tester.takeException(), isNull);
+        },
+      );
+    }
+
+    for (final scenario in const [
+      (
+        name: 'classic portrait artwork',
+        viewport: Size(390, 820),
+        artworkStyle: PlayerArtworkStyle.classic,
+      ),
+      (
+        name: 'expanded landscape artwork',
+        viewport: Size(820, 390),
+        artworkStyle: PlayerArtworkStyle.expanded,
+      ),
+    ]) {
+      testWidgets(
+        '${style.name} keeps ${scenario.name} without a reflected hero crop',
+        (tester) async {
+          _configureView(tester, scenario.viewport);
+          final trackWithArtwork = LocalTrack(
+            id: trackId,
+            title: 'Cancion de prueba',
+            artist: 'BStream Music',
+            filePath: '/tmp/player-controls-track.m4a',
+            thumbnailPath: '/tmp/player-reflection-cover.jpg',
+            addedAt: DateTime(2026),
+          );
+          await tester.pumpWidget(
+            _playerHarness(
+              platform: TargetPlatform.android,
+              snapshot: snapshot,
+              localTrack: trackWithArtwork,
+              playlists: _TestPlaylistsController(),
+              style: style,
+              artworkStyle: scenario.artworkStyle,
+              drawBackground: true,
+              disableAnimations: true,
+            ),
+          );
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 500));
+
+          final backdropFinder = find.byType(PlaybackArtworkBackdrop);
+          expect(backdropFinder, findsOneWidget);
+          expect(
+            tester
+                .widget<PlaybackArtworkBackdrop>(backdropFinder)
+                .reflectionArtworkRect,
+            isNull,
+          );
+          expect(
+            find.byKey(const ValueKey('player-expanded-artwork-hero')),
+            findsNothing,
+          );
+          expect(tester.takeException(), isNull);
+        },
+      );
+    }
+
     testWidgets(
       '${style.name} applies the animated artwork preference to the large cover',
       (tester) async {
@@ -795,7 +1512,7 @@ void main() {
     );
 
     testWidgets(
-      '${style.name} keeps classic artwork and renders the expanded layers',
+      '${style.name} keeps classic artwork and fades expanded artwork without a second blur',
       (tester) async {
         _configureView(tester, const Size(390, 820));
         final trackWithArtwork = LocalTrack(
@@ -867,11 +1584,11 @@ void main() {
         );
         expect(
           find.byKey(const ValueKey('player-expanded-artwork-blur')),
-          findsOneWidget,
+          findsNothing,
         );
         expect(
           find.byKey(const ValueKey('player-expanded-artwork-blurred-image')),
-          findsOneWidget,
+          findsNothing,
         );
         expect(
           find.byKey(const ValueKey('player-expanded-artwork-focused-image')),
@@ -904,10 +1621,10 @@ void main() {
           find.descendant(
             of: find.byType(AnimatedArtworkMotion),
             matching: find.byKey(
-              const ValueKey('player-expanded-artwork-blurred-image'),
+              const ValueKey('player-expanded-artwork-focus-fade'),
             ),
           ),
-          findsNothing,
+          findsOneWidget,
         );
         expect(
           find.descendant(
@@ -927,27 +1644,53 @@ void main() {
           find.byKey(const ValueKey('player-artwork-presentation-scale')),
           findsNothing,
         );
-        expect(tester.getRect(largeArtwork), classicArtworkRect);
-        expect(
-          tester.getRect(find.byKey(const ValueKey('player-track-title'))),
-          classicTitleRect,
+        final expandedArtworkRect = tester.getRect(largeArtwork);
+        final expandedTitleRect = tester.getRect(
+          find.byKey(const ValueKey('player-track-title')),
         );
-        expect(
-          tester.getRect(find.byKey(const ValueKey('player-primary-control'))),
-          classicPrimaryControlRect,
+        final expandedPrimaryControlRect = tester.getRect(
+          find.byKey(const ValueKey('player-primary-control')),
         );
+        if (style == PlayerStyle.bstreamMusic) {
+          final artworkOffset = Offset(
+            0,
+            expandedArtworkRect.top - classicArtworkRect.top,
+          );
+          final controlsOffset = Offset(
+            0,
+            expandedTitleRect.top - classicTitleRect.top,
+          );
+          expect(artworkOffset.dy, greaterThan(8));
+          expect(artworkOffset.dy, greaterThan(controlsOffset.dy));
+          expect(
+            expandedArtworkRect,
+            rectMoreOrLessEquals(classicArtworkRect.shift(artworkOffset)),
+          );
+          expect(
+            expandedTitleRect,
+            rectMoreOrLessEquals(classicTitleRect.shift(controlsOffset)),
+          );
+          expect(
+            expandedPrimaryControlRect,
+            rectMoreOrLessEquals(
+              classicPrimaryControlRect.shift(controlsOffset),
+            ),
+          );
+          expect(
+            classicTitleRect.top - classicArtworkRect.bottom,
+            greaterThan(expandedTitleRect.top - expandedArtworkRect.bottom),
+          );
+        } else {
+          expect(expandedArtworkRect, classicArtworkRect);
+          expect(expandedTitleRect, classicTitleRect);
+          expect(expandedPrimaryControlRect, classicPrimaryControlRect);
+        }
         final heroRect = tester.getRect(hero);
-        final foregroundAnchor = style == PlayerStyle.bstreamMusic
-            ? find.byKey(const ValueKey('player-header'))
-            : find.byKey(const ValueKey('apple-player-grabber'));
-        final foregroundRect = tester.getRect(foregroundAnchor);
         expect(heroRect.left, closeTo(0, 0.1));
         expect(heroRect.right, closeTo(390, 0.1));
-        expect(heroRect.top, lessThan(0));
-        expect(heroRect.bottom, closeTo(493.35, 0.1));
+        expect(heroRect.top, closeTo(0, 0.1));
+        expect(heroRect.bottom, closeTo(514.8, 0.1));
         expect(heroRect.bottom, greaterThan(classicArtworkRect.bottom));
-        expect(heroRect.top, lessThan(foregroundRect.bottom));
-        expect(heroRect.bottom, greaterThan(foregroundRect.top));
         expect(
           find.byKey(const ValueKey('player-artwork-track-transition')),
           findsOneWidget,
@@ -1025,12 +1768,12 @@ void main() {
         expect(artworkSize.shortestSide, greaterThan(0));
         expect(heroRect.left, closeTo(0, 0.1));
         expect(heroRect.right, closeTo(320, 0.1));
-        expect(heroRect.top, lessThan(0));
-        expect(heroRect.bottom, closeTo(408.4, 0.1));
-        final blurredImageRect = tester.getRect(
-          find.byKey(const ValueKey('player-expanded-artwork-blurred-image')),
+        expect(heroRect.top, closeTo(0, 0.1));
+        expect(heroRect.bottom, closeTo(426, 0.1));
+        final focusedImageRect = tester.getRect(
+          find.byKey(const ValueKey('player-expanded-artwork-focused-image')),
         );
-        expect(blurredImageRect.width, closeTo(blurredImageRect.height, 0.1));
+        expect(focusedImageRect.width, closeTo(focusedImageRect.height, 0.1));
         expect(
           heroRect.bottom,
           greaterThan(tester.getRect(largeArtwork).bottom),
@@ -1057,6 +1800,176 @@ void main() {
           find.byKey(const ValueKey('player-primary-control')),
         );
         expect(primaryControl.center.dy, inInclusiveRange(0, 568));
+        expect(tester.takeException(), isNull);
+      },
+    );
+
+    testWidgets(
+      '${style.name} expanded cover renders smooth edges without a dark header band',
+      (tester) async {
+        _configureView(tester, const Size(390, 820), topPadding: 44);
+        final fixtures = (await tester.runAsync(
+          () => Directory.systemTemp.createTemp('bstream-artwork-edge-'),
+        ))!;
+        addTearDown(() => fixtures.delete(recursive: true));
+        final coverFile = File('${fixtures.path}/white-cover.png');
+        await tester.runAsync(() => _writeSolidWhiteArtwork(coverFile));
+        final trackWithArtwork = LocalTrack(
+          id: trackId,
+          title: 'Cancion de prueba',
+          artist: 'BStream Music',
+          filePath: '/tmp/player-controls-track.m4a',
+          thumbnailPath: coverFile.path,
+          addedAt: DateTime(2026),
+        );
+        // Both mounts measure the hero mask, so avoid unrelated palette IO on
+        // the temporary image, including when the keyed animation mount starts.
+        final menuColorService = _CountingMenuColorService();
+
+        await tester.pumpWidget(
+          _playerHarness(
+            platform: TargetPlatform.android,
+            snapshot: snapshot,
+            localTrack: trackWithArtwork,
+            playlists: _TestPlaylistsController(),
+            menuColorService: menuColorService,
+            style: style,
+            artworkStyle: PlayerArtworkStyle.expanded,
+            disableAnimations: true,
+          ),
+        );
+        await tester.runAsync(
+          () => precacheImage(
+            ResizeImage(FileImage(coverFile), width: 1280),
+            tester.element(find.byType(PlayerPanel)),
+          ),
+        );
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 600));
+
+        final hero = find.byKey(const ValueKey('player-expanded-artwork'));
+        final heroRect = tester.getRect(hero);
+        final focusedRect = tester.getRect(
+          find.byKey(const ValueKey('player-expanded-artwork-focused-image')),
+        );
+        final boundary = tester.renderObject<RenderRepaintBoundary>(hero);
+        final rendered = (await tester.runAsync(
+          () => boundary.toImage(pixelRatio: 1),
+        ))!;
+        try {
+          final pixels = (await tester.runAsync(
+            () => rendered.toByteData(format: ui.ImageByteFormat.rawRgba),
+          ))!;
+          final x = rendered.width ~/ 2;
+          int pixelOffset(int y) => ((y * rendered.width) + x) * 4;
+          int alphaAt(int y) => pixels.getUint8(pixelOffset(y) + 3);
+          final imageTop = focusedRect.top - heroRect.top;
+          final topY = imageTop.ceil();
+          final upperOpaqueY = (imageTop + focusedRect.height * 0.16).ceil();
+          final opaqueY = (imageTop + focusedRect.height * 0.55).round();
+          final edgeY = (imageTop + focusedRect.height).floor();
+
+          // White artwork over a dark backdrop is the worst-case visible seam.
+          // Check rendered pixels, not just the gradient's declared stops.
+          expect(alphaAt(topY), lessThanOrEqualTo(1));
+          for (var y = topY + 1; y <= upperOpaqueY; y += 1) {
+            final alphaStep = alphaAt(y) - alphaAt(y - 1);
+            expect(alphaStep, greaterThanOrEqualTo(-1));
+            expect(alphaStep, lessThanOrEqualTo(16));
+          }
+          for (final position in [0.16, 0.20, 0.24, 0.28, 0.30]) {
+            final y = (imageTop + focusedRect.height * position).round();
+            for (var channel = 0; channel < 4; channel += 1) {
+              expect(
+                pixels.getUint8(pixelOffset(y) + channel),
+                greaterThanOrEqualTo(250),
+                reason: 'The opaque upper cover must retain its white color.',
+              );
+            }
+          }
+          for (var channel = 0; channel < 4; channel += 1) {
+            expect(
+              pixels.getUint8(pixelOffset(opaqueY) + channel),
+              greaterThanOrEqualTo(250),
+            );
+          }
+          expect(alphaAt(edgeY - 1), lessThanOrEqualTo(1));
+          expect(alphaAt(edgeY + 1), lessThanOrEqualTo(1));
+
+          var largestStep = 0;
+          final fadeStart = (imageTop + focusedRect.height * 0.60).ceil();
+          for (var y = fadeStart; y <= edgeY + 1; y += 1) {
+            final step = (alphaAt(y) - alphaAt(y - 1)).abs();
+            if (step > largestStep) largestStep = step;
+          }
+          expect(largestStep, lessThanOrEqualTo(8));
+        } finally {
+          rendered.dispose();
+        }
+
+        await tester.pumpWidget(
+          _playerHarness(
+            key: ValueKey('${style.name}-expanded-edge-motion'),
+            platform: TargetPlatform.android,
+            snapshot: snapshot.copyWith(status: PlayerStatus.playing),
+            localTrack: trackWithArtwork,
+            playlists: _TestPlaylistsController(),
+            menuColorService: menuColorService,
+            style: style,
+            artworkStyle: PlayerArtworkStyle.expanded,
+            animatedArtworkEnabled: true,
+          ),
+        );
+        await tester.pump();
+        expect(hero, findsOneWidget);
+        final motion = find.descendant(
+          of: hero,
+          matching: find.byType(AnimatedArtworkMotion),
+        );
+        expect(tester.widget<AnimatedArtworkMotion>(motion).enabled, isTrue);
+        expect(tester.widget<AnimatedArtworkMotion>(motion).isPlaying, isTrue);
+        expect(MediaQuery.disableAnimationsOf(tester.element(motion)), isFalse);
+
+        for (final phase in const [
+          (advance: Duration(seconds: 14), elapsed: 14),
+          (advance: Duration(seconds: 6), elapsed: 20),
+        ]) {
+          await tester.pump(phase.advance);
+          final transform = tester.widget<Transform>(
+            find.descendant(
+              of: hero,
+              matching: find.byKey(
+                const ValueKey('animated-artwork-flat-transform'),
+              ),
+            ),
+          );
+          expect(transform.transform.getMaxScaleOnAxis(), greaterThan(1));
+          final movingBoundary = tester.renderObject<RenderRepaintBoundary>(
+            hero,
+          );
+          final movingFrame = (await tester.runAsync(
+            () => movingBoundary.toImage(pixelRatio: 1),
+          ))!;
+          try {
+            final pixels = (await tester.runAsync(
+              () => movingFrame.toByteData(format: ui.ImageByteFormat.rawRgba),
+            ))!;
+            for (final x in [
+              0,
+              movingFrame.width ~/ 2,
+              movingFrame.width - 1,
+            ]) {
+              expect(
+                pixels.getUint8(x * 4 + 3),
+                lessThanOrEqualTo(1),
+                reason:
+                    'The top edge must remain transparent at ${phase.elapsed}s of zoom and pan.',
+              );
+            }
+          } finally {
+            movingFrame.dispose();
+          }
+        }
         expect(tester.takeException(), isNull);
       },
     );
@@ -1383,6 +2296,8 @@ void main() {
             'player-next-control',
             'player-repeat-control',
             'player-lyrics-control',
+            'player-queue-toggle',
+            'player-audio-output-control',
             'player-volume-control',
           ]) {
             expect(
@@ -1590,8 +2505,8 @@ void main() {
           viewport.height - systemBottomInset - layoutBottomPadding;
       final deckControlsGap = controls.top - deck.bottom;
       final remainingControlsHeight = usableBottom - controls.top;
-      // Compact portrait phones reserve part of the width/height budget for
-      // the larger labeled controls below the turntable.
+      // Compact portrait phones reserve space for the transport and utility
+      // icon rows below the turntable.
       expect(deck.width / viewport.width, inInclusiveRange(0.88, 0.92));
       expect(deckControlsGap, inInclusiveRange(75.0, 90.0));
       expect(controls.height, closeTo(remainingControlsHeight, 1));
@@ -1665,20 +2580,27 @@ void main() {
         for (final key in const [
           'player-lyrics-control',
           'player-volume-control',
+          'player-audio-output-control',
+          'player-queue-toggle',
         ])
           tester.getRect(find.byKey(ValueKey(key))),
       ];
-      expect(utilityButtonRects.first.left, closeTo(utilityRow.left, 1));
-      expect(utilityButtonRects.last.right, closeTo(utilityRow.right, 1));
-      final utilityCenterSteps = <double>[
-        for (var index = 1; index < utilityButtonRects.length; index += 1)
-          utilityButtonRects[index].center.dx -
-              utilityButtonRects[index - 1].center.dx,
-      ]..sort();
-      expect(
-        utilityCenterSteps.last - utilityCenterSteps.first,
-        lessThanOrEqualTo(1),
+      final utilityCapsule = tester.getRect(
+        find.byKey(const ValueKey('player-utility-capsule')),
       );
+      expect(utilityCapsule, utilityRow);
+      expect(utilityButtonRects.first.left, greaterThan(utilityCapsule.left));
+      expect(utilityButtonRects.last.right, lessThan(utilityCapsule.right));
+      for (var index = 1; index < utilityButtonRects.length; index += 1) {
+        expect(
+          utilityButtonRects[index].center.dy,
+          closeTo(utilityButtonRects.first.center.dy, 0.1),
+        );
+        expect(
+          utilityButtonRects[index].left,
+          greaterThanOrEqualTo(utilityButtonRects[index - 1].right),
+        );
+      }
 
       final transport = tester.getRect(
         find.byKey(const ValueKey('classic-vinyl-player-transport')),
@@ -1714,8 +2636,8 @@ void main() {
       expect(primary.center.dx, closeTo(transport.center.dx, 0.1));
       expect(previous.width, closeTo(next.width, 0.001));
       expect(shuffle.width, closeTo(repeat.width, 0.001));
-      expect(previous.width, inInclusiveRange(69, 72));
-      expect(primary.width, inInclusiveRange(82, 85));
+      expect(previous.width, closeTo(67.18, 0.1));
+      expect(primary.width, closeTo(79.39, 0.1));
       expect(primary.width / previous.width, inInclusiveRange(1.15, 1.25));
       expect(
         shuffle.left - transport.left,
@@ -1883,7 +2805,13 @@ void main() {
     final transport = tester.getRect(
       find.byKey(const ValueKey('classic-vinyl-player-transport')),
     );
-    expect(controls.width, greaterThanOrEqualTo(239));
+    final controlsInset = tester.getRect(
+      find.byKey(const ValueKey('classic-vinyl-player-controls-inset')),
+    );
+    expect(controlsInset.width, closeTo(240, 0.1));
+    expect(controls.left - controlsInset.left, closeTo(6, 0.1));
+    expect(controlsInset.right - controls.right, closeTo(6, 0.1));
+    expect(controls.width, closeTo(228, 0.1));
     expect(controls.bottom, lessThanOrEqualTo(viewport.height - 24 + 0.1));
     for (final key in const [
       'player-shuffle-control',
@@ -2079,7 +3007,7 @@ void main() {
     },
   );
 
-  testWidgets('BStream landscape header stays legible in a light theme', (
+  testWidgets('BStream landscape keeps dark controls over a light app theme', (
     tester,
   ) async {
     _configureView(tester, const Size(568, 320));
@@ -2104,78 +3032,252 @@ void main() {
     await tester.pump(const Duration(milliseconds: 500));
     await tester.pump();
 
-    final header = find.byKey(const ValueKey('player-header'));
     final queueButton = tester.widget<IconButton>(
-      find.byKey(const ValueKey('player-queue-toggle')),
+      find.descendant(
+        of: find.byKey(const ValueKey('player-queue-toggle')),
+        matching: find.byType(IconButton),
+        matchRoot: true,
+      ),
     );
     final menuButton = tester.widget<IconButton>(
       find.byKey(const ValueKey('player-menu-control')),
     );
 
-    expect(header, findsOneWidget);
-    expect(
-      tester
-          .widget<Text>(find.byKey(const ValueKey('player-tab-title')))
-          .style
-          ?.color,
-      Colors.white,
+    expect(find.byKey(const ValueKey('player-header')), findsNothing);
+    expect(find.byKey(const ValueKey('player-tab-title')), findsNothing);
+    final controlContext = tester.element(
+      find.byKey(const ValueKey('player-queue-toggle')),
     );
-    expect(queueButton.style?.foregroundColor?.resolve({}), Colors.white);
-    expect(menuButton.color, Colors.white);
+    expect(Theme.of(controlContext).brightness, Brightness.dark);
+    final foreground = AppColors.playbackControlForegroundFor(controlContext);
+    expect(queueButton.color, foreground);
+    expect(menuButton.color, foreground);
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets(
-    'the full player stays dark in a light app theme for every style',
-    (tester) async {
-      _configureView(tester, const Size(390, 820));
+  testWidgets('mobile player stays dark for every app theme and style', (
+    tester,
+  ) async {
+    _configureView(tester, const Size(390, 820));
 
-      for (final style in PlayerStyle.values) {
-        await tester.pumpWidget(
-          _playerHarness(
-            key: ValueKey('light-app-dark-player-${style.name}'),
-            platform: TargetPlatform.android,
-            snapshot: snapshot,
-            localTrack: localTrack,
-            playlists: _TestPlaylistsController(),
-            style: style,
-            brightness: Brightness.light,
-          ),
-        );
-        await tester.pump(const Duration(milliseconds: 500));
-        await tester.pump();
+    for (final platform in [TargetPlatform.android, TargetPlatform.iOS]) {
+      for (final brightness in Brightness.values) {
+        for (final style in PlayerStyle.values) {
+          await tester.pumpWidget(
+            _playerHarness(
+              key: ValueKey(
+                'mobile-player-theme-$platform-$brightness-${style.name}',
+              ),
+              platform: platform,
+              snapshot: snapshot,
+              localTrack: localTrack,
+              playlists: _TestPlaylistsController(),
+              style: style,
+              brightness: brightness,
+            ),
+          );
+          await tester.pump(const Duration(milliseconds: 500));
+          await tester.pump();
 
-        final playerContent = switch (style) {
-          PlayerStyle.bstreamMusic => find.byKey(
-            const ValueKey('player-content-layout'),
-          ),
-          PlayerStyle.appleMusic => find.byKey(
-            const ValueKey('apple-player-layout'),
-          ),
-          PlayerStyle.classicVinyl => find.byKey(
-            const ValueKey('classic-vinyl-player-layout'),
-          ),
-        };
-        expect(playerContent, findsOneWidget, reason: '$style player content');
+          final playerContent = switch (style) {
+            PlayerStyle.bstreamMusic => find.byKey(
+              const ValueKey('player-content-layout'),
+            ),
+            PlayerStyle.appleMusic => find.byKey(
+              const ValueKey('apple-player-layout'),
+            ),
+            PlayerStyle.classicVinyl => find.byKey(
+              const ValueKey('classic-vinyl-player-layout'),
+            ),
+            PlayerStyle.spotifyMusic => find.byKey(
+              const ValueKey('spotify-player-layout'),
+            ),
+          };
+          expect(
+            playerContent,
+            findsOneWidget,
+            reason: '$style player content',
+          );
 
-        final playerTheme = Theme.of(tester.element(playerContent));
-        expect(
-          playerTheme.brightness,
-          Brightness.dark,
-          reason: '$style must ignore the surrounding light brightness',
-        );
-        expect(playerTheme.colorScheme.brightness, Brightness.dark);
+          final playerTheme = Theme.of(tester.element(playerContent));
+          expect(
+            playerTheme.brightness,
+            Brightness.dark,
+            reason: '$platform $style keeps the isolated dark player palette',
+          );
+          expect(playerTheme.colorScheme.brightness, Brightness.dark);
 
-        final appTheme = Theme.of(tester.element(find.byType(Scaffold).first));
-        expect(
-          appTheme.brightness,
-          Brightness.light,
-          reason: 'the app outside $style must remain light',
-        );
-        expect(tester.takeException(), isNull);
+          final appTheme = Theme.of(
+            tester.element(find.byType(Scaffold).first),
+          );
+          expect(
+            appTheme.brightness,
+            brightness,
+            reason: 'the surrounding app keeps its brightness',
+          );
+          expect(tester.takeException(), isNull);
+        }
       }
-    },
-  );
+    }
+  });
+
+  for (final platform in [TargetPlatform.android, TargetPlatform.iOS]) {
+    for (final frame in const [
+      (size: Size(390, 820), topPadding: 44.0),
+      (size: Size(320, 568), topPadding: 56.0),
+    ]) {
+      for (final style in PlayerStyle.values) {
+        testWidgets(
+          '$platform ${style.name} paints behind the status bar and keeps controls safe at ${frame.size.width.toInt()}px',
+          (tester) async {
+            const bottomPadding = 24.0;
+            _configureView(
+              tester,
+              frame.size,
+              topPadding: frame.topPadding,
+              bottomPadding: bottomPadding,
+            );
+            final trackWithArtwork = LocalTrack(
+              id: trackId,
+              title: 'Cancion de prueba',
+              artist: 'BStream Music',
+              filePath: '/tmp/player-controls-track.m4a',
+              thumbnailPath: '/tmp/player-status-bar-cover.jpg',
+              addedAt: DateTime(2026),
+            );
+            await tester.pumpWidget(
+              _playerHarness(
+                platform: platform,
+                snapshot: snapshot,
+                localTrack: trackWithArtwork,
+                playlists: _TestPlaylistsController(),
+                style: style,
+                artworkStyle: PlayerArtworkStyle.expanded,
+                drawBackground: true,
+                disableAnimations: true,
+                brightness: Brightness.light,
+                onCollapse: () {},
+              ),
+            );
+            await tester.pump();
+            await tester.pump(const Duration(milliseconds: 500));
+
+            final backdrop = find.byType(PlaybackArtworkBackdrop);
+            expect(backdrop, findsOneWidget);
+            final backdropRect = tester.getRect(backdrop);
+            expect(backdropRect.top, closeTo(0, 0.001));
+            expect(backdropRect.bottom, closeTo(frame.size.height, 0.001));
+
+            final grabber = find.byKey(
+              ValueKey(switch (style) {
+                PlayerStyle.bstreamMusic => 'bstream-player-grabber',
+                PlayerStyle.appleMusic => 'apple-player-grabber',
+                PlayerStyle.classicVinyl => 'classic-vinyl-player-grabber',
+                PlayerStyle.spotifyMusic => 'spotify-player-grabber',
+              }),
+            );
+            expect(grabber, findsOneWidget);
+            expect(
+              tester.getRect(grabber).top,
+              greaterThanOrEqualTo(frame.topPadding),
+            );
+            if (style != PlayerStyle.classicVinyl) {
+              final hero = find.byKey(
+                const ValueKey('player-expanded-artwork-hero'),
+              );
+              expect(hero, findsOneWidget);
+              final heroRect = tester.getRect(hero);
+              expect(heroRect.left, closeTo(0, 0.001));
+              expect(heroRect.right, closeTo(frame.size.width, 0.001));
+              expect(heroRect.top, closeTo(frame.topPadding - 24, 0.001));
+              expect(heroRect.bottom, lessThanOrEqualTo(frame.size.height));
+              final sharpCoverRect = tester.getRect(
+                find.byKey(
+                  const ValueKey('player-expanded-artwork-focused-image'),
+                ),
+              );
+              expect(sharpCoverRect.top, closeTo(heroRect.top, 0.001));
+              expect(sharpCoverRect.width, greaterThan(frame.size.width));
+              expect(
+                sharpCoverRect.height,
+                closeTo(sharpCoverRect.width, 0.001),
+              );
+              final reflectionRect = tester
+                  .widget<PlaybackArtworkBackdrop>(backdrop)
+                  .reflectionArtworkRect;
+              expect(reflectionRect, isNotNull);
+              expect(
+                reflectionRect!.shift(backdropRect.topLeft),
+                rectMoreOrLessEquals(sharpCoverRect),
+              );
+            }
+            final primary = find.byKey(
+              const ValueKey('player-primary-control'),
+            );
+            await tester.ensureVisible(primary);
+            await tester.pump();
+            final primaryRect = tester.getRect(primary);
+            expect(primaryRect.top, greaterThanOrEqualTo(frame.topPadding));
+            expect(
+              primaryRect.bottom,
+              lessThanOrEqualTo(frame.size.height - bottomPadding + 0.1),
+            );
+
+            final utility = find.byKey(
+              ValueKey(switch (style) {
+                PlayerStyle.appleMusic => 'apple-player-utility-row',
+                PlayerStyle.classicVinyl => 'classic-vinyl-player-utility-row',
+                PlayerStyle.bstreamMusic ||
+                PlayerStyle.spotifyMusic => 'player-utility-controls',
+              }),
+            );
+            expect(utility, findsOneWidget);
+            await tester.ensureVisible(utility);
+            await tester.pump();
+            final utilityRect = tester.getRect(utility);
+            expect(utilityRect.top, greaterThanOrEqualTo(frame.topPadding));
+            expect(
+              utilityRect.bottom,
+              lessThanOrEqualTo(frame.size.height - bottomPadding + 0.1),
+            );
+            expect(tester.takeException(), isNull);
+          },
+        );
+      }
+    }
+  }
+
+  testWidgets('desktop player menu exposes app audio output without Cast', (
+    tester,
+  ) async {
+    _configureView(tester, const Size(1200, 820));
+    for (final platform in [
+      TargetPlatform.windows,
+      TargetPlatform.macOS,
+      TargetPlatform.linux,
+    ]) {
+      await tester.pumpWidget(
+        _playerHarness(
+          key: ValueKey('desktop-audio-menu-$platform'),
+          platform: platform,
+          snapshot: snapshot,
+          localTrack: localTrack,
+          playlists: _TestPlaylistsController(),
+        ),
+      );
+      await tester.pump(const Duration(milliseconds: 500));
+      await tester.tap(find.byKey(const ValueKey('player-menu-control')));
+      await tester.pump(const Duration(milliseconds: 500));
+      expect(
+        find.byKey(const ValueKey('player-menu-audio-output')),
+        findsOneWidget,
+      );
+      expect(find.text('Salida de audio'), findsOneWidget);
+      expect(find.byKey(const ValueKey('player-menu-cast')), findsNothing);
+      expect(tester.takeException(), isNull);
+      await tester.pumpWidget(const SizedBox.shrink());
+    }
+  });
 
   testWidgets('desktop player follows the app theme for every style', (
     tester,
@@ -2213,9 +3315,7 @@ void main() {
     }
   });
 
-  testWidgets('the chosen font reaches all three full player styles', (
-    tester,
-  ) async {
+  testWidgets('the chosen font reaches all full player styles', (tester) async {
     _configureView(tester, const Size(390, 820));
 
     for (final style in PlayerStyle.values) {
@@ -2300,7 +3400,7 @@ void main() {
           tester.element(find.byKey(const ValueKey('player-track-title'))),
         ).brightness,
         Brightness.dark,
-        reason: '$style player must remain dark behind its light menu',
+        reason: '$style player keeps its dark palette behind the light menu',
       );
       expect(tester.takeException(), isNull);
 
@@ -2368,7 +3468,7 @@ void main() {
   }
 
   testWidgets(
-    'menu samples the cover only while open and ignores position ticks',
+    'capsules do not sample artwork and menu sampling ignores position ticks',
     (tester) async {
       _configureView(tester, const Size(390, 820));
       final service = _CountingMenuColorService();
@@ -2389,6 +3489,35 @@ void main() {
       );
       await tester.pump(const Duration(milliseconds: 500));
       expect(service.sources, isEmpty);
+      final capsule =
+          tester
+                  .widget<DecoratedBox>(
+                    find
+                        .descendant(
+                          of: find.byKey(
+                            const ValueKey('player-utility-capsule'),
+                          ),
+                          matching: find.byType(DecoratedBox),
+                        )
+                        .first,
+                  )
+                  .decoration
+              as BoxDecoration;
+      for (final key in [
+        'apple-player-favorite-surface',
+        'apple-player-menu-surface',
+      ]) {
+        expect(
+          find.descendant(
+            of: find.byKey(ValueKey(key)),
+            matching: find.byType(LiquidGlassSurface),
+          ),
+          findsOneWidget,
+        );
+      }
+      expect(capsule.color!.a, lessThan(.2));
+      expect(capsule.gradient, isNull);
+      expect(capsule.border, isNull);
       await tester.tap(find.byKey(const ValueKey('player-menu-control')));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 500));
@@ -2434,6 +3563,9 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 500));
       expect(service.releases, 2);
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pump();
+      expect(service.releases, 2);
       expect(tester.takeException(), isNull);
     },
   );
@@ -2463,7 +3595,7 @@ void main() {
     expect(
       Theme.of(tester.element(popover)).brightness,
       Brightness.light,
-      reason: 'only the player surface should override the app brightness',
+      reason: 'the popover follows the app brightness',
     );
     expect(
       Theme.of(
@@ -2558,9 +3690,13 @@ void main() {
     final queueTitle = find.textContaining('Cola de Reproducción');
     expect(queueTitle, findsOneWidget);
     expect(
+      find.byKey(const ValueKey('queue-header-artwork-background')),
+      findsOneWidget,
+    );
+    expect(
       Theme.of(tester.element(queueTitle)).brightness,
       Brightness.light,
-      reason: 'the queue route is outside the player-only dark theme',
+      reason: 'the queue follows the surrounding app brightness',
     );
     expect(tester.takeException(), isNull);
   });
@@ -2638,7 +3774,7 @@ void main() {
 
   for (final size in const [Size(320, 720), Size(360, 800)]) {
     testWidgets(
-      'Android ${size.width.toInt()} px stacks labeled secondary controls',
+      'Android ${size.width.toInt()} px puts four utility icons below transport',
       (tester) async {
         _configureView(tester, size);
         final playlists = _TestPlaylistsController();
@@ -2662,20 +3798,20 @@ void main() {
         final previous = find.byKey(const ValueKey('player-previous-control'));
         final next = find.byKey(const ValueKey('player-next-control'));
         final artwork = find.byKey(const ValueKey('player-large-artwork'));
-        final header = find.byKey(const ValueKey('player-header'));
+        final utility = find.byKey(const ValueKey('player-utility-controls'));
 
         expect(
           find.descendant(of: lyrics, matching: find.text('Letras')),
-          findsOneWidget,
+          findsNothing,
         );
         expect(
           find.descendant(of: volume, matching: find.text('Volumen')),
-          findsOneWidget,
+          findsNothing,
         );
         expect(
           find.descendant(
             of: lyrics,
-            matching: find.byIcon(Icons.lyrics_rounded),
+            matching: find.byKey(const ValueKey('player-lyrics-icon')),
           ),
           findsOneWidget,
         );
@@ -2704,91 +3840,86 @@ void main() {
         );
         expect(
           tester.getCenter(volume).dx,
-          greaterThan(tester.getCenter(primary).dx),
+          lessThan(tester.getCenter(primary).dx),
         );
         expect(
           tester.getCenter(repeat).dx,
           greaterThan(tester.getCenter(primary).dx),
         );
-        expect(
-          tester.getSize(lyrics).width,
-          greaterThan(tester.getSize(shuffle).width),
-        );
-        expect(
-          tester.getSize(volume).width,
-          greaterThan(tester.getSize(repeat).width),
-        );
-        final expectedLabelWidth = ((size.width - 40) * 0.36).clamp(
-          112.0,
-          132.0,
-        );
-        expect(tester.getSize(lyrics), Size(expectedLabelWidth, 48));
-        expect(tester.getSize(volume), Size(expectedLabelWidth, 48));
-        expect(tester.getSize(lyrics).width, lessThan(128));
-        expect(tester.getRect(lyrics).left, closeTo(20, 0.1));
-        expect(tester.getRect(volume).right, closeTo(size.width - 20, 0.1));
+        final utilityRects = [
+          for (final key in const [
+            'player-lyrics-control',
+            'player-volume-control',
+            'player-audio-output-control',
+            'player-queue-toggle',
+          ])
+            tester.getRect(find.byKey(ValueKey(key))),
+        ];
+        for (var index = 0; index < utilityRects.length; index++) {
+          final rect = utilityRects[index];
+          expect(rect.width, greaterThanOrEqualTo(48));
+          expect(rect.height, greaterThanOrEqualTo(48));
+          expect(rect.center.dy, closeTo(utilityRects.first.center.dy, 0.1));
+          expect(rect.left, greaterThanOrEqualTo(tester.getRect(utility).left));
+          expect(rect.right, lessThanOrEqualTo(tester.getRect(utility).right));
+          if (index > 0) {
+            expect(
+              rect.left,
+              greaterThanOrEqualTo(utilityRects[index - 1].right),
+            );
+          }
+        }
         final artworkSize = tester.getSize(artwork);
         expect(artworkSize.width, lessThanOrEqualTo(size.width - 48));
         expect(artworkSize.width, greaterThanOrEqualTo(180));
         expect(artworkSize.height, closeTo(artworkSize.width, 0.1));
-        final artworkTopGap =
-            tester.getRect(artwork).top - tester.getRect(header).bottom;
-        expect(artworkTopGap, lessThanOrEqualTo(size.width == 320 ? 100 : 112));
-        final lyricsIcon = tester.widget<Icon>(
-          find.descendant(
-            of: lyrics,
-            matching: find.byIcon(Icons.lyrics_rounded),
-          ),
+        expect(find.byKey(const ValueKey('player-header')), findsNothing);
+        expect(
+          find.byKey(const ValueKey('player-share-control')),
+          findsNothing,
         );
-        final lyricsLabel = tester.widget<Text>(
-          find.descendant(of: lyrics, matching: find.text('Letras')),
+        final lyricsButton = tester.widget<IconButton>(
+          find.descendant(of: lyrics, matching: find.byType(IconButton)),
         );
-        final lyricsButton = tester.widget<TextButton>(
-          find.descendant(of: lyrics, matching: find.byType(TextButton)),
+        final volumeButton = tester.widget<IconButton>(
+          find.descendant(of: volume, matching: find.byType(IconButton)),
         );
-        final volumeButton = tester.widget<TextButton>(
-          find.descendant(of: volume, matching: find.byType(TextButton)),
-        );
-        expect(lyricsIcon.size, 24);
-        expect(lyricsLabel.style?.fontSize, 14);
+        expect(lyricsButton.iconSize, greaterThanOrEqualTo(22));
+        expect(lyricsButton.tooltip, 'Letras');
+        expect(volumeButton.tooltip, 'Volumen');
         expect(
           lyricsButton.style?.backgroundColor?.resolve(<WidgetState>{}),
-          Colors.transparent,
+          anyOf(isNull, Colors.transparent),
         );
         expect(
           volumeButton.style?.backgroundColor?.resolve(<WidgetState>{}),
-          Colors.transparent,
+          anyOf(isNull, Colors.transparent),
         );
         expect(
           lyricsButton.style?.backgroundColor?.resolve(<WidgetState>{
             WidgetState.disabled,
           }),
-          Colors.transparent,
+          anyOf(isNull, Colors.transparent),
         );
         expect(
           volumeButton.style?.backgroundColor?.resolve(<WidgetState>{
             WidgetState.disabled,
           }),
-          Colors.transparent,
-        );
-        expect(
-          lyricsButton.style?.shape?.resolve(<WidgetState>{}),
-          isA<RoundedRectangleBorder>(),
+          anyOf(isNull, Colors.transparent),
         );
 
-        final contentWidth = size.width - 40;
-        final originalRegularPlaySize = (contentWidth * 0.22).clamp(64.0, 88.0);
-        final originalPlaySize = (originalRegularPlaySize + 6).clamp(
-          76.0,
-          94.0,
+        final expectedPlaySize = size.width == 320 ? 64.0 : 76.0;
+        expect(tester.getSize(primary), Size.square(expectedPlaySize));
+        _expectTransparentPrimaryControl(tester, mobile: true);
+        final minimumSideSize = size.width == 320 ? 48.0 : 52.0;
+        expect(
+          tester.getSize(previous).shortestSide,
+          greaterThanOrEqualTo(minimumSideSize),
         );
         expect(
-          tester.getSize(primary),
-          Size.square(originalPlaySize.toDouble()),
+          tester.getSize(next).shortestSide,
+          greaterThanOrEqualTo(minimumSideSize),
         );
-        _expectTransparentPrimaryControl(tester, mobile: true);
-        expect(tester.getSize(previous).shortestSide, greaterThanOrEqualTo(52));
-        expect(tester.getSize(next).shortestSide, greaterThanOrEqualTo(52));
 
         if (size.width == 360) {
           final shuffleRect = tester.getRect(shuffle);
@@ -2808,6 +3939,56 @@ void main() {
           expect(repeatRect.left - nextRect.right, greaterThanOrEqualTo(6));
         }
         await tester.ensureVisible(volume);
+        final classicArtworkRect = tester.getRect(artwork);
+        final classicPrimaryRect = tester.getRect(primary);
+        final classicUtilityRect = tester.getRect(utility);
+        final classicVolumeRect = tester.getRect(volume);
+        expect(
+          size.height - classicVolumeRect.bottom,
+          greaterThanOrEqualTo(16),
+        );
+
+        // Classic uses spare room above the cover for a larger title gap;
+        // metadata and playback controls retain their spacing as a group.
+        await tester.pumpWidget(
+          _playerHarness(
+            key: ValueKey('bstream-bottom-anchor-${size.width}'),
+            platform: TargetPlatform.android,
+            snapshot: snapshot,
+            localTrack: localTrack,
+            playlists: _TestPlaylistsController(),
+            artworkStyle: PlayerArtworkStyle.expanded,
+          ),
+        );
+        await tester.pump(const Duration(milliseconds: 500));
+        await tester.pump();
+        final artworkOffset =
+            tester.getTopLeft(artwork) - classicArtworkRect.topLeft;
+        final controlsOffset =
+            tester.getTopLeft(primary) - classicPrimaryRect.topLeft;
+        expect(artworkOffset.dx, closeTo(0, 0.001));
+        expect(artworkOffset.dy, greaterThan(0));
+        expect(controlsOffset.dx, closeTo(0, 0.001));
+        expect(
+          artworkOffset.dy,
+          greaterThanOrEqualTo(controlsOffset.dy - 0.001),
+        );
+        expect(
+          tester.getRect(artwork),
+          rectMoreOrLessEquals(classicArtworkRect.shift(artworkOffset)),
+        );
+        expect(
+          tester.getRect(primary),
+          rectMoreOrLessEquals(classicPrimaryRect.shift(controlsOffset)),
+        );
+        expect(
+          tester.getRect(utility),
+          rectMoreOrLessEquals(classicUtilityRect.shift(controlsOffset)),
+        );
+        expect(
+          tester.getRect(volume),
+          rectMoreOrLessEquals(classicVolumeRect.shift(controlsOffset)),
+        );
         expect(size.height - tester.getRect(volume).bottom, closeTo(16, 0.1));
         expect(tester.takeException(), isNull);
       },
@@ -2918,8 +4099,13 @@ void main() {
       final timeline = tester.getRect(
         find.byKey(const ValueKey('player-timeline')),
       );
-      expect(timeline.left, closeTo(14, 0.1));
-      expect(timeline.right, closeTo(376, 0.1));
+      final controlsInset = tester.getRect(
+        find.byKey(const ValueKey('bstream-player-controls-inset')),
+      );
+      expect(controlsInset.left, closeTo(14, 0.1));
+      expect(controlsInset.right, closeTo(376, 0.1));
+      expect(timeline.left - controlsInset.left, closeTo(8, 0.1));
+      expect(controlsInset.right - timeline.right, closeTo(8, 0.1));
 
       final shuffle = tester.getRect(
         find.byKey(const ValueKey('player-shuffle-control')),
@@ -2973,6 +4159,105 @@ void main() {
       expect(tester.takeException(), isNull);
     },
   );
+
+  for (final scenario in const [
+    (platform: TargetPlatform.android, brightness: Brightness.dark),
+    (platform: TargetPlatform.windows, brightness: Brightness.light),
+  ]) {
+    testWidgets(
+      '${scenario.platform} wave follows the cover and shares its lookup with the menu',
+      (tester) async {
+        _configureView(
+          tester,
+          scenario.platform == TargetPlatform.android
+              ? const Size(390, 820)
+              : const Size(700, 820),
+        );
+        const blueCover = '/fixture/blue-wave-cover.png';
+        const orangeCover = '/fixture/orange-wave-cover.png';
+        final service = _CountingMenuColorService();
+        final initial = snapshot.copyWith(thumbnailUrl: blueCover);
+        final controller = _TestPlayerController(initial);
+        await tester.pumpWidget(
+          _playerHarness(
+            platform: scenario.platform,
+            brightness: scenario.brightness,
+            accent: AppAccent.red,
+            snapshot: initial,
+            localTrack: localTrack,
+            playlists: _TestPlaylistsController(),
+            playerController: controller,
+            menuColorService: service,
+          ),
+        );
+        await tester.pump(const Duration(milliseconds: 500));
+        await tester.pump();
+
+        Color waveColor() => tester
+            .widget<WavyPlaybackSeekBar>(find.byType(WavyPlaybackSeekBar))
+            .waveColor;
+
+        final firstColor = waveColor();
+        final firstTone = HSLColor.fromColor(firstColor);
+        expect(firstTone.hue, closeTo(HSLColor.fromColor(Colors.blue).hue, 1));
+        expect(
+          firstColor,
+          isNot(
+            AppColors.downloadAccentFor(
+              tester.element(find.byType(WavyPlaybackSeekBar)),
+            ),
+          ),
+        );
+        expect(
+          firstTone.lightness,
+          scenario.brightness == Brightness.dark
+              ? greaterThan(0.5)
+              : lessThan(0.5),
+        );
+        expect(service.sources, [blueCover]);
+
+        controller.emit(
+          initial.copyWith(position: const Duration(seconds: 10)),
+        );
+        await tester.pump();
+        expect(waveColor(), firstColor);
+        expect(service.sources, [blueCover]);
+
+        await tester.tap(find.byKey(const ValueKey('player-menu-control')));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 500));
+        expect(service.sources, [blueCover]);
+        expect(
+          tester
+              .widget<PlaybackArtworkBackdrop>(
+                find.byKey(const ValueKey('playback-menu-artwork-background')),
+              )
+              .source,
+          blueCover,
+        );
+
+        controller.emit(
+          initial.copyWith(
+            trackId: 'next-wave-track',
+            thumbnailUrl: orangeCover,
+          ),
+        );
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 500));
+        expect(service.sources, [blueCover, orangeCover]);
+
+        await tester.tap(find.byKey(const ValueKey('player-options-close')));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 500));
+        expect(
+          HSLColor.fromColor(waveColor()).hue,
+          closeTo(HSLColor.fromColor(Colors.orange).hue, 1),
+        );
+        expect(service.sources, [blueCover, orangeCover]);
+        expect(tester.takeException(), isNull);
+      },
+    );
+  }
 
   testWidgets('liquid volume popover delegates its complete material paint', (
     tester,
@@ -3328,17 +4613,25 @@ void main() {
       expect(tester.getSize(previous).shortestSide, inInclusiveRange(74, 76));
       expect(tester.getSize(primary).shortestSide, inInclusiveRange(89, 91));
       expect(tester.getSize(next).shortestSide, inInclusiveRange(74, 76));
+      final previousRect = tester.getRect(previous);
+      final primaryRect = tester.getRect(primary);
+      final nextRect = tester.getRect(next);
+      expect(primaryRect.left - previousRect.right, inInclusiveRange(6, 16));
+      expect(
+        nextRect.left - primaryRect.right,
+        closeTo(primaryRect.left - previousRect.right, 0.1),
+      );
       expect(
         tester
             .widget<IconButton>(
               find.descendant(of: previous, matching: find.byType(IconButton)),
             )
             .iconSize,
-        inInclusiveRange(48, 50),
+        inInclusiveRange(60, 62),
       );
       expect(
         tester.widget<IconButton>(primary).iconSize,
-        inInclusiveRange(71, 73),
+        inInclusiveRange(82, 84),
       );
       expect(
         tester
@@ -3346,7 +4639,7 @@ void main() {
               find.descendant(of: next, matching: find.byType(IconButton)),
             )
             .iconSize,
-        inInclusiveRange(48, 50),
+        inInclusiveRange(60, 62),
       );
 
       final position = tester.getRect(
@@ -3363,8 +4656,10 @@ void main() {
       final timelineSlider = tester.getRect(
         find.byKey(const ValueKey('apple-player-linear-seek')),
       );
-      expect(artwork.left, closeTo(timelineSlider.left, 0.1));
-      expect(artwork.right, closeTo(timelineSlider.right, 0.1));
+      expect(timelineSlider.left - artwork.left, closeTo(8, 0.1));
+      expect(artwork.right - timelineSlider.right, closeTo(8, 0.1));
+      expect(metadata.left, closeTo(timelineSlider.left, 0.1));
+      expect(metadata.right, closeTo(timelineSlider.right, 0.1));
 
       SliderThemeData localSliderTheme(String sliderKey) {
         final themes = find.ancestor(
@@ -4035,6 +5330,234 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets(
+    'BStream raises its classic cover and adds title spacing when phone portrait has spare room',
+    (tester) async {
+      _configureView(
+        tester,
+        const Size(390, 820),
+        topPadding: 44,
+        bottomPadding: 24,
+      );
+      final trackWithArtwork = LocalTrack(
+        id: trackId,
+        title: 'Cancion de prueba',
+        artist: 'BStream Music',
+        filePath: '/tmp/player-controls-track.m4a',
+        thumbnailPath: '/tmp/bstream-balanced-classic-cover.jpg',
+        addedAt: DateTime(2026),
+      );
+
+      for (final viewport in const [Size(390, 820), Size(390, 900)]) {
+        tester.view.physicalSize = viewport;
+        final measurements =
+            <
+              PlayerArtworkStyle,
+              ({
+                Rect artwork,
+                Rect title,
+                Rect primary,
+                Rect utility,
+                Rect scroll,
+              })
+            >{};
+        for (final artworkStyle in PlayerArtworkStyle.values) {
+          await tester.pumpWidget(
+            _playerHarness(
+              key: ValueKey('bstream-balanced-$viewport-$artworkStyle'),
+              platform: TargetPlatform.android,
+              snapshot: snapshot,
+              localTrack: trackWithArtwork,
+              playlists: _TestPlaylistsController(),
+              artworkStyle: artworkStyle,
+              disableAnimations: true,
+            ),
+          );
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 500));
+
+          final artworkRect = tester.getRect(
+            find.byKey(const ValueKey('player-large-artwork')),
+          );
+          final utilityRect = tester.getRect(
+            find.byKey(const ValueKey('player-utility-capsule')),
+          );
+          measurements[artworkStyle] = (
+            artwork: artworkRect,
+            title: tester.getRect(
+              find.byKey(const ValueKey('player-track-title')),
+            ),
+            primary: tester.getRect(
+              find.byKey(const ValueKey('player-primary-control')),
+            ),
+            utility: utilityRect,
+            scroll: tester.getRect(
+              find.byKey(const ValueKey('player-content-scroll')),
+            ),
+          );
+          final handleRect = tester.getRect(
+            find.byKey(const ValueKey('bstream-player-grabber')),
+          );
+          expect(handleRect.top, greaterThanOrEqualTo(44));
+          expect(artworkRect.top - handleRect.bottom, greaterThanOrEqualTo(12));
+          expect(utilityRect.bottom, lessThanOrEqualTo(viewport.height - 24));
+          expect(tester.takeException(), isNull);
+        }
+
+        final classic = measurements[PlayerArtworkStyle.classic]!;
+        final expanded = measurements[PlayerArtworkStyle.expanded]!;
+        final upwardShift = expanded.artwork.top - classic.artwork.top;
+        expect(upwardShift, greaterThan(8), reason: '$viewport');
+        final artworkOffset = Offset(0, upwardShift);
+        final controlsOffset = Offset(
+          0,
+          expanded.title.top - classic.title.top,
+        );
+        expect(artworkOffset.dy, greaterThan(controlsOffset.dy));
+        expect(
+          expanded.artwork,
+          rectMoreOrLessEquals(classic.artwork.shift(artworkOffset)),
+        );
+        expect(
+          expanded.title,
+          rectMoreOrLessEquals(classic.title.shift(controlsOffset)),
+        );
+        expect(
+          expanded.primary,
+          rectMoreOrLessEquals(classic.primary.shift(controlsOffset)),
+        );
+        expect(
+          expanded.utility,
+          rectMoreOrLessEquals(classic.utility.shift(controlsOffset)),
+        );
+        expect(
+          classic.title.top - classic.artwork.bottom,
+          greaterThan(expanded.title.top - expanded.artwork.bottom),
+        );
+        expect(classic.scroll, expanded.scroll);
+        expect(
+          classic.artwork.top - classic.scroll.top,
+          lessThan(expanded.artwork.top - expanded.scroll.top),
+        );
+        expect(
+          classic.scroll.bottom - classic.utility.bottom,
+          greaterThan(expanded.scroll.bottom - expanded.utility.bottom),
+        );
+        expect(
+          classic.artwork.top - classic.scroll.top,
+          lessThanOrEqualTo(
+            (classic.scroll.bottom - classic.utility.bottom) * 1.6,
+          ),
+          reason: 'The classic group balances the spare room above and below.',
+        );
+      }
+    },
+  );
+
+  testWidgets(
+    'BStream keeps its classic cover and controls safe on small frames',
+    (tester) async {
+      _configureView(
+        tester,
+        const Size(320, 568),
+        topPadding: 44,
+        bottomPadding: 24,
+      );
+      for (final viewport in const [Size(320, 568), Size(820, 390)]) {
+        tester.view.physicalSize = viewport;
+        await tester.pumpWidget(
+          _playerHarness(
+            key: ValueKey('bstream-classic-small-$viewport'),
+            platform: TargetPlatform.android,
+            snapshot: snapshot,
+            localTrack: localTrack,
+            playlists: _TestPlaylistsController(),
+            disableAnimations: true,
+          ),
+        );
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 500));
+
+        expect(
+          find.byKey(const ValueKey('player-expanded-artwork-hero')),
+          findsNothing,
+        );
+        final handleRect = tester.getRect(
+          find.byKey(const ValueKey('bstream-player-grabber')),
+        );
+        final artworkRect = tester.getRect(
+          find.byKey(const ValueKey('player-large-artwork')),
+        );
+        expect(handleRect.top, greaterThanOrEqualTo(44));
+        expect(artworkRect.top, greaterThanOrEqualTo(44));
+        expect(artworkRect.left, greaterThanOrEqualTo(0));
+        expect(artworkRect.right, lessThanOrEqualTo(viewport.width));
+        if (viewport.height > viewport.width) {
+          expect(artworkRect.top - handleRect.bottom, greaterThanOrEqualTo(12));
+          expect(
+            tester
+                    .getRect(find.byKey(const ValueKey('player-track-title')))
+                    .top -
+                artworkRect.bottom,
+            closeTo(8, 0.1),
+          );
+        } else {
+          expect(
+            find.byKey(const ValueKey('bstream-player-adaptive-landscape')),
+            findsOneWidget,
+          );
+        }
+        for (final key in [
+          'player-primary-control',
+          'player-utility-capsule',
+        ]) {
+          final control = find.byKey(ValueKey(key));
+          await tester.ensureVisible(control);
+          await tester.pump();
+          final rect = tester.getRect(control);
+          expect(rect.top, greaterThanOrEqualTo(44));
+          expect(rect.bottom, lessThanOrEqualTo(viewport.height - 24 + 0.1));
+        }
+        expect(tester.takeException(), isNull, reason: '$viewport');
+      }
+    },
+  );
+
+  testWidgets('BStream keeps a gap between its collapse handle and cover', (
+    tester,
+  ) async {
+    _configureView(tester, const Size(936, 680));
+    for (final testCase in [
+      (platform: TargetPlatform.windows, size: const Size(936, 680)),
+      (platform: TargetPlatform.windows, size: const Size(1280, 900)),
+      (platform: TargetPlatform.android, size: const Size(390, 820)),
+      (platform: TargetPlatform.android, size: const Size(320, 720)),
+    ]) {
+      tester.view.physicalSize = testCase.size;
+      await tester.pumpWidget(
+        _playerHarness(
+          key: ValueKey(
+            'bstream-handle-gap-${testCase.platform}-${testCase.size}',
+          ),
+          platform: testCase.platform,
+          snapshot: snapshot,
+          localTrack: localTrack,
+          playlists: _TestPlaylistsController(),
+        ),
+      );
+      await tester.pump(const Duration(milliseconds: 500));
+      await tester.pump();
+      final handle = tester.getRect(
+        find.byKey(const ValueKey('bstream-player-grabber')),
+      );
+      final artwork = tester.getRect(
+        find.byKey(const ValueKey('player-large-artwork')),
+      );
+      expect(artwork.top - handle.bottom, greaterThanOrEqualTo(12));
+      expect(tester.takeException(), isNull);
+    }
+  });
+
   testWidgets('Apple Music Style toggles the desktop playback queue rail', (
     tester,
   ) async {
@@ -4058,6 +5581,10 @@ void main() {
       const ValueKey('desktop-playback-queue-switcher'),
     );
     expect(rail, findsOneWidget);
+    expect(
+      find.byKey(const ValueKey('queue-header-artwork-background')),
+      findsOneWidget,
+    );
     expect(tester.getSize(switcher).width, closeTo(400, 0.1));
 
     await tester.tap(toggle);
@@ -4082,7 +5609,122 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('Windows keeps secondary controls in one row', (tester) async {
+  testWidgets(
+    'BStream adapts between wide and tall desktop windows without stretched controls',
+    (tester) async {
+      _configureView(tester, const Size(1280, 820));
+      await tester.pumpWidget(
+        _playerHarness(
+          platform: TargetPlatform.windows,
+          snapshot: snapshot,
+          localTrack: localTrack,
+          playlists: _TestPlaylistsController(),
+        ),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey('queue-close')));
+      await tester.pumpAndSettle();
+
+      for (final viewport in const [
+        Size(1600, 900),
+        Size(720, 1100),
+        Size(1280, 720),
+        Size(640, 480),
+      ]) {
+        tester.view.physicalSize = viewport;
+        await tester.pumpAndSettle();
+        await tester.ensureVisible(
+          find.byKey(const ValueKey('player-utility-capsule')),
+        );
+        await tester.pumpAndSettle();
+        final artwork = tester.getRect(
+          find.byKey(const ValueKey('player-large-artwork')),
+        );
+        final title = tester.getRect(
+          find.byKey(const ValueKey('player-track-title')),
+        );
+        final utility = tester.getRect(
+          find.byKey(const ValueKey('player-utility-capsule')),
+        );
+        if (viewport.width >= 1200) {
+          expect(
+            artwork.right,
+            lessThan(title.left),
+            reason: '$viewport places artwork beside controls',
+          );
+          expect(title.width, lessThanOrEqualTo(520));
+        } else if (viewport.height > 900) {
+          expect(artwork.bottom, lessThan(title.top));
+          expect(
+            title.top - artwork.bottom,
+            lessThan(70),
+            reason: 'Tall windows keep metadata close to the cover',
+          );
+          expect(artwork.width, greaterThan(340));
+        }
+        expect(utility.left, greaterThanOrEqualTo(0));
+        expect(utility.right, lessThanOrEqualTo(viewport.width));
+        expect(utility.bottom, lessThanOrEqualTo(viewport.height));
+        expect(
+          find.descendant(
+            of: find.byKey(const ValueKey('player-lyrics-control')),
+            matching: find.text('Letras'),
+          ),
+          findsNothing,
+        );
+        expect(
+          tester.takeException(),
+          isNull,
+          reason: '$viewport resizes without overflow',
+        );
+      }
+    },
+  );
+
+  testWidgets('BStream and Apple use the same capsule icon and button sizes', (
+    tester,
+  ) async {
+    for (final scenario in [
+      (TargetPlatform.android, const Size(360, 740)),
+      (TargetPlatform.android, const Size(390, 820)),
+      (TargetPlatform.windows, const Size(936, 680)),
+      (TargetPlatform.windows, const Size(1280, 900)),
+    ]) {
+      _configureView(tester, scenario.$2);
+      final measurements = <PlayerStyle, ({double icon, double button})>{};
+      for (final style in [PlayerStyle.bstreamMusic, PlayerStyle.appleMusic]) {
+        await tester.pumpWidget(
+          _playerHarness(
+            key: ValueKey('utility-sizes-$scenario-$style'),
+            platform: scenario.$1,
+            snapshot: snapshot,
+            localTrack: localTrack,
+            playlists: _TestPlaylistsController(),
+            style: style,
+          ),
+        );
+        await tester.pump(const Duration(milliseconds: 500));
+        final control = find.byKey(const ValueKey('player-lyrics-control'));
+        final button = tester.widget<IconButton>(
+          find.descendant(of: control, matching: find.byType(IconButton)),
+        );
+        measurements[style] = (
+          icon: button.iconSize!,
+          button: tester.getSize(control).height,
+        );
+        expect(tester.takeException(), isNull);
+      }
+      expect(
+        measurements[PlayerStyle.bstreamMusic],
+        measurements[PlayerStyle.appleMusic],
+        reason: '$scenario',
+      );
+    }
+  });
+
+  testWidgets('Windows puts four utility icons below transport', (
+    tester,
+  ) async {
     _configureView(tester, const Size(1280, 720));
 
     await tester.pumpWidget(
@@ -4103,12 +5745,31 @@ void main() {
 
     expect(
       tester.getCenter(lyrics).dy,
-      closeTo(tester.getCenter(shuffle).dy, 0.1),
+      greaterThan(tester.getCenter(shuffle).dy),
     );
     expect(
       tester.getCenter(volume).dy,
-      closeTo(tester.getCenter(repeat).dy, 0.1),
+      greaterThan(tester.getCenter(repeat).dy),
     );
+    final utilityRects = [
+      for (final key in const [
+        'player-lyrics-control',
+        'player-volume-control',
+        'player-audio-output-control',
+        'player-queue-toggle',
+      ])
+        tester.getRect(find.byKey(ValueKey(key))),
+    ];
+    for (var index = 1; index < utilityRects.length; index++) {
+      expect(
+        utilityRects[index].center.dy,
+        closeTo(utilityRects.first.center.dy, 0.1),
+      );
+      expect(
+        utilityRects[index].left,
+        greaterThanOrEqualTo(utilityRects[index - 1].right),
+      );
+    }
     expect(
       find.descendant(of: lyrics, matching: find.text('Letras')),
       findsNothing,
@@ -4192,6 +5853,8 @@ void main() {
       'player-shuffle-control',
       'player-primary-control',
       'player-repeat-control',
+      'player-queue-toggle',
+      'player-audio-output-control',
       'player-volume-control',
     ]) {
       final rect = tester.getRect(find.byKey(ValueKey(key)));
@@ -4200,7 +5863,7 @@ void main() {
     }
     expect(
       tester.getSize(find.byKey(const ValueKey('player-primary-control'))),
-      const Size.square(76),
+      const Size.square(64),
     );
     _expectTransparentPrimaryControl(tester, mobile: true);
     final volume = find.byKey(const ValueKey('player-volume-control'));
@@ -4257,7 +5920,7 @@ void main() {
         final volume = find.byKey(const ValueKey('player-volume-control'));
         await tester.ensureVisible(volume);
         await tester.pump();
-        expect(tester.getSize(volume).height, 48);
+        expect(tester.getSize(volume).height, greaterThanOrEqualTo(48));
         expect(tester.takeException(), isNull);
       },
     );
@@ -4308,8 +5971,8 @@ void main() {
       );
       final artworkWidth = tester.getSize(artwork).width;
       expect(errorArtworkWidth, closeTo(artworkWidth, 0.1));
-      expect(tester.getSize(volume).width, greaterThanOrEqualTo(112));
-      expect(tester.getSize(volume).height, 48);
+      expect(tester.getSize(volume).width, greaterThanOrEqualTo(48));
+      expect(tester.getSize(volume).height, greaterThanOrEqualTo(48));
       expect(scroll.position.pixels, closeTo(0, 0.1));
       expect(scroll.position.maxScrollExtent, closeTo(0, 0.1));
       expect(
@@ -4321,7 +5984,7 @@ void main() {
   );
 
   testWidgets(
-    'short Android frames compact the artwork shadow and balance the header',
+    'short Android frames compact the artwork shadow and preserve metadata gaps',
     (tester) async {
       _configureView(tester, const Size(430, 900));
 
@@ -4344,7 +6007,6 @@ void main() {
       }
 
       final artwork = find.byKey(const ValueKey('player-large-artwork'));
-      final header = find.byKey(const ValueKey('player-header'));
       final contentScroll = find.byKey(const ValueKey('player-content-scroll'));
       final metadata = find.byKey(const ValueKey('player-stable-metadata'));
       final timeline = find.byKey(const ValueKey('player-timeline'));
@@ -4352,11 +6014,11 @@ void main() {
         const ValueKey('player-playback-controls'),
       );
       final longShadow = artworkShadow();
-      expect(tester.getRect(header).top, closeTo(10, 0.1));
+      expect(find.byKey(const ValueKey('player-header')), findsNothing);
       expect(
         tester.getRect(find.byKey(const ValueKey('player-track-title'))).top -
             tester.getRect(artwork).bottom,
-        closeTo(22, 0.1),
+        closeTo(46, 0.1),
       );
       expect(
         tester.getRect(timeline).top - tester.getRect(metadata).bottom,
@@ -4390,11 +6052,7 @@ void main() {
 
       final shortArtworkWidth = tester.getSize(artwork).width;
       final shortShadow = artworkShadow();
-      expect(tester.getRect(header).top, closeTo(12, 0.1));
-      expect(
-        tester.getRect(find.byKey(const ValueKey('player-tab-title'))).top,
-        greaterThan(tester.getRect(header).top),
-      );
+      expect(find.byKey(const ValueKey('player-tab-title')), findsNothing);
       expect(
         shortShadow.blurRadius / shortArtworkWidth,
         lessThanOrEqualTo(0.035),
@@ -4481,10 +6139,22 @@ void main() {
     expect(tester.getSize(artwork).width, greaterThan(320));
     expect(scroll.position.pixels, closeTo(0, 0.1));
     expect(scroll.position.maxScrollExtent, closeTo(0, 0.1));
+    final artworkTitleGap =
+        tester.getRect(find.byKey(const ValueKey('player-track-title'))).top -
+        artworkRect.bottom;
+    final baseArtworkTitleGap = 22 - (14 * compactness);
     expect(
-      tester.getRect(find.byKey(const ValueKey('player-track-title'))).top -
-          artworkRect.bottom,
-      closeTo(22 - (14 * compactness), 0.2),
+      artworkTitleGap,
+      inInclusiveRange(baseArtworkTitleGap - 0.2, baseArtworkTitleGap + 24.2),
+    );
+    expect(
+      artworkTitleGap,
+      closeTo(
+        tester
+            .getSize(find.byKey(const ValueKey('player-artwork-title-gap')))
+            .height,
+        0.2,
+      ),
     );
     expect(
       tester.getRect(timeline).top - tester.getRect(metadata).bottom,
@@ -4633,12 +6303,8 @@ void main() {
       final metadataTransition = tester.widget<AnimatedSwitcher>(
         find.byKey(const ValueKey('player-metadata-track-transition')),
       );
-      final headerTransition = tester.widget<AnimatedSwitcher>(
-        find.byKey(const ValueKey('player-header-track-transition')),
-      );
       expect(artworkTransition.duration, const Duration(milliseconds: 420));
       expect(metadataTransition.duration, const Duration(milliseconds: 420));
-      expect(headerTransition.duration, const Duration(milliseconds: 420));
 
       controller.emit(second);
       await tester.pump();
@@ -4655,7 +6321,7 @@ void main() {
         reason: 'The track id must animate even when both covers are absent.',
       );
       expect(
-        find.byKey(const ValueKey('player-header-artist-action')),
+        find.byKey(const ValueKey('player-track-artist-action')),
         findsNWidgets(2),
       );
 
@@ -4720,7 +6386,6 @@ void main() {
     for (final key in const [
       'player-artwork-track-transition',
       'player-metadata-track-transition',
-      'player-header-track-transition',
     ]) {
       final switcher = tester.widget<AnimatedSwitcher>(
         find.byKey(ValueKey(key)),
@@ -4807,7 +6472,6 @@ void main() {
       for (final key in const [
         'player-artwork-track-transition',
         'player-metadata-track-transition',
-        'player-header-track-transition',
       ]) {
         expect(find.byKey(ValueKey(key)), findsNothing);
       }
@@ -4816,7 +6480,7 @@ void main() {
         findsOneWidget,
       );
       expect(
-        find.byKey(const ValueKey('player-header-artist-action')),
+        find.byKey(const ValueKey('player-track-artist-action')),
         findsOneWidget,
       );
       expect(
@@ -4833,7 +6497,6 @@ void main() {
       for (final key in const [
         'player-artwork-track-transition',
         'player-metadata-track-transition',
-        'player-header-track-transition',
       ]) {
         expect(find.byKey(ValueKey(key)), findsOneWidget);
       }
@@ -4863,7 +6526,7 @@ void main() {
         findsNWidgets(2),
       );
       expect(
-        find.byKey(const ValueKey('player-header-artist-action')),
+        find.byKey(const ValueKey('player-track-artist-action')),
         findsNWidgets(2),
       );
       expect(
@@ -5049,13 +6712,32 @@ void main() {
             1.0,
           );
           final expectedArtworkTitleGap = 22 - (14 * compactness);
-          expect(
+          for (final gap in [
             shortTitle.artworkTitleGap,
-            closeTo(expectedArtworkTitleGap, 0.1),
-          );
+            longTitle.artworkTitleGap,
+          ]) {
+            if (variant.textScale > 1.35 || compactness == 1) {
+              expect(gap, closeTo(expectedArtworkTitleGap, 0.1));
+            } else {
+              expect(
+                gap,
+                inInclusiveRange(
+                  expectedArtworkTitleGap - 0.1,
+                  expectedArtworkTitleGap + 24.1,
+                ),
+              );
+            }
+          }
           expect(
             longTitle.artworkTitleGap,
-            closeTo(expectedArtworkTitleGap, 0.1),
+            closeTo(
+              tester
+                  .getSize(
+                    find.byKey(const ValueKey('player-artwork-title-gap')),
+                  )
+                  .height,
+              0.1,
+            ),
           );
           expect(
             longTitle.artworkTitleGap,
@@ -5066,7 +6748,7 @@ void main() {
     );
   }
 
-  testWidgets('share stays direct in BStream and in both overflow menus', (
+  testWidgets('share stays in the overflow menu for every player style', (
     tester,
   ) async {
     _configureView(tester, const Size(360, 800));
@@ -5104,18 +6786,7 @@ void main() {
       await tester.pump();
 
       final directShare = find.byKey(const ValueKey('player-share-control'));
-      if (style == PlayerStyle.bstreamMusic) {
-        expect(directShare, findsOneWidget);
-        await tester.tap(directShare);
-        await tester.pump();
-        expect(shareService.shareCalls, 1);
-      } else {
-        expect(
-          directShare,
-          findsNothing,
-          reason: 'Apple keeps Share exclusively in the overflow menu',
-        );
-      }
+      expect(directShare, findsNothing);
       final menu = find.byKey(const ValueKey('player-menu-control'));
       expect(menu, findsOneWidget);
 
@@ -5125,7 +6796,7 @@ void main() {
 
       expect(
         shareService.shareCalls,
-        style == PlayerStyle.bstreamMusic ? 1 : 0,
+        0,
         reason: 'opening the $style menu must not start sharing',
       );
       final popupSurface = find.byKey(const ValueKey('app-menu-sheet-surface'));
@@ -5142,10 +6813,7 @@ void main() {
       await tester.tap(shareAction);
       await tester.pump();
 
-      expect(
-        shareService.shareCalls,
-        style == PlayerStyle.bstreamMusic ? 2 : 1,
-      );
+      expect(shareService.shareCalls, 1);
       expect(shareService.sharedTrack, canonicalTrack);
       expect(shareService.sharedTrack!.album, 'Album canonico');
       expect(shareService.title, 'Compartir canción');
@@ -5244,13 +6912,9 @@ void main() {
     );
     expect(find.byKey(const ValueKey('player-menu-go-to-album')), findsNothing);
 
-    final headerArtist = tester.widget<InkWell>(
-      find.byKey(const ValueKey('player-header-artist-action')),
-    );
     final trackArtist = tester.widget<InkWell>(
       find.byKey(const ValueKey('player-track-artist-action')),
     );
-    expect(headerArtist.onTap, isNull);
     expect(trackArtist.onTap, isNull);
     expect(artistService.profileCalls, 0);
 
@@ -5281,10 +6945,7 @@ void main() {
     );
     await tester.pump(const Duration(milliseconds: 500));
 
-    final directShare = tester.widget<IconButton>(
-      find.byKey(const ValueKey('player-share-control')),
-    );
-    expect(directShare.onPressed, isNull);
+    expect(find.byKey(const ValueKey('player-share-control')), findsNothing);
     await tester.tap(find.byKey(const ValueKey('player-menu-control')));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 300));
@@ -5870,22 +7531,43 @@ double _visibleGaussianShadowExtent(BoxShadow shadow) {
       (3 * ((shadow.blurRadius * blurRadiusToSigma) + 0.5));
 }
 
+Future<void> _writeSolidWhiteArtwork(File file) async {
+  final recorder = ui.PictureRecorder();
+  final canvas = ui.Canvas(recorder);
+  canvas.drawRect(
+    const Rect.fromLTWH(0, 0, 4, 4),
+    Paint()..color = Colors.white,
+  );
+  final picture = recorder.endRecording();
+  final image = await picture.toImage(4, 4);
+  try {
+    final data = (await image.toByteData(format: ui.ImageByteFormat.png))!;
+    await file.writeAsBytes(data.buffer.asUint8List());
+  } finally {
+    image.dispose();
+    picture.dispose();
+  }
+}
+
 void _configureView(
   WidgetTester tester,
   Size size, {
   double textScaleFactor = 1,
+  double topPadding = 0,
   double bottomPadding = 0,
 }) {
   tester.view
     ..physicalSize = size
     ..devicePixelRatio = 1
-    ..padding = FakeViewPadding(bottom: bottomPadding);
+    ..padding = FakeViewPadding(top: topPadding, bottom: bottomPadding)
+    ..viewPadding = FakeViewPadding(top: topPadding, bottom: bottomPadding);
   tester.platformDispatcher.textScaleFactorTestValue = textScaleFactor;
   addTearDown(() {
     tester.view
       ..resetPhysicalSize()
       ..resetDevicePixelRatio()
-      ..resetPadding();
+      ..resetPadding()
+      ..resetViewPadding();
     tester.platformDispatcher.clearTextScaleFactorTestValue();
   });
 }
@@ -5903,6 +7585,8 @@ Widget _playerHarness({
   YouTubeMusicSearch? youtubeMusicSearch,
   DownloadController? downloadController,
   VoidCallback? onOpenSearch,
+  VoidCallback? onCollapse,
+  bool drawBackground = false,
   bool disableAnimations = false,
   ValueListenable<bool>? trackTransitionsEnabledListenable,
   PlayerStyle style = defaultPlayerStyle,
@@ -5956,7 +7640,7 @@ Widget _playerHarness({
         shareService ?? _TestTrackShareService(),
       ),
       if (menuColorService != null)
-        playbackMenuColorServiceProvider.overrideWithValue(menuColorService),
+        artworkSurfaceColorServiceProvider.overrideWithValue(menuColorService),
       appStringsProvider.overrideWithValue(
         const AppStrings(AppLanguage.spanish),
       ),
@@ -5983,8 +7667,9 @@ Widget _playerHarness({
       home: Scaffold(
         body: trackTransitionsEnabledListenable == null
             ? PlayerPanel(
-                drawBackground: false,
+                drawBackground: drawBackground,
                 onOpenSearch: onOpenSearch,
+                onCollapse: onCollapse,
                 style: style,
                 artworkStyle: artworkStyle,
                 animatedArtworkEnabled: animatedArtworkEnabled,
@@ -5992,8 +7677,9 @@ Widget _playerHarness({
             : ValueListenableBuilder<bool>(
                 valueListenable: trackTransitionsEnabledListenable,
                 builder: (context, enabled, _) => PlayerPanel(
-                  drawBackground: false,
+                  drawBackground: drawBackground,
                   onOpenSearch: onOpenSearch,
+                  onCollapse: onCollapse,
                   trackTransitionsEnabled: enabled,
                   style: style,
                   artworkStyle: artworkStyle,

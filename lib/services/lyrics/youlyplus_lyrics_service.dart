@@ -5,8 +5,8 @@ import '../../features/music/domain/entities/lyrics_lookup.dart';
 import 'remote_lyrics_parsing.dart';
 import 'remote_lyrics_service_base.dart';
 
-/// Public YouLy+ / LyricsPlus V2 endpoint. The current player has line timing,
-/// not a word model, so word/syllable responses retain their parent line time.
+/// Public YouLy+ / LyricsPlus V2 endpoint. Word and syllable timing is retained
+/// alongside its original parent line; line-only payloads remain line synced.
 /// API: https://github.com/ibratabian17/LyricsPlus/blob/gelato/docs/endpoints.md
 class YouLyPlusLyricsService extends RemoteLyricsServiceBase {
   YouLyPlusLyricsService({
@@ -118,7 +118,48 @@ class _YouLyPlusParseJob {
         if (line['time'] == null) continue;
         throw const FormatException('YouLyPlus line has invalid timing.');
       }
-      lines.add(LyricLine(timestamp: timestamp, text: text));
+      if ((type == 'word' || type == 'syllable') && line['syllabus'] is List) {
+        final syllables = line['syllabus'] as List;
+        if (syllables.length > maximumLyricLines) {
+          throw const FormatException('Too many lyric syllables.');
+        }
+        final tokens = <TimedLyricsToken>[];
+        for (final raw in syllables) {
+          if (raw is! Map) {
+            tokens.add(const TimedLyricsToken(text: '', start: null));
+            continue;
+          }
+          final syllable = lyricsJsonObject(raw);
+          var start = _milliseconds(syllable['time']);
+          final duration = _milliseconds(syllable['duration']);
+          final end = _milliseconds(syllable['end']);
+          if ((syllable['duration'] != null && duration == null) ||
+              (syllable['end'] != null && end == null)) {
+            start = null;
+          }
+          final tokenText = syllable['text'];
+          tokens.add(
+            TimedLyricsToken(
+              text: tokenText is String ? tokenText : '',
+              start: start,
+              end:
+                  end ??
+                  (start == null || duration == null ? null : start + duration),
+            ),
+          );
+        }
+        final lineDuration = _milliseconds(line['duration']);
+        lines.add(
+          wordTimedLyricLine(
+            timestamp: timestamp,
+            text: text,
+            tokens: tokens,
+            lineEnd: lineDuration == null ? null : timestamp + lineDuration,
+          ),
+        );
+      } else {
+        lines.add(LyricLine(timestamp: timestamp, text: text));
+      }
     }
     final identity = Uri(
       queryParameters: {

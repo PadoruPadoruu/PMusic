@@ -1664,6 +1664,11 @@ class LocalDatabaseService {
   }
 
   Future<void> savePlaylist(Playlist playlist) async {
+    final artworkFileName = playlist.customArtworkFileName;
+    if (artworkFileName != null &&
+        !Playlist.isValidCustomArtworkFileName(artworkFileName)) {
+      throw ArgumentError.value(artworkFileName, 'customArtworkFileName');
+    }
     final db = await database;
     final values = PlaylistModel.fromEntity(playlist).toMap();
     await db.transaction(
@@ -1683,10 +1688,39 @@ class LocalDatabaseService {
                 ? requestedRevision
                 : currentRevision + 1,
             'deleted_at': values['deleted_at'],
+            'custom_artwork_file_name': values['custom_artwork_file_name'],
           };
         },
       ),
     );
+  }
+
+  /// Artwork is local presentation, so changing it must not reorder playlists,
+  /// restart queues or invalidate in-flight remote synchronization revisions.
+  Future<Playlist?> setPlaylistArtworkFileName(
+    String playlistId,
+    String? fileName,
+  ) async {
+    if (fileName != null && !Playlist.isValidCustomArtworkFileName(fileName)) {
+      throw ArgumentError.value(fileName, 'fileName');
+    }
+    final db = await database;
+    return db.transaction((transaction) async {
+      final changed = await transaction.update(
+        'playlists',
+        <String, Object?>{'custom_artwork_file_name': fileName},
+        where: 'id = ? AND deleted_at IS NULL',
+        whereArgs: <Object?>[playlistId],
+      );
+      if (changed == 0) return null;
+      final rows = await transaction.query(
+        'playlists',
+        where: 'id = ? AND deleted_at IS NULL',
+        whereArgs: <Object?>[playlistId],
+        limit: 1,
+      );
+      return PlaylistModel.fromMap(rows.single);
+    });
   }
 
   Future<void> deletePlaylist(String playlistId) async {
@@ -2057,6 +2091,7 @@ class LocalDatabaseService {
             updated_at TEXT NOT NULL,
             local_revision INTEGER NOT NULL DEFAULT 0,
             deleted_at TEXT,
+            custom_artwork_file_name TEXT,
             entries_migrated INTEGER NOT NULL DEFAULT 1
           )
         ''');
@@ -2171,6 +2206,14 @@ class LocalDatabaseService {
         if (oldVersion < 9) {
           await _createLibraryTrackOrderTable(db);
         }
+        if (oldVersion < 10) {
+          await _addColumnIfMissing(
+            db,
+            table: 'playlists',
+            column: 'custom_artwork_file_name',
+            definition: 'TEXT',
+          );
+        }
       },
       onOpen: _repairAndValidateCurrentSchema,
     );
@@ -2218,6 +2261,7 @@ class LocalDatabaseService {
       'local_revision': 'INTEGER NOT NULL DEFAULT 0',
       'deleted_at': 'TEXT',
       'entries_migrated': 'INTEGER NOT NULL DEFAULT 0',
+      'custom_artwork_file_name': 'TEXT',
     };
     for (final column in additivePlaylistColumns.entries) {
       if (playlistColumns.add(column.key)) {
@@ -2311,6 +2355,7 @@ class LocalDatabaseService {
           'deleted_at',
           'entries_migrated',
         },
+        if (version >= 10) 'custom_artwork_file_name',
       },
     );
     await _requirePrimaryKey(db, table: 'playlists', columns: const ['id']);

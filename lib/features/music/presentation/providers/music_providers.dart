@@ -3,6 +3,7 @@ import 'dart:collection';
 import 'dart:convert';
 import 'dart:io';
 import 'dart:math' as math;
+import 'dart:ui' as ui;
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
@@ -111,6 +112,7 @@ import 'mini_player_mode.dart';
 import 'player_artwork_style.dart';
 import 'player_style.dart';
 import 'player_font.dart';
+import 'playlist_artwork_providers.dart';
 import 'youtube_music_auth_controller.dart';
 import 'player/catalog_playback_item.dart';
 import 'player/catalog_playlist_playback.dart';
@@ -164,7 +166,9 @@ part 'youtube_music_playlist_sync_controller.dart';
 
 final homeScreenWidgetSyncProvider = Provider<void>((ref) {
   if (!AppPlatform.isMobile) return;
+  final supportsQueue = AppPlatform.isAndroid;
   final widgetSync = HomeScreenWidgetSync(
+    supportsQueue: supportsQueue,
     onAction: (action) async {
       await ref.read(playerControllerProvider.future);
       final player = ref.read(playerControllerProvider.notifier);
@@ -202,14 +206,19 @@ final homeScreenWidgetSyncProvider = Provider<void>((ref) {
     final isFavorite =
         currentTrackId != null &&
         ref.read(favoriteTrackIdsProvider).contains(currentTrackId);
-    final playbackQueue = ref.read(playbackQueueProvider);
-    var currentQueueIndex = playbackQueue.currentIndex;
+    final playbackQueue = supportsQueue
+        ? ref.read(playbackQueueProvider)
+        : null;
+    var currentQueueIndex = playbackQueue?.currentIndex ?? -1;
     final focusedEntry =
-        currentQueueIndex >= 0 &&
+        playbackQueue != null &&
+            currentQueueIndex >= 0 &&
             currentQueueIndex < playbackQueue.entries.length
         ? playbackQueue.entries[currentQueueIndex]
         : null;
-    if (currentTrackId != null && focusedEntry?.id != currentTrackId) {
+    if (playbackQueue != null &&
+        currentTrackId != null &&
+        focusedEntry?.id != currentTrackId) {
       final snapshotIndex = playbackQueue.entries.indexWhere(
         (entry) => entry.id == currentTrackId,
       );
@@ -225,22 +234,26 @@ final homeScreenWidgetSyncProvider = Provider<void>((ref) {
       repeatMode: snapshot?.repeatMode.name ?? 'off',
       accentColor: accent.seedColor.toARGB32(),
       languageCode: language.code,
-      queue: playbackQueue.entries
-          .asMap()
-          .entries
-          .map(
-            (queueItem) => <String, String>{
-              'queueIndex': '${queueItem.key}',
-              'id': queueItem.value.logicalEntryId?.trim().isNotEmpty == true
-                  ? queueItem.value.logicalEntryId!.trim()
-                  : queueItem.value.id,
-              'title': queueItem.value.title,
-              'artist': queueItem.value.artist,
-              if (queueItem.value.thumbnailUrl?.trim().isNotEmpty == true)
-                'artworkUrl': queueItem.value.thumbnailUrl!.trim(),
-            },
-          )
-          .toList(growable: false),
+      queue: playbackQueue == null
+          ? const []
+          : playbackQueue.entries
+                .asMap()
+                .entries
+                .map(
+                  (queueItem) => <String, String>{
+                    'queueIndex': '${queueItem.key}',
+                    'id':
+                        queueItem.value.logicalEntryId?.trim().isNotEmpty ==
+                            true
+                        ? queueItem.value.logicalEntryId!.trim()
+                        : queueItem.value.id,
+                    'title': queueItem.value.title,
+                    'artist': queueItem.value.artist,
+                    if (queueItem.value.thumbnailUrl?.trim().isNotEmpty == true)
+                      'artworkUrl': queueItem.value.thumbnailUrl!.trim(),
+                  },
+                )
+                .toList(growable: false),
       currentQueueIndex: currentQueueIndex,
     );
   }
@@ -267,7 +280,9 @@ final homeScreenWidgetSyncProvider = Provider<void>((ref) {
     (_, _) => publish(),
   );
   ref.listen(favoriteTrackIdsProvider, (_, _) => publish());
-  ref.listen(playbackQueueProvider, (_, _) => publish());
+  if (supportsQueue) {
+    ref.listen(playbackQueueProvider, (_, _) => publish());
+  }
   ref.onDispose(widgetSync.dispose);
 });
 

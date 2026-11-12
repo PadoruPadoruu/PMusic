@@ -239,9 +239,20 @@ abstract class RemoteLyricsServiceBase implements LyricsService {
 
   int _documentCharacters(LyricsDocument? document) {
     if (document == null) return 0;
-    return (document.plainLyrics?.length ?? 0) +
-        (document.syncedLyrics?.length ?? 0) +
-        document.lines.fold(0, (count, line) => count + line.text.length);
+    var characters =
+        (document.plainLyrics?.length ?? 0) +
+        (document.syncedLyrics?.length ?? 0);
+    for (final line in document.lines) {
+      characters += line.text.length;
+      for (final word in line.words) {
+        // Charge the word text plus conservative character-equivalent space
+        // for its timing, offsets and list entry. A dense syllable timeline
+        // must not bypass the cache budget merely because its text is short.
+        characters += word.text.length + 64;
+        if (characters > maximumCachedCharacters) return characters;
+      }
+    }
+    return characters;
   }
 
   Duration _retryAfter(String? value) {

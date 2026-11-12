@@ -2,6 +2,7 @@ import 'package:xml/xml.dart';
 
 import '../../features/music/data/parsers/lrc_parser.dart';
 import '../../features/music/domain/entities/lyric_line.dart';
+import '../../features/music/domain/entities/lyric_word.dart';
 import '../../features/music/domain/entities/lyrics_document.dart';
 import '../../features/music/domain/entities/lyrics_lookup.dart';
 
@@ -13,6 +14,69 @@ class RemoteLyricsText {
   final List<LyricLine> lines;
   final List<String> plainLines;
 }
+
+/// Provider token text with absolute timing. A missing end can only use the
+/// next token's start or an explicit parent-line end, never an estimated pace.
+class TimedLyricsToken {
+  const TimedLyricsToken({required this.text, required this.start, this.end});
+  final String text;
+  final Duration? start;
+  final Duration? end;
+}
+
+LyricLine wordTimedLyricLine({
+  required Duration timestamp,
+  required String text,
+  required List<TimedLyricsToken> tokens,
+  Duration? lineEnd,
+}) {
+  LyricLine fallback() => LyricLine(timestamp: timestamp, text: text);
+  if (tokens.isEmpty) return fallback();
+  final words = <LyricWord>[];
+  final nextStarts = List<Duration?>.filled(tokens.length, null);
+  Duration? nextStart;
+  for (var i = tokens.length - 1; i >= 0; i--) {
+    nextStarts[i] = nextStart;
+    nextStart = tokens[i].start ?? nextStart;
+  }
+  var cursor = 0;
+  for (var i = 0; i < tokens.length; i++) {
+    final token = tokens[i];
+    final part = token.text.trim();
+    if (part.isEmpty) continue;
+    if (token.start == null && !_meaningfulText.hasMatch(part)) continue;
+    final startOffset = text.indexOf(part, cursor);
+    if (startOffset < 0 ||
+        _meaningfulText.hasMatch(text.substring(cursor, startOffset))) {
+      return fallback();
+    }
+    final start = token.start;
+    final end = token.end ?? nextStarts[i] ?? lineEnd;
+    if (start == null || end == null || (lineEnd != null && end > lineEnd)) {
+      return fallback();
+    }
+    final endOffset = startOffset + part.length;
+    words.add(
+      LyricWord(
+        text: part,
+        start: start,
+        end: end,
+        startOffset: startOffset,
+        endOffset: endOffset,
+      ),
+    );
+    cursor = endOffset;
+  }
+  if (_meaningfulText.hasMatch(text.substring(cursor))) return fallback();
+  final result = LyricLine(
+    timestamp: timestamp,
+    text: text,
+    words: List.unmodifiable(words),
+  );
+  return result.hasWordTiming ? result : fallback();
+}
+
+final _meaningfulText = RegExp(r'[\p{L}\p{N}]', unicode: true);
 
 RemoteLyricsText parseRemoteLyricsLrc(String source) {
   final lines = const LrcParser().parse(source);
@@ -26,6 +90,7 @@ RemoteLyricsText parseRemoteLyricsLrc(String source) {
     }
     final text = row
         .replaceFirst(RegExp(r'^\s*(?:\[\d[^\]]*\]\s*)+'), '')
+        .replaceAll(RegExp(r'<\d+(?::\d+){1,2}(?:[.,]\d+)?>'), '')
         .trim();
     if (text.isNotEmpty) plain.add(text);
   }
@@ -91,7 +156,63 @@ RemoteLyricsText parseRemoteLyricsTtml(String source) {
           }
         }
       }
-      if (time != null) lines.add(LyricLine(timestamp: time, text: text));
+      if (time != null) {
+        final tokens = <TimedLyricsToken>[];
+        void collect(XmlNode node, {Duration? start, Duration? end}) {
+          if (node is XmlText || node is XmlCDATA) {
+            final value = (node.value ?? '').replaceAll(RegExp(r'\s+'), ' ');
+            if (value.trim().isEmpty) return;
+            tokens.add(TimedLyricsToken(text: value, start: start, end: end));
+            return;
+          }
+          if (node is! XmlElement ||
+              isCompanion(node) ||
+              node.name.local == 'rt' ||
+              node.name.local == 'br') {
+            return;
+          }
+          final begin = node.getAttribute('begin');
+          final finish = node.getAttribute('end');
+          final duration = node.getAttribute('dur');
+          if (node.name.local == 'span' && begin != null) {
+            start = lyricsClockTime(begin);
+            end = finish == null ? null : lyricsClockTime(finish);
+            if (end == null &&
+                finish == null &&
+                start != null &&
+                duration != null) {
+              final interval = lyricsClockTime(duration);
+              if (interval != null) end = start + interval;
+            }
+            // Invalid explicit timing must not be inferred from a neighbour.
+            if (start == null ||
+                (finish != null && end == null) ||
+                (duration != null && end == null)) {
+              start = null;
+              end = null;
+            }
+          }
+          for (final child in node.children) {
+            collect(child, start: start, end: end);
+          }
+        }
+
+        for (final child in paragraph.children) {
+          collect(child);
+        }
+        final explicitEnd = lyricsClockTime(paragraph.getAttribute('end'));
+        final parentDuration = lyricsClockTime(paragraph.getAttribute('dur'));
+        lines.add(
+          wordTimedLyricLine(
+            timestamp: time,
+            text: text,
+            tokens: tokens,
+            lineEnd:
+                explicitEnd ??
+                (parentDuration == null ? null : time + parentDuration),
+          ),
+        );
+      }
     }
   }
   return RemoteLyricsText(lines: lines, plainLines: plain);

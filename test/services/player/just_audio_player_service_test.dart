@@ -481,6 +481,69 @@ void main() {
   );
 
   test(
+    'an interrupted old load cannot fail the replacement at its reused index',
+    () async {
+      final fixture = await _Fixture.create();
+      final backend = fixture.backend..blockNextSourceLoad = true;
+      final snapshots = <PlayerSnapshot>[];
+      final subscription = fixture.service.snapshotStream.listen(snapshots.add);
+      try {
+        final load = fixture.service.playRemoteSource(
+          _remoteSource('selected'),
+        );
+        await _waitUntil(() => backend.sourceLoadCalls.length == 1);
+        // The SDK publishes the replacement's index/tags before its load Future
+        // completes, then Android reports cancellation of the previous load.
+        backend.publishPendingSourceSequence(0);
+        expect(_queueEntryId(backend), 'remote:selected');
+        backend.emitError(PlayerException(10000000, 'Connection aborted', 0));
+        await _drainEvents();
+        expect(
+          snapshots.any((snapshot) => snapshot.status == PlayerStatus.failed),
+          isFalse,
+        );
+        backend.completeSourceLoad(0);
+        await load;
+        await _drainEvents();
+        expect(backend.setAudioSourcesCalls, 1);
+        expect(backend.playCalls, 1);
+        expect(backend.playing, isTrue);
+        expect(fixture.service.currentSnapshot.status, PlayerStatus.playing);
+        expect(fixture.service.currentSnapshot.errorMessage, isNull);
+        expect(
+          snapshots.any((snapshot) => snapshot.status == PlayerStatus.failed),
+          isFalse,
+        );
+      } finally {
+        await subscription.cancel();
+        await fixture.dispose();
+      }
+    },
+  );
+
+  test(
+    'a genuine HTTP failure at the same current index still fails playback',
+    () async {
+      final fixture = await _Fixture.create();
+      try {
+        await fixture.service.playRemoteSource(_remoteSource('selected'));
+        expect(_queueEntryId(fixture.backend), 'remote:selected');
+        fixture.backend.emitError(
+          PlayerException(403, 'HTTP 403 forbidden', 0),
+        );
+        await _drainEvents();
+        expect(fixture.service.currentSnapshot.status, PlayerStatus.failed);
+        expect(
+          fixture.service.currentSnapshot.errorMessage,
+          'HTTP 403 forbidden',
+        );
+      } finally {
+        await fixture.dispose();
+      }
+    },
+  );
+
+  test(
     'a current setAudioSources Future failure still reaches its caller',
     () async {
       final fixture = await _Fixture.create();
@@ -2558,6 +2621,15 @@ class _BlockingAudioPlayer extends AudioPlayer {
 
   void completeSourceLoad(int index) =>
       sourceLoadCalls[index].completer.complete();
+
+  void publishPendingSourceSequence(int index) {
+    final call = sourceLoadCalls[index];
+    _sources
+      ..clear()
+      ..addAll(call.sources);
+    _currentIndex = call.initialIndex ?? 0;
+    emitSequenceState();
+  }
 
   void emitError(PlayerException error) => _errors.add(error);
 

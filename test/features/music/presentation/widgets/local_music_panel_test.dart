@@ -17,6 +17,33 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
+  testWidgets('plays all local songs or a folder directly from its card', (
+    tester,
+  ) async {
+    final catalog = _FakeDeviceAudioCatalog(
+      const DeviceAudioCatalogResult(
+        status: DeviceAudioPermissionStatus.granted,
+        tracks: _tracks,
+      ),
+    );
+    final player = _RecordingLocalPlayerController();
+    await tester.pumpWidget(_harness(catalog: catalog, player: player));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byKey(const ValueKey('local-all-songs-play')));
+    await tester.pump();
+    expect(player.lastQueue, hasLength(3));
+    expect(player.lastQueueSourceId, 'device-local:all');
+
+    await tester.tap(
+      find.byKey(const ValueKey('local-folder-play-folder:downloads')),
+    );
+    await tester.pump();
+    expect(player.lastQueue, hasLength(2));
+    expect(player.lastQueueSourceId, 'device-local:folder:folder:downloads');
+    expect(player.lastUseNativeQueue, isFalse);
+  });
+
   testWidgets(
     'shows all songs and distinct folders, then plays a transient full queue',
     (tester) async {
@@ -86,7 +113,39 @@ void main() {
       expect(find.text('Alpha'), findsOneWidget);
       expect(find.text('Beta'), findsOneWidget);
       expect(find.text('Gamma'), findsOneWidget);
-      expect(find.byType(PopupMenuButton), findsNothing);
+      expect(find.byKey(const ValueKey('local-detail-menu')), findsOneWidget);
+      await tester.tap(find.byKey(const ValueKey('local-detail-menu')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey('local-detail-search')));
+      await tester.pumpAndSettle();
+      await tester.enterText(
+        find.descendant(
+          of: find.byKey(const ValueKey('local-filter-surface')),
+          matching: find.byType(TextField),
+        ),
+        'Alpha',
+      );
+      await tester.pumpAndSettle();
+      expect(
+        find.byKey(const ValueKey('local-track-device:alpha')),
+        findsOneWidget,
+      );
+      expect(
+        find.byKey(const ValueKey('local-track-device:beta')),
+        findsNothing,
+      );
+      await tester.tap(
+        find.byKey(const ValueKey('local-filter-clear-or-close')),
+      );
+      await tester.pumpAndSettle();
+      expect(
+        find.byKey(const ValueKey('local-track-device:beta')),
+        findsOneWidget,
+      );
+      await tester.tap(
+        find.byKey(const ValueKey('local-filter-clear-or-close')),
+      );
+      await tester.pumpAndSettle();
       final localTrackCard = find.byKey(
         const ValueKey('local-track-device:alpha'),
       );

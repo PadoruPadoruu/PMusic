@@ -70,6 +70,40 @@ void main() {
   });
 
   test(
+    'ZIP restore keeps a custom playlist cover under the new media root',
+    () async {
+      const fileName = 'playlist_backup-cover.png';
+      const artworkBytes = <int>[137, 80, 78, 71, 13, 10, 26, 10];
+      await source.createCatalogPlaylist(
+        id: Playlist.favoritesId,
+        name: 'Favorites',
+        now: _now,
+      );
+      await source.setPlaylistArtworkFileName(Playlist.favoritesId, fileName);
+      final original = File(p.join(sourceMedia, 'thumbnails', fileName));
+      await original.create(recursive: true);
+      await original.writeAsBytes(artworkBytes);
+      final archive = await BackupService(source, coordinator).createBackupFile(
+        mediaRoot: sourceMedia,
+        outputPath: p.join(sandbox.path, 'custom-cover.zip'),
+      );
+      await target.initialize();
+      await BackupService(
+        target,
+        coordinator,
+      ).restoreBackupFile(backupPath: archive.path, mediaRoot: targetMedia);
+      final restored = (await target.getCatalogPlaylist(
+        Playlist.favoritesId,
+      ))!.playlist;
+      expect(restored.customArtworkFileName, fileName);
+      final relocated = File(
+        p.join(targetMedia, 'thumbnails', restored.customArtworkFileName!),
+      );
+      expect(await relocated.readAsBytes(), artworkBytes);
+    },
+  );
+
+  test(
     'ZIP restore rebases old mutations and unions current favorites',
     () async {
       await _seedOldSyncState(source, sourceMedia);

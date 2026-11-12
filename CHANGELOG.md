@@ -2,8 +2,25 @@
 
 ## Unreleased
 
+## 1.3.1+131 — 2026-11-12
+
+### Added
+
+- Added the new Spotify Style player.
+- Added filtering options in the Local music tab.
+- Added support for word-synchronized lyrics when word timing is available,
+  with line-by-line synchronization retained as the fallback.
+- Custom artwork for saved playlists, including Favorites. Tapping the cover
+  offers Random or Custom, with gallery selection and the shared square crop
+  editor. Saved covers are reused by library rows, playlist headers, backgrounds
+  and playlist pickers, and remain available after media moves or ZIP restores.
+
 ### Changed
 
+- Improved and optimized the layouts of the player styles.
+- Improved the design of the Settings tab.
+- Playback waves now share the artwork color extraction and cache used by
+  playback menus, retaining the app accent when artwork is unavailable.
 - Updated the minimum Flutter version and CI builds to stable 3.47.9.
 - Retained Liquid Glass filters and painted optics during navigation, with
   full droplet growth and refraction reserved for dragging.
@@ -17,6 +34,10 @@
 
 ### Fixed
 
+- Prevented interrupted remote loads from restarting the newly selected song
+  after rapid skips.
+- Removed lower-edge seams from expanded animated artwork and Spotify Canvas
+  without adding video decoders or blur passes.
 - Preserved full-player artwork through its exit transition.
 
 ## 1.2.9+129 — 2026-10-12

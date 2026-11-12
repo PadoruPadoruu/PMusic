@@ -5,6 +5,9 @@ import 'app_colors.dart';
 /// Horizontal page margin used by all tab content.
 const double appPagePaddingHorizontal = 12.0;
 
+/// Volume glyphs need a little more visual weight beside the playback icons.
+const double appVolumeIconScale = 1.15;
+
 /// Horizontal inset shared by the fixed tab title and section headings.
 const double appTabTitleHorizontalPadding = 16.0;
 
@@ -28,6 +31,9 @@ const double appGroupHeadingGap = 10.0;
 
 /// Vertical spacing between consecutive cards inside the same group.
 const double appCardGap = 6.0;
+
+/// Small external gap between consecutive song rows, preserving their hit area.
+const double appTrackRowGap = 2.0;
 
 /// Horizontal padding inside a list card's content area.
 const double appListCardPaddingHorizontal = 16.0;

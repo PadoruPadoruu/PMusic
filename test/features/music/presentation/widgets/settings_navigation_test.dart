@@ -625,6 +625,7 @@ void main() {
       );
 
       await tester.ensureVisible(quality);
+      await tester.pumpAndSettle();
       await tester.tap(
         find.descendant(
           of: quality,
@@ -948,6 +949,7 @@ void main() {
     );
 
     await tester.ensureVisible(surfaceBackgroundSelector);
+    await tester.pumpAndSettle();
     await tester.tap(surfaceBackgroundSelector);
     await tester.pumpAndSettle();
 
@@ -1005,11 +1007,12 @@ void main() {
     );
 
     await tester.ensureVisible(playerStyleSelector);
+    await tester.pumpAndSettle();
     await tester.tap(playerStyleSelector);
     await tester.pumpAndSettle();
 
     expect(
-      find.byKey(const ValueKey('settings-player-style-dialog')),
+      find.byKey(const ValueKey('settings-player-style-gallery')),
       findsOneWidget,
     );
     expect(
@@ -1024,9 +1027,20 @@ void main() {
       find.byKey(const ValueKey('settings-player-style-option-classic-vinyl')),
       findsOneWidget,
     );
+    await tester.ensureVisible(
+      find.byKey(const ValueKey('settings-player-style-option-apple-music')),
+    );
+    await tester.pumpAndSettle();
+    await tester.pumpAndSettle();
     await tester.tap(
       find.byKey(const ValueKey('settings-player-style-option-apple-music')),
     );
+    await tester.pumpAndSettle();
+    expect(
+      find.byKey(const ValueKey('settings-player-style-apply')),
+      findsNothing,
+    );
+    await tester.tap(find.byKey(const ValueKey('settings-detail-back')));
     await tester.pumpAndSettle();
 
     expect(
@@ -1039,9 +1053,20 @@ void main() {
 
     await tester.tap(playerStyleSelector);
     await tester.pumpAndSettle();
+    await tester.ensureVisible(
+      find.byKey(const ValueKey('settings-player-style-option-classic-vinyl')),
+    );
+    await tester.pumpAndSettle();
+    await tester.pumpAndSettle();
     await tester.tap(
       find.byKey(const ValueKey('settings-player-style-option-classic-vinyl')),
     );
+    await tester.pumpAndSettle();
+    expect(
+      find.byKey(const ValueKey('settings-player-style-apply')),
+      findsNothing,
+    );
+    await tester.tap(find.byKey(const ValueKey('settings-detail-back')));
     await tester.pumpAndSettle();
 
     expect(
@@ -1052,13 +1077,39 @@ void main() {
       findsOneWidget,
     );
 
+    await tester.tap(playerStyleSelector);
+    await tester.pumpAndSettle();
+    final spotifyStyle = find.byKey(
+      const ValueKey('settings-player-style-option-spotify-music'),
+    );
+    await tester.ensureVisible(spotifyStyle);
+    await tester.pumpAndSettle();
+    await tester.pumpAndSettle();
+    await tester.tap(spotifyStyle);
+    await tester.pumpAndSettle();
+    expect(
+      find.byKey(const ValueKey('settings-player-style-apply')),
+      findsNothing,
+    );
+    await tester.tap(find.byKey(const ValueKey('settings-detail-back')));
+    await tester.pumpAndSettle();
+    expect(
+      find.descendant(
+        of: playerStyleSelector,
+        matching: find.text('Spotify Style'),
+      ),
+      findsOneWidget,
+    );
+
     await tester.ensureVisible(animatedArtworkToggle);
+    await tester.pumpAndSettle();
     await tester.tap(animatedArtworkToggle);
     await tester.pumpAndSettle();
 
     expect(tester.widget<Switch>(animatedArtworkSwitch).value, isFalse);
 
     await tester.ensureVisible(playerArtworkStyleSelector);
+    await tester.pumpAndSettle();
     await tester.tap(playerArtworkStyleSelector);
     await tester.pumpAndSettle();
 
@@ -1098,6 +1149,7 @@ void main() {
     );
 
     await tester.ensureVisible(selector);
+    await tester.pumpAndSettle();
     await tester.tap(selector);
     await tester.pumpAndSettle();
 
@@ -1132,6 +1184,7 @@ void main() {
     );
 
     await tester.ensureVisible(backgroundSelector);
+    await tester.pumpAndSettle();
     await tester.tap(backgroundSelector);
     await tester.pumpAndSettle();
 
@@ -1375,7 +1428,9 @@ void main() {
     },
   );
 
-  testWidgets('settings cards use compact corners and spacing', (tester) async {
+  testWidgets('settings sections share lightweight panels and compact rows', (
+    tester,
+  ) async {
     _configureView(tester, const Size(760, 1100));
     final navigationController = SettingsNavigationController();
     addTearDown(navigationController.dispose);
@@ -1396,15 +1451,31 @@ void main() {
       const ValueKey('settings-inline-crossfade'),
     );
 
-    final cardMaterial = _outerMaterial(tester, appearanceCard);
-    final timerMaterial = _outerMaterial(tester, timerCard);
-    final crossfadeMaterial = _outerMaterial(tester, crossfadeCard);
+    final cardMaterial = _sectionCard(tester, appearanceCard);
+    final timerMaterial = _sectionCard(tester, timerCard);
+    final crossfadeMaterial = _sectionCard(tester, crossfadeCard);
+    expect(
+      tester.element(
+        find.ancestor(of: appearanceCard, matching: find.byType(Card)).first,
+      ),
+      tester.element(
+        find.ancestor(of: lyricsCard, matching: find.byType(Card)).first,
+      ),
+    );
+    expect(
+      tester.element(
+        find.ancestor(of: timerCard, matching: find.byType(Card)).first,
+      ),
+      tester.element(
+        find.ancestor(of: crossfadeCard, matching: find.byType(Card)).first,
+      ),
+    );
     final cardShape = cardMaterial.shape! as RoundedRectangleBorder;
     final timerShape = timerMaterial.shape! as RoundedRectangleBorder;
     final crossfadeShape = crossfadeMaterial.shape! as RoundedRectangleBorder;
-    expect(cardShape.borderRadius, BorderRadius.circular(6));
-    expect(timerShape.borderRadius, BorderRadius.circular(6));
-    expect(crossfadeShape.borderRadius, BorderRadius.circular(6));
+    expect(cardShape.borderRadius, BorderRadius.circular(22));
+    expect(timerShape.borderRadius, BorderRadius.circular(22));
+    expect(crossfadeShape.borderRadius, BorderRadius.circular(22));
     expect(timerMaterial.color, cardMaterial.color);
     expect(crossfadeMaterial.color, cardMaterial.color);
     expect(timerShape.side.color, cardShape.side.color);
@@ -1416,14 +1487,14 @@ void main() {
         of: appearanceCard,
         matching: find.byType(AppCardGradientBorder),
       ),
-      findsOneWidget,
+      findsNothing,
     );
     expect(
       find.descendant(
         of: timerCard,
         matching: find.byType(AppCardGradientBorder),
       ),
-      findsOneWidget,
+      findsNothing,
     );
     final gradient = AppColors.cardBorderGradientFor(
       tester.element(appearanceCard),
@@ -1435,11 +1506,11 @@ void main() {
     final cardGap =
         tester.getTopLeft(lyricsCard).dy -
         tester.getBottomLeft(appearanceCard).dy;
-    expect(cardGap, closeTo(6, 0.1));
+    expect(cardGap, closeTo(1, 0.1));
     final playbackCardGap =
         tester.getTopLeft(crossfadeCard).dy -
         tester.getBottomLeft(timerCard).dy;
-    expect(playbackCardGap, closeTo(6, 0.1));
+    expect(playbackCardGap, closeTo(1, 0.1));
     expect(tester.takeException(), isNull);
   });
 
@@ -1537,7 +1608,7 @@ void main() {
     expect(
       tester.getTopLeft(skipSilenceCard).dy -
           tester.getBottomLeft(crossfadeCard).dy,
-      closeTo(6, 0.1),
+      closeTo(1, 0.1),
     );
     expect(tester.getSize(skipSilenceCard).width, closeTo(520, 0.1));
 
@@ -1844,8 +1915,8 @@ void main() {
         await tester.ensureVisible(providersCard);
         await tester.pumpAndSettle();
         final cardRect = tester.getRect(providersCard);
-        expect(cardRect.left, closeTo(12, 0.1));
-        expect(cardRect.width, closeTo(layout.size.width - 24, 0.1));
+        expect(cardRect.left, closeTo(18, 0.1));
+        expect(cardRect.width, closeTo(layout.size.width - 36, 0.1));
         for (final provider in LyricsProvider.values) {
           expect(
             find.byKey(ValueKey('lyrics-provider-toggle-${provider.name}')),
@@ -2060,12 +2131,13 @@ void main() {
         final card = find.byKey(
           const ValueKey('settings-card-lyrics-appearance'),
         );
-        await tester.ensureVisible(card);
+        await _ensureSettingsVisible(tester, card);
         await tester.tap(card);
         await tester.pumpAndSettle();
 
         final toggle = find.byKey(const ValueKey('lyrics-romanization-toggle'));
         await tester.ensureVisible(toggle);
+        await tester.pumpAndSettle();
         await tester.tap(toggle);
         await tester.pumpAndSettle();
 
@@ -2073,7 +2145,7 @@ void main() {
         await tester.ensureVisible(preview);
         await tester.pumpAndSettle();
         final previewRect = tester.getRect(preview);
-        final expectedWidth = layout.size.width - 24;
+        final expectedWidth = layout.size.width - 60;
         expect(previewRect.width, closeTo(expectedWidth, 0.1));
 
         for (final slot in const ['previous', 'active', 'next']) {
@@ -3189,7 +3261,7 @@ void main() {
         find.descendant(of: card, matching: find.byType(LiquidGlassSurface)),
         findsNothing,
       );
-      expect(_outerMaterial(tester, card).color?.a, 0.68);
+      expect(_sectionCard(tester, card).color?.a, closeTo(0.88, 0.001));
     }
   });
 }
@@ -3336,9 +3408,9 @@ Color _activeColor(WidgetTester tester) {
   return Theme.of(context).colorScheme.primary;
 }
 
-Material _outerMaterial(WidgetTester tester, Finder surface) {
-  return tester.widget<Material>(
-    find.descendant(of: surface, matching: find.byType(Material)).first,
+Card _sectionCard(WidgetTester tester, Finder row) {
+  return tester.widget<Card>(
+    find.ancestor(of: row, matching: find.byType(Card)).first,
   );
 }
 
