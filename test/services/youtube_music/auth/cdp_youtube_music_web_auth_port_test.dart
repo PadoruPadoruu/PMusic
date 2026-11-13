@@ -375,7 +375,7 @@ void main() {
       'apiKey': 'test_api_key',
       'clientVersion': '1.20260827.01.00',
       'clientName': 'WEB_REMIX',
-      'region': 'NI',
+      'region': 'HK',
     };
     fixture.connection.cookies = <Object?>[
       <String, Object?>{
@@ -423,7 +423,7 @@ void main() {
     expect(auth.identity.dataSyncId, 'channel-id');
     expect(auth.identity.delegatedPageId, 'page-id');
     expect(auth.clientName, 'WEB_REMIX');
-    expect(auth.region, 'NI');
+    expect(auth.region, 'HK');
 
     await fixture.port.cleanup();
   });

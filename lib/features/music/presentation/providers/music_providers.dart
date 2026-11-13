@@ -852,11 +852,22 @@ final libraryOperationCoordinatorProvider =
     });
 
 final youtubeMusicSearchProvider = Provider<YouTubeMusicSearch>((ref) {
+  final language = ref.watch(
+    settingsControllerProvider.select(
+      (settings) => settings.value?.language ?? AppLanguage.english,
+    ),
+  );
+  final hl = switch(language){
+    AppLanguage.traditionalChinese => 'zh-TW',
+    AppLanguage.chinese => 'zh-CN',
+    _ => language.code,
+  };
   final service = InnerTubeSearchService(
     visitorDataStore: const SharedPreferencesInnerTubeVisitorDataStore(),
     region: _innerTubeDeviceRegion(),
+    language: hl,
   );
-  ref.onDispose(service.dispose);
+    ref.onDispose(service.dispose);
   return service;
 });
 

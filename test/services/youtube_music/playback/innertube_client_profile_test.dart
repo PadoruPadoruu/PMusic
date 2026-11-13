@@ -183,7 +183,7 @@ void main() {
       final headers = profile.requestHeaders;
       final context = profile.buildClientContext(
         language: 'en',
-        region: 'NI',
+        region: 'HK',
         visitorData: ' visitor ',
       );
 
@@ -195,7 +195,7 @@ void main() {
       expect(headers['X-Goog-Api-Format-Version'], '1');
       expect(profile.playerEndpoint.host, profile.host);
       expect(context['hl'], 'en');
-      expect(context['gl'], 'NI');
+      expect(context['gl'], 'HK');
       expect(context['visitorData'], 'visitor');
       expect(context['userAgent'], profile.userAgent);
       expect(() => context['hl'] = 'en', throwsUnsupportedError);

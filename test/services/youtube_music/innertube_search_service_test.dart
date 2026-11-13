@@ -38,7 +38,7 @@ void main() {
         playerEndpoint: Uri.parse('https://example.test/player'),
         bootstrapUri: Uri.parse('https://example.test/bootstrap'),
         language: 'en',
-        region: 'ni',
+        region: 'HK',
         userAgent: 'BStreamMusic/InnerTubeTest',
         requestTimeout: requestTimeout,
         retryDelay: retryDelay,
@@ -430,14 +430,14 @@ void main() {
           'clientName': 'TEST_REMIX',
           'clientVersion': 'bootstrap-version',
           'hl': 'en',
-          'gl': 'NI',
+          'gl': 'HK',
           'visitorData': 'visitor-data',
         },
       });
       expect(transport.getRequests.single.uri.path, '/bootstrap');
       expect(transport.getRequests.single.uri.queryParameters, {
         'hl': 'en',
-        'gl': 'NI',
+        'gl': 'HK',
       });
     });
 
@@ -521,7 +521,7 @@ void main() {
           'clientName': 'TEST_REMIX',
           'clientVersion': 'bootstrap-version',
           'hl': 'en',
-          'gl': 'NI',
+          'gl': 'HK',
           'visitorData': 'visitor-data',
         },
       });
@@ -967,7 +967,7 @@ void main() {
             'clientName': 'TEST_REMIX',
             'clientVersion': 'bootstrap-version',
             'hl': 'en',
-            'gl': 'NI',
+            'gl': 'HK',
             'visitorData': 'visitor-data',
           },
         });
@@ -1403,7 +1403,7 @@ void main() {
             'clientName': 'TEST_REMIX',
             'clientVersion': 'bootstrap-version',
             'hl': 'en',
-            'gl': 'NI',
+            'gl': 'HK',
             'visitorData': 'visitor-data',
           },
         });
@@ -1548,7 +1548,7 @@ void main() {
             'clientName': 'TEST_REMIX',
             'clientVersion': 'bootstrap-version',
             'hl': 'en',
-            'gl': 'NI',
+            'gl': 'HK',
             'visitorData': 'visitor-data',
           },
         });
