@@ -729,3 +729,27 @@ The repository deliberately excludes:
 - Local developer tool caches and their auxiliary directories.
 - Signing keys, passwords, and local Android configuration files.
 - Databases, downloaded music, thumbnails, and user backups.
+
+## Locales
+
+Localization is considered for this forked repository, added traditional chinese locale, whenever there's another updated patch, there will be two explicit python script just to cater this update and appending the text. 
+
+dependancies 
+
+Python 3.9+
+```pip install opencc-python-reimplemented
+```
+
+### How does it work
+| Script | Target Files | Description |
+| :--- | :--- | :--- |
+| **`1_patch_locales_and_defaults.py`** | `app_strings.dart`<br>`app_strings_provider.dart`<br>`music_providers.dart`<br>`settings_controller.dart`<br>`main.dart` | 1. Converts `AppLanguage` into an enhanced Dart enum with intrinsic `.label`, `.code`, and `.fromCode()` members.<br>2. Adds `AppLanguage.traditionalChinese` (`繁體中文` / `zh_TW`, `zh_HK`, `zh-Hant`).<br>3. Changes all `AppLanguage.spanish` default fallbacks to `AppLanguage.english` (US English).<br>4. Replaces hardcoded Spanish fallbacks (`'Desconocido'` and `StateError` strings) with English.<br>5. Registers `zh_Hant_TW` and `zh_Hant_HK` in `MaterialApp.supportedLocales`. |
+| **`2_patch_zh_tw_catalog.py`** | `app_strings_translation_catalog.dart` | 1. Maps `'zh_TW'`, `'zh_HK'`, and `'zh-Hant'` to index `5` in `_appStringLanguageIndex`.<br>2. Parses every 5-element `<String>[pt, fr, ko, zh, ja]` list (including multiline concatenated Dart strings and dynamic `ZXQPH` templates), converts the Simplified Chinese (`zh`, index `3`) entry to Traditional Chinese using OpenCC (`s2twp`), and appends it at index `5`.<br>3. Adds a bounds check (`index < length ? index : 3`) in `translateAppString()` so unpatched 5-item lists safely fall back to `zh` instead of throwing a `RangeError`. |
+
+### How to Re-Apply After Merging Upstream (`BStream-Music`)
+
+If an upstream `git pull` overwrites localization files or causes conflicts in `app_strings_translation_catalog.dart`:
+
+1. Accept upstream's clean version of the catalog:
+   ```cmd
+   git checkout --theirs lib/features/music/presentation/providers/app_strings_translation_catalog.dart
