@@ -195,7 +195,7 @@ final homeScreenWidgetSyncProvider = Provider<void>((ref) {
         ref.read(settingsControllerProvider).value?.accent ?? AppAccent.white;
     final language =
         ref.read(settingsControllerProvider).value?.language ??
-        AppLanguage.spanish;
+        AppLanguage.english;
     final hasTrack =
         snapshot?.trackId != null || (snapshot?.title?.isNotEmpty ?? false);
     final currentTrackId = snapshot?.trackId;
@@ -538,7 +538,7 @@ final currentLyricsTranslationProvider =
         settingsControllerProvider.select(
           (settings) => (
             enabled: settings.value?.lyricsTranslationEnabled == true,
-            language: settings.value?.language ?? AppLanguage.spanish,
+            language: settings.value?.language ?? AppLanguage.english,
           ),
         ),
       );
@@ -2672,11 +2672,11 @@ RemoteCollectionData _remoteCollectionDataFromAuthenticatedPlaylist(
     if (!entry.isAvailable || videoId == null || videoId.isEmpty) {
       continue;
     }
-    tracks.add(
+  tracks.add(
       TrackInfo(
         id: videoId,
         title: entry.title,
-        artist: entry.artist.isEmpty ? 'Desconocido' : entry.artist,
+        artist: entry.artist.isEmpty ? 'Unknown' : entry.artist,
         artists: entry.artists,
         artistBrowseIds: entry.artistBrowseIds,
         album: entry.album,

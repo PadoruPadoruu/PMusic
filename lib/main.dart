@@ -209,7 +209,7 @@ class BStreamMusicApp extends ConsumerWidget {
       settingsControllerProvider.select((settings) {
         final value = settings.value;
         return (
-          language: value?.language ?? AppLanguage.spanish,
+          language: value?.language ?? AppLanguage.english,
           accent: value?.accent ?? AppAccent.white,
           surfaceBackgroundMode:
               value?.surfaceBackgroundMode ?? SurfaceBackgroundMode.accent,
@@ -238,6 +238,8 @@ class BStreamMusicApp extends ConsumerWidget {
         Locale('fr'),
         Locale('ko'),
         Locale('zh'),
+        Locale.fromSubtags(languageCode: 'zh', scriptCode: 'Hant', countryCode: 'TW'),
+        Locale.fromSubtags(languageCode: 'zh', scriptCode: 'Hant', countryCode: 'HK'),
         Locale('ja'),
       ],
       localizationsDelegates: const [

@@ -12,13 +12,38 @@ import 'player_font.dart';
 import 'app_strings_translation_catalog.dart';
 
 enum AppLanguage {
-  spanish,
   english,
+  spanish,
   portuguese,
   french,
   korean,
   chinese,
-  japanese,
+  traditionalChinese,
+  japanese;
+
+  String get label => switch (this) {
+    AppLanguage.spanish => 'Español',
+    AppLanguage.english => 'English',
+    AppLanguage.portuguese => 'Português',
+    AppLanguage.french => 'Français',
+    AppLanguage.korean => '한국어',
+    AppLanguage.chinese => '简体中文',
+    AppLanguage.traditionalChinese => '繁體中文',
+    AppLanguage.japanese => '日本語',
+  };
+
+  String get code => switch (this) {
+    AppLanguage.spanish => 'es',
+    AppLanguage.english => 'en',
+    AppLanguage.portuguese => 'pt',
+    AppLanguage.french => 'fr',
+    AppLanguage.korean => 'ko',
+    AppLanguage.chinese => 'zh',
+    AppLanguage.traditionalChinese => 'zh_TW',
+    AppLanguage.japanese => 'ja',
+  };
+
+  static AppLanguage fromCode(String? code) => AppLanguageLabel.fromCode(code);
 }
 
 String systemFontNameForPlatform(AppPlatformType platform) =>
@@ -30,35 +55,17 @@ String systemFontNameForPlatform(AppPlatformType platform) =>
     };
 
 extension AppLanguageLabel on AppLanguage {
-  String get label => switch (this) {
-    AppLanguage.spanish => 'Español',
-    AppLanguage.english => 'English',
-    AppLanguage.portuguese => 'Português',
-    AppLanguage.french => 'Français',
-    AppLanguage.korean => '한국어',
-    AppLanguage.chinese => '简体中文',
-    AppLanguage.japanese => '日本語',
-  };
-
-  String get code => switch (this) {
-    AppLanguage.spanish => 'es',
-    AppLanguage.english => 'en',
-    AppLanguage.portuguese => 'pt',
-    AppLanguage.french => 'fr',
-    AppLanguage.korean => 'ko',
-    AppLanguage.chinese => 'zh',
-    AppLanguage.japanese => 'ja',
-  };
-
   static AppLanguage fromCode(String? code) {
     return switch (code) {
+      'es' => AppLanguage.spanish,
       'en' => AppLanguage.english,
       'pt' => AppLanguage.portuguese,
       'fr' => AppLanguage.french,
       'ko' => AppLanguage.korean,
       'zh' => AppLanguage.chinese,
+      'zh_TW' || 'zh_HK' || 'zh-Hant' => AppLanguage.traditionalChinese,
       'ja' => AppLanguage.japanese,
-      _ => AppLanguage.spanish,
+      _ => AppLanguage.english,
     };
   }
 }
