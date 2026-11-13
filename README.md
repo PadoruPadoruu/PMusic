@@ -756,8 +756,8 @@ If an upstream `git pull` overwrites localization files or causes conflicts in `
    ```
 2. Run the script:
    ```cmd 
-   python patch_scripts\1_patch_locales_and_defaults.py
-   python patch_scripts\2_patch_zh_tw_catalog.py
+   python patch_scripts\patch_locales_and_defaults.py
+   python patch_scripts\patch_zh_tw_catalog.py
    ```
 
   
