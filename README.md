@@ -753,3 +753,11 @@ If an upstream `git pull` overwrites localization files or causes conflicts in `
 1. Accept upstream's clean version of the catalog:
    ```cmd
    git checkout --theirs lib/features/music/presentation/providers/app_strings_translation_catalog.dart
+   ```
+2. Run the script:
+   ```cmd 
+   python patch_scripts\1_patch_locales_and_defaults.py
+   python patch_scripts\2_patch_zh_tw_catalog.py
+   ```
+
+  
