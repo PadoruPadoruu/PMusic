@@ -18,7 +18,8 @@ class YouLyPlusLyricsService extends RemoteLyricsServiceBase {
     super.maxCacheEntries,
     super.clock,
   }) : _apiBaseUri =
-           apiBaseUri ?? Uri.parse('https://lyricsplus.prjktla.my.id');
+           apiBaseUri ??
+           Uri.parse('https://lyricsplus.prjktla.my.id'); //deadlink
 
   final Uri _apiBaseUri;
 
