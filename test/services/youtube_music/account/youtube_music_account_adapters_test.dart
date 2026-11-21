@@ -105,7 +105,7 @@ void main() {
           dataSyncId: 'UC-main||sync',
         ),
         language: 'es-419',
-        region: 'ni',
+        region: 'HK',
       );
 
       final client = context['client']! as Map<String, Object?>;
@@ -113,7 +113,7 @@ void main() {
       expect(client['clientName'], 'WEB_REMIX');
       expect(client['clientVersion'], '1.test');
       expect(client['visitorData'], 'visitor-data');
-      expect(client['gl'], 'NI');
+      expect(client['gl'], 'HK');
       expect(user['onBehalfOfUser'], 'UC-main||sync');
     });
 
@@ -130,7 +130,7 @@ void main() {
         );
 
         final client = context['client']! as Map<String, Object?>;
-        expect(client['gl'], isNot('NI'));
+        expect(client['gl'], isNot('HK'));
         expect(client['gl'], matches(r'^[A-Z]{2}$'));
       },
     );

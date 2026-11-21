@@ -756,7 +756,7 @@ class SettingsController extends AsyncNotifier<SettingsState> {
       _downloadDirectoryMigrationJournalKey,
       journal.encode(),
     )) {
-      throw StateError('No se pudo preparar la migración de descargas.');
+      throw StateError('Could not prepare downloads migration.');
     }
   }
 
@@ -764,7 +764,7 @@ class SettingsController extends AsyncNotifier<SettingsState> {
     SharedPreferences prefs,
   ) async {
     if (!await prefs.remove(_downloadDirectoryMigrationJournalKey)) {
-      throw StateError('No se pudo cerrar la migración de descargas.');
+      throw StateError('Could not close downloads migration.');
     }
   }
 
@@ -784,7 +784,7 @@ class SettingsController extends AsyncNotifier<SettingsState> {
     String path,
   ) async {
     if (!await prefs.setString(_downloadDirectoryKey, path)) {
-      throw StateError('No se pudo guardar el directorio de descargas.');
+      throw StateError('Could not save downloads directory.');
     }
   }
 
@@ -826,12 +826,12 @@ class SettingsController extends AsyncNotifier<SettingsState> {
     final nextPath = await service.resolve(nextFileName);
     if (nextPath == null) {
       await service.delete(nextFileName);
-      throw StateError('No se pudo guardar el fondo de la app.');
+      throw StateError('Could not save app background.');
     }
     try {
       final prefs = await SharedPreferences.getInstance();
       if (!await prefs.setString(_appBackgroundFileNameKey, nextFileName)) {
-        throw StateError('No se pudo guardar el fondo de la app.');
+        throw StateError('Could not save app background.');
       }
     } catch (_) {
       await service.delete(nextFileName);
@@ -860,7 +860,7 @@ class SettingsController extends AsyncNotifier<SettingsState> {
     if (current.appBackgroundFileName == null) return;
     final prefs = await SharedPreferences.getInstance();
     if (!await prefs.remove(_appBackgroundFileNameKey)) {
-      throw StateError('No se pudo quitar el fondo de la app.');
+      throw StateError('Could not remove app background.');
     }
     state = AsyncData(
       current.copyWith(appBackgroundFileName: null, appBackgroundPath: null),

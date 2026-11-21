@@ -7,6 +7,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '가사 공유',
     '分享歌词',
     '歌詞を共有',
+    '分享歌詞',
   ],
   'Hold a line to share up to 5 lines': <String>[
     'Toque e segure uma linha para compartilhar até 5 linhas',
@@ -14,6 +15,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '한 줄을 길게 눌러 최대 5줄까지 공유하세요',
     '长按一行，最多可分享 5 行歌词',
     '行を長押しすると、最大5行まで共有できます',
+    '長按一行，最多可分享 5 行歌詞',
   ],
   'Select up to 5 lines': <String>[
     'Selecione até 5 linhas',
@@ -21,6 +23,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '최대 5줄까지 선택하세요',
     '最多选择 5 行',
     '最大5行まで選択できます',
+    '最多選擇 5 行',
   ],
   'ZXQPH0X of 5 lines': <String>[
     'ZXQPH0X de 5 linhas',
@@ -28,25 +31,28 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     'ZXQPH0X/5줄',
     'ZXQPH0X/5 行',
     'ZXQPH0X/5行',
+    'ZXQPH0X/5 行',
   ],
-  'Background': <String>['Fundo', 'Fond', '배경', '背景', '背景'],
+  'Background': <String>['Fundo', 'Fond', '배경', '背景', '背景', '背景'],
   'Text color': <String>[
     'Cor do texto',
     'Couleur du texte',
     '글자색',
     '文字颜色',
     '文字色',
+    '文字顏色',
   ],
-  'Automatic': <String>['Automático', 'Automatique', '자동', '自动', '自動'],
-  'Blur': <String>['Desfoque', 'Flou', '블러', '模糊', 'ぼかし'],
-  'Gradient': <String>['Gradiente', 'Dégradé', '그라데이션', '渐变', 'グラデーション'],
-  'Gallery': <String>['Galeria', 'Galerie', '갤러리', '相册', 'ギャラリー'],
+  'Automatic': <String>['Automático', 'Automatique', '자동', '自动', '自動', '自動'],
+  'Blur': <String>['Desfoque', 'Flou', '블러', '模糊', 'ぼかし', '模糊'],
+  'Gradient': <String>['Gradiente', 'Dégradé', '그라데이션', '渐变', 'グラデーション', '漸變'],
+  'Gallery': <String>['Galeria', 'Galerie', '갤러리', '相册', 'ギャラリー', '相簿'],
   'Choose photo': <String>[
     'Escolher foto',
     'Choisir une photo',
     '사진 선택',
     '选择照片',
     '写真を選択',
+    '選擇照片',
   ],
   'Adjust photo': <String>[
     'Ajustar foto',
@@ -54,6 +60,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '사진 조정',
     '调整照片',
     '写真を調整',
+    '調整照片',
   ],
   'Drag and zoom the photo to adjust the crop': <String>[
     'Arraste e amplie a foto para ajustar o recorte',
@@ -61,6 +68,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '사진을 드래그하고 확대하여 자르기 영역을 조정하세요',
     '拖动并缩放照片以调整裁剪范围',
     '写真をドラッグ・拡大して切り抜く範囲を調整します',
+    '拖動並縮放照片以調整裁剪範圍',
   ],
   'Use photo': <String>[
     'Usar foto',
@@ -68,14 +76,16 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '사진 사용',
     '使用照片',
     'この写真を使う',
+    '使用照片',
   ],
-  'Reset': <String>['Redefinir', 'Réinitialiser', '초기화', '重置', 'リセット'],
+  'Reset': <String>['Redefinir', 'Réinitialiser', '초기화', '重置', 'リセット', '重置'],
   'Could not open the photo. Try another image.': <String>[
     'Não foi possível abrir a foto. Tente outra imagem.',
     'Impossible d’ouvrir la photo. Essayez une autre image.',
     '사진을 열 수 없습니다. 다른 이미지를 선택해 주세요.',
     '无法打开照片。请尝试其他图片。',
     '写真を開けませんでした。別の画像をお試しください。',
+    '無法開啟照片。請嘗試其他圖片。',
   ],
   'Gradient colors': <String>[
     'Cores do gradiente',
@@ -83,6 +93,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '그라데이션 색상',
     '渐变颜色',
     'グラデーションの色',
+    '漸變顏色',
   ],
   'Color ZXQPH0X': <String>[
     'Cor ZXQPH0X',
@@ -90,6 +101,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '색상 ZXQPH0X',
     '颜色 ZXQPH0X',
     '色 ZXQPH0X',
+    '顏色 ZXQPH0X',
   ],
   'Share image': <String>[
     'Compartilhar imagem',
@@ -97,6 +109,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '이미지 공유',
     '分享图片',
     '画像を共有',
+    '分享圖片',
   ],
   'Save image': <String>[
     'Salvar imagem',
@@ -104,6 +117,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '이미지 저장',
     '保存图片',
     '画像を保存',
+    '儲存圖片',
   ],
   'Image saved': <String>[
     'Imagem salva',
@@ -111,6 +125,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '이미지 저장됨',
     '图片已保存',
     '画像を保存しました',
+    '圖片已儲存',
   ],
   'Could not prepare or share the image': <String>[
     'Não foi possível preparar ou compartilhar a imagem',
@@ -118,6 +133,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '이미지를 준비하거나 공유할 수 없습니다',
     '无法生成或分享图片',
     '画像を準備または共有できませんでした',
+    '無法生成或分享圖片',
   ],
   'Preparing image…': <String>[
     'Preparando imagem…',
@@ -125,6 +141,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '이미지 준비 중…',
     '正在生成图片…',
     '画像を準備中…',
+    '正在生成圖片…',
   ],
   'The artist\'s releases could not be loaded.': <String>[
     'Não foi possível carregar os lançamentos do artista.',
@@ -132,6 +149,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '이 아티스트의 발매작을 불러올 수 없습니다.',
     '无法加载此艺人的发行作品。',
     'このアーティストのリリースを読み込めませんでした。',
+    '無法載入此藝人的發行作品。',
   ],
   'No releases were found for this artist.': <String>[
     'Nenhum lançamento deste artista foi encontrado.',
@@ -139,6 +157,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '이 아티스트의 발매작을 찾을 수 없습니다.',
     '未找到此艺人的发行作品。',
     'このアーティストのリリースが見つかりませんでした。',
+    '未找到此藝人的發行作品。',
   ],
   'Some releases could not be loaded. Try again.': <String>[
     'Não foi possível carregar todos os lançamentos. Tente novamente.',
@@ -146,22 +165,39 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '일부 발매작을 불러오지 못했습니다. 다시 시도해 주세요.',
     '部分发行作品无法加载。请重试。',
     '一部のリリースを読み込めませんでした。もう一度お試しください。',
+    '部分發行作品無法載入。請重試。',
   ],
-  'Show more': <String>['Mostrar mais', 'Afficher plus', '더 보기', '展开', 'もっと見る'],
+  'Show more': <String>[
+    'Mostrar mais',
+    'Afficher plus',
+    '더 보기',
+    '展开',
+    'もっと見る',
+    '展開',
+  ],
   'Show less': <String>[
     'Mostrar menos',
     'Afficher moins',
     '간략히 보기',
     '收起',
     '折りたたむ',
+    '收起',
   ],
-  'View all': <String>['Ver tudo', 'Tout voir', '모두 보기', '查看全部', 'すべて見る'],
+  'View all': <String>[
+    'Ver tudo',
+    'Tout voir',
+    '모두 보기',
+    '查看全部',
+    'すべて見る',
+    '檢視全部',
+  ],
   'ZXQPH0X songs loaded': <String>[
     'ZXQPH0X músicas carregadas',
     'ZXQPH0X chansons chargées',
     'ZXQPH0X곡 로드됨',
     '已加载 ZXQPH0X 首歌曲',
     'ZXQPH0X曲を読み込み済み',
+    '已載入 ZXQPH0X 首歌曲',
   ],
   'The artist\'s songs could not be loaded.': <String>[
     'Não foi possível carregar as músicas do artista.',
@@ -169,6 +205,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '이 아티스트의 노래를 불러올 수 없습니다.',
     '无法加载此艺人的歌曲。',
     'このアーティストの曲を読み込めませんでした。',
+    '無法載入此藝人的歌曲。',
   ],
   'No songs were found for this artist.': <String>[
     'Nenhuma música deste artista foi encontrada.',
@@ -176,6 +213,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '이 아티스트의 노래를 찾을 수 없습니다.',
     '未找到此艺人的歌曲。',
     'このアーティストの曲が見つかりませんでした。',
+    '未找到此藝人的歌曲。',
   ],
   'TTML depends on its public cache; if unavailable, Kugou is tried.': <String>[
     'TTML depende do cache público; se indisponível, o Kugou será consultado.',
@@ -183,6 +221,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     'TTML은 공개 캐시에 따라 제공되며, 없으면 Kugou를 조회합니다.',
     'TTML 取决于公共缓存；如不可用，将尝试 Kugou。',
     'TTMLは公開キャッシュに依存します。利用できない場合はKugouを試します。',
+    'TTML 取決於公共快取；如不可用，將嘗試 Kugou。',
   ],
   'Lyrics providers': <String>[
     'Provedores de letras',
@@ -190,6 +229,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '가사 제공업체',
     '歌词提供商',
     '歌詞プロバイダー',
+    '歌詞提供商',
   ],
   'Enable the providers you want to use. Search order: Better Lyrics → LyricsPlus → LRCLIB.':
       <String>[
@@ -198,6 +238,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
         '사용할 제공업체를 활성화하세요. 검색 순서: Better Lyrics → LyricsPlus → LRCLIB.',
         '启用您想使用的提供商。搜索顺序：Better Lyrics → LyricsPlus → LRCLIB。',
         '使用するプロバイダーを有効にしてください。検索順序：Better Lyrics → LyricsPlus → LRCLIB。',
+        '啟用您想使用的提供商。搜尋順序：Better Lyrics → LyricsPlus → LRCLIB。',
       ],
   'Only enabled providers are queried. If synchronized lyrics are unavailable, the next provider is tried, including instrumental results. Unsynchronized lyrics are kept as a last resort.': <String>[
     'Apenas os provedores ativos são consultados. Se não houver letra sincronizada, o próximo será consultado, inclusive em resultados instrumentais. Letras sem sincronização são mantidas como último recurso.',
@@ -205,6 +246,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '활성화된 제공업체만 조회합니다. 동기화된 가사가 없으면 연주곡 결과를 포함해 다음 제공업체를 조회합니다. 동기화되지 않은 가사는 최후의 대안으로 유지합니다.',
     '仅查询已启用的提供商。如果没有同步歌词，将尝试下一个提供商，包括纯音乐结果。非同步歌词仅作为最后的备选保留。',
     '有効なプロバイダーのみ検索します。同期歌詞がない場合は、インストゥルメンタルの場合も含めて次のプロバイダーを試します。同期していない歌詞は最後の選択肢として保持します。',
+    '僅查詢已啟用的提供商。如果沒有同步歌詞，將嘗試下一個提供商，包括純音樂結果。非同步歌詞僅作為最後的備選保留。',
   ],
   'No providers enabled': <String>[
     'Nenhum provedor ativo',
@@ -212,6 +254,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '활성화된 제공업체 없음',
     '未启用任何提供商',
     '有効なプロバイダーがありません',
+    '未啟用任何提供商',
   ],
   'No providers are enabled. Automatic lyrics lookup is disabled.': <String>[
     'Nenhum provedor está ativo. A busca automática de letras está desativada.',
@@ -219,6 +262,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '활성화된 제공업체가 없습니다. 자동 가사 검색이 비활성화되었습니다.',
     '未启用任何提供商。自动歌词搜索已关闭。',
     '有効なプロバイダーがありません。歌詞の自動検索は無効です。',
+    '未啟用任何提供商。自動歌詞搜尋已關閉。',
   ],
   'Media output': <String>[
     'Saída de mídia',
@@ -226,6 +270,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '미디어 출력',
     '媒体输出',
     'メディア出力',
+    '媒體輸出',
   ],
   'This phone': <String>[
     'Este telefone',
@@ -233,6 +278,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '이 휴대전화',
     '此手机',
     'この電話',
+    '此手機',
   ],
   'Cast to': <String>[
     'Transmitir para',
@@ -240,6 +286,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '캐스트 대상',
     '投射到',
     'キャスト先',
+    '投射到',
   ],
   'Media volume': <String>[
     'Volume de mídia',
@@ -247,6 +294,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '미디어 볼륨',
     '媒体音量',
     'メディアの音量',
+    '媒體音量',
   ],
   'Device volume': <String>[
     'Volume do dispositivo',
@@ -254,6 +302,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '장치 볼륨',
     '设备音量',
     'デバイスの音量',
+    '裝置音量',
   ],
   'More system outputs': <String>[
     'Mais saídas do sistema',
@@ -261,6 +310,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '추가 시스템 출력',
     '更多系统输出',
     'その他のシステム出力',
+    '更多系統輸出',
   ],
   'The system could not change the audio output.': <String>[
     'O sistema não conseguiu alterar a saída de áudio.',
@@ -268,6 +318,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '시스템에서 오디오 출력을 변경할 수 없습니다.',
     '系统无法更改音频输出。',
     'システムはオーディオ出力を変更できませんでした。',
+    '系統無法更改音訊輸出。',
   ],
   'Output requested': <String>[
     'Saída solicitada',
@@ -275,6 +326,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '출력 요청',
     '请求输出',
     '出力要求されました',
+    '請求輸出',
   ],
   'Connect your device and receiver to the same Wi-Fi.': <String>[
     'Conecte seu dispositivo e receptor ao mesmo Wi-Fi.',
@@ -282,6 +334,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '장치와 수신기를 동일한 Wi-Fi에 연결하세요.',
     '将您的设备和接收器连接到同一个 Wi-Fi。',
     'デバイスと受信機を同じ Wi-Fi に接続してください。',
+    '將您的裝置和接收器連線到同一個 Wi-Fi。',
   ],
   'No compatible devices found.': <String>[
     'Nenhum dispositivo compatível encontrado.',
@@ -289,6 +342,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '호환 장치가 없습니다. 발견되었습니다.',
     '未找到兼容设备。',
     '互換性のあるデバイスが見つかりません。',
+    '未找到相容裝置。',
   ],
   'Searching for devices\u2026': <String>[
     'Procurando por dispositivos…',
@@ -296,6 +350,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '기기 검색 중…',
     '正在搜索设备…',
     'デバイスを検索しています....',
+    '正在搜尋裝置…',
   ],
   'Find devices': <String>[
     'Encontrar dispositivos',
@@ -303,6 +358,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '기기 찾기',
     '查找设备',
     'デバイスを見つけます',
+    '查詢裝置',
   ],
   'Stop casting': <String>[
     'Parar a transmissão',
@@ -310,6 +366,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '캐스팅 중지',
     '停止投射',
     'キャストを停止します',
+    '停止投射',
   ],
   'Could not cast. Music continues on this device.': <String>[
     'Não foi possível transmitir. A música continua neste dispositivo.',
@@ -317,6 +374,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '캐스팅할 수 없습니다. 이 기기에서 음악이 계속 재생됩니다.',
     '无法投射。音乐在此设备上继续播放。',
     'できませんでしたキャスト。このデバイスでは音楽が続行されます。',
+    '無法投射。音樂在此裝置上繼續播放。',
   ],
   'Could not read audio outputs.': <String>[
     'Não foi possível ler as saídas de áudio.',
@@ -324,15 +382,24 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '오디오 출력을 읽을 수 없습니다.',
     '无法读取音频输出。',
     'オーディオ出力を読み取れませんでした。',
+    '無法讀取音訊輸出。',
   ],
-  'Home': <String>['Início', 'Accueil', '홈', '首页', 'ホーム'],
-  'Good morning': <String>['Bom dia', 'Bonjour', '좋은 아침', '早上好', 'おはようございます'],
+  'Home': <String>['Início', 'Accueil', '홈', '首页', 'ホーム', '首頁'],
+  'Good morning': <String>[
+    'Bom dia',
+    'Bonjour',
+    '좋은 아침',
+    '早上好',
+    'おはようございます',
+    '早上好',
+  ],
   'Good afternoon': <String>[
     'Boa tarde',
     'Bon après-midi',
     '안녕하세요',
     '下午好',
     'こんにちは',
+    '下午好',
   ],
   'Refresh recommendations': <String>[
     'Recomendações de atualização',
@@ -340,6 +407,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '새로고침 추천',
     '刷新推荐',
     'おすすめを更新',
+    '重新整理推薦',
   ],
   'Refreshing recommendations': <String>[
     'Recomendações de atualização',
@@ -347,6 +415,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '새로고침 추천',
     '刷新推荐',
     'おすすめを更新',
+    '重新整理推薦',
   ],
   'Popular artists': <String>[
     'Artistas populares',
@@ -354,6 +423,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '인기 아티스트',
     '热门艺人',
     '人気アーティスト',
+    '熱門藝人',
   ],
   'Recommended artists': <String>[
     'Artistas recomendados',
@@ -361,6 +431,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '추천 아티스트',
     '推荐艺人',
     'おすすめアーティスト',
+    '推薦藝人',
   ],
   'Go to artist': <String>[
     'Ir para artista',
@@ -368,6 +439,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '바로가기 아티스트',
     '转到艺人',
     'アーティストに移動',
+    '轉到藝人',
   ],
   'Go to album': <String>[
     'Ir para o álbum',
@@ -375,6 +447,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '앨범으로 이동',
     '转到专辑',
     'アルバムに移動',
+    '轉到專輯',
   ],
   'The album for this song could not be found.': <String>[
     'O álbum desta música não foi encontrado.',
@@ -382,6 +455,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '이 노래의 앨범을 찾을 수 없습니다.',
     '这首歌曲的专辑无法播放已找到。',
     'この曲のアルバムが見つかりませんでした。',
+    '這首歌曲的專輯無法播放已找到。',
   ],
   'Artist profile': <String>[
     'Perfil do artista',
@@ -389,6 +463,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '아티스트 프로필',
     '艺人简介',
     'アーティスト プロフィール',
+    '藝人簡介',
   ],
   'Popular songs': <String>[
     'Músicas populares',
@@ -396,16 +471,18 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '인기곡',
     '热门歌曲',
     '人気曲',
+    '熱門歌曲',
   ],
-  'Albums': <String>['Álbuns', 'Albums', 'Albums', '专辑', 'アルバム'],
-  'Singles': <String>['Singles', 'Singles', 'Singles', '单曲', 'シングル'],
-  'Subscribe': <String>['Subscribe', 'S\'abonner', '구독', '订阅', '購読'],
+  'Albums': <String>['Álbuns', 'Albums', 'Albums', '专辑', 'アルバム', '專輯'],
+  'Singles': <String>['Singles', 'Singles', 'Singles', '单曲', 'シングル', '單曲'],
+  'Subscribe': <String>['Subscribe', 'S\'abonner', '구독', '订阅', '購読', '訂閱'],
   'Unsubscribe': <String>[
     'Cancelar inscrição',
     'Se désabonner',
     '구독 취소',
     '取消订阅',
     '購読解除',
+    '取消訂閱',
   ],
   'The artist profile could not be loaded.': <String>[
     'O perfil do artista não pôde ser carregado.',
@@ -413,6 +490,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '아티스트 프로필을 찾을 수 없습니다. 로드되었습니다.',
     '艺人简介无法加载。',
     'アーティスト プロフィールを読み込めませんでした。',
+    '藝人簡介無法載入。',
   ],
   'The artist mix could not be started.': <String>[
     'O mix do artista não pôde ser iniciado.',
@@ -420,6 +498,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '아티스트 믹스를 시작할 수 없습니다.',
     '艺人组合无法启动。',
     'アーティスト ミックスを開始できませんでした。',
+    '藝人組合無法啟動。',
   ],
   'The subscription could not be updated.': <String>[
     'A assinatura não pôde ser atualizada.',
@@ -427,6 +506,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '구독을 업데이트할 수 없습니다.',
     '订阅无法更新。',
     'サブスクリプションを更新できませんでした。',
+    '訂閱無法更新。',
   ],
   'A subscription is not available for this artist.': <String>[
     'Uma assinatura não está disponível para este artista.',
@@ -434,6 +514,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '이 아티스트는 구독할 수 없습니다.',
     '此订阅不可用艺术家。',
     'このアーティストではサブスクリプションを利用できません。',
+    '此訂閱不可用藝術家。',
   ],
   'Sign in to subscribe': <String>[
     'Faça login para se inscrever',
@@ -441,6 +522,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '구독하려면 로그인하세요',
     '登录订阅',
     'サインインして購読',
+    '登入訂閱',
   ],
   'YouTube Music account': <String>[
     'Conta do YouTube Music',
@@ -448,8 +530,10 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     'YouTube Music 계정',
     'YouTube Music 帐户',
     'YouTube Music アカウント',
+    'YouTube Music 帳戶',
   ],
   'YouTube Music': <String>[
+    'YouTube Music',
     'YouTube Music',
     'YouTube Music',
     'YouTube Music',
@@ -462,6 +546,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     'YouTube Music에 로그인',
     '登录 YouTube Music',
     'YouTube Music にサインイン',
+    '登入 YouTube Music',
   ],
   'Unofficial integration': <String>[
     'Não oficial integração',
@@ -469,6 +554,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '비공식 통합',
     '非官方集成',
     '非公式統合',
+    '非官方整合',
   ],
   'The YouTube Music integration uses unofficial interfaces and is not affiliated with Google. BStream never stores your password. YouTube may change, block, or restrict this feature.': <String>[
     'A integração do YouTube Music usa interfaces não oficiais e não é afiliada ao Google. BStream nunca armazena sua senha. O YouTube pode alterar, bloquear ou restringir esse recurso.',
@@ -476,6 +562,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     'YouTube Music 통합은 비공식 인터페이스를 사용하며 Google과 제휴하지 않습니다. BStream은 절대로 귀하의 비밀번호를 저장하지 않습니다. YouTube는 이 기능을 변경, 차단 또는 제한할 수 있습니다.',
     'YouTube Music 集成使用非官方界面，不隶属于 Google。 BStream 永远不会存储您的密码。 YouTube 可能会更改、阻止或限制此功能。',
     'YouTube Music の統合は非公式インターフェースを使用しており、Google とは提携していません。 BStream がパスワードを保存することはありません。 YouTube はこの機能を変更、ブロック、または制限する場合があります。',
+    'YouTube Music 整合使用非官方介面，不隸屬於 Google。 BStream 永遠不會儲存您的密碼。 YouTube 可能會更改、阻止或限制此功能。',
   ],
   'I understand, continue': <String>[
     'Eu entendo, continue',
@@ -483,6 +570,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '이해합니다. 계속',
     '我了解，请继续',
     '理解しました。続行',
+    '我瞭解，請繼續',
   ],
   'Sync now': <String>[
     'Sincronize agora',
@@ -490,6 +578,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '지금 동기화',
     '立即同步',
     '今すぐ同期',
+    '立即同步',
   ],
   'Synchronize playlists': <String>[
     'Sincronize playlists',
@@ -497,6 +586,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '재생목록 동기화',
     '同步播放列表',
     'プレイリストを同期',
+    '同步播放列表',
   ],
   'Your local playlists will stay': <String>[
     'Suas playlists locais permanecerão',
@@ -504,6 +594,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '로컬 재생목록은 유지됩니다',
     '您的本地播放列表将保留',
     'ローカル プレイリストは残ります',
+    '您的本地播放列表將保留',
   ],
   'Your local playlist will stay': <String>[
     'Sua playlist local permanecerá',
@@ -511,6 +602,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '로컬 재생목록은 유지됩니다',
     '您的本地播放列表将保留',
     'ローカル プレイリストは残ります',
+    '您的本地播放列表將保留',
   ],
   'Your ZXQPH0X local playlists will stay': <String>[
     'Suas playlists locais ZXQPH0X permanecerão',
@@ -518,6 +610,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     'ZXQPH0X 로컬 재생목록은 BStream에 유지됩니다',
     '您的 ZXQPH0X 本地播放列表将保留',
     'あなたの ZXQPH0X ローカル プレイリストは BStream に残ります',
+    '您的 ZXQPH0X 本地播放列表將保留',
   ],
   'ZXQPH0X in BStream. Favorites will sync with YouTube Music Liked Music; unlinked local playlists are created as private playlists and remote playlists are imported here. This first sync does not delete your local playlists.': <String>[
     'ZXQPH0X no BStream. Os favoritos serão sincronizados com as músicas curtidas do YouTube Music; playlists locais desvinculadas são criadas como playlists privadas e playlists remotas são importadas aqui. Esta primeira sincronização não exclui suas listas de reprodução locais.',
@@ -525,6 +618,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     'ZXQPH0X. 즐겨찾기는 YouTube Music이 좋아하는 음악과 동기화됩니다. 연결되지 않은 로컬 재생 목록은 비공개 재생 목록으로 생성되고 원격 재생 목록은 여기로 가져옵니다. 이 첫 번째 동기화는 로컬 재생 목록을 삭제하지 않습니다.',
     'ZXQPH0X 在 BStream 中。收藏夹将与 YouTube Music 喜欢的音乐同步；未链接的本地播放列表将创建为私有播放列表，远程播放列表将在此处导入。第一次同步不会删除您的本地播放列表。',
     'ZXQPH0X。お気に入りは YouTube Music の「いいね！」した音楽と同期します。リンクされていないローカル プレイリストはプライベート プレイリストとして作成され、リモート プレイリストはここにインポートされます。この最初の同期では、ローカル プレイリストは削除されません。',
+    'ZXQPH0X 在 BStream 中。收藏夾將與 YouTube Music 喜歡的音樂同步；未連結的本地播放列表將建立為私有播放列表，遠端播放列表將在此處匯入。第一次同步不會刪除您的本地播放列表。',
   ],
   'Keep and synchronize': <String>[
     'Manter e sincronizar',
@@ -532,6 +626,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '유지 및 동기화',
     '保留并同步',
     '保持して同期します',
+    '保留並同步',
   ],
   'Not now': <String>[
     'Agora não',
@@ -539,6 +634,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '지금은 아님',
     '现在不',
     '今は実行しません',
+    '現在不',
   ],
   'Your decision could not be saved. Synchronization was not started.': <String>[
     'Sua decisão não pôde ser salva. A sincronização não foi iniciada.',
@@ -546,6 +642,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '결정한 내용을 저장할 수 없습니다. 동기화가 시작되지 않았습니다.',
     '无法保存您的决定。未开始同步。',
     '決定を保存できませんでした。同期は開始されませんでした。',
+    '無法儲存您的決定。未開始同步。',
   ],
   'Syncing playlists\u2026': <String>[
     'Sincronizando listas de reprodução\u2026',
@@ -553,6 +650,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '재생목록 동기화 중...',
     '正在同步播放列表…',
     'プレイリストを同期しています....',
+    '正在同步播放列表…',
   ],
   'Playlists synchronized': <String>[
     'Listas de reprodução sincronizadas',
@@ -560,6 +658,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '재생목록 동기화됨',
     '已同步的播放列表',
     'プレイリストが同期されました',
+    '已同步的播放列表',
   ],
   'Imported 1 playlist from YouTube Music.': <String>[
     'Importou 1 lista de reprodução do YouTube Music.',
@@ -567,6 +666,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     'YouTube Music에서 재생목록 1개를 가져왔습니다.',
     '从 YouTube Music 导入了 1 个播放列表。',
     'YouTube Music から 1 つのプレイリストをインポートしました。',
+    '從 YouTube Music 匯入了 1 個播放列表。',
   ],
   'Imported ZXQPH0X playlists from YouTube Music.': <String>[
     'Listas de reprodução ZXQPH0X importadas do YouTube Music.',
@@ -574,6 +674,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     'YouTube Music에서 ZXQPH0X 재생목록을 가져왔습니다.',
     '从 YouTube Music 导入了 ZXQPH0X 播放列表。',
     'YouTube Music から ZXQPH0X プレイリストをインポートしました。',
+    '從 YouTube Music 匯入了 ZXQPH0X 播放列表。',
   ],
   'Resolve conflicts': <String>[
     'Resolver conflitos',
@@ -581,6 +682,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '충돌 해결',
     '解决冲突',
     '競合を解決',
+    '解決衝突',
   ],
   'BStream paused these playlists to avoid repeating or overwriting uncertain changes. Choose which version to keep for each one.': <String>[
     'BStream pausou essas listas de reprodução para evitar repetição ou substituição incerta mudanças. Escolha qual versão manter para cada um.',
@@ -588,6 +690,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     'BStream은 불확실한 변경 사항이 반복되거나 덮어쓰지 않도록 이 재생 목록을 일시 중지했습니다. 각 버전에 대해 유지할 버전을 선택하세요.',
     'BStream 暂停了这些播放列表，以避免重复或覆盖不确定的更改。选择要为每个版本保留哪个版本。',
     'BStream は、不確実な変更の繰り返しや上書きを避けるために、これらのプレイリストを一時停止しました。それぞれにどのバージョンを保持するかを選択してください。',
+    'BStream 暫停了這些播放列表，以避免重複或覆蓋不確定的更改。選擇要為每個版本保留哪個版本。',
   ],
   'Keep BStream': <String>[
     'Keep BStream',
@@ -595,6 +698,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     'Keep BStream',
     '保留 BStream',
     'BStream を保持する',
+    '保留 BStream',
   ],
   'Keep YouTube Music': <String>[
     'Keep YouTube Music',
@@ -602,6 +706,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     'Keep YouTube Music',
     '保留 YouTube Music',
     'YouTube Music を保持する',
+    '保留 YouTube Music',
   ],
   'There are no unresolved playlist conflicts.': <String>[
     'Não há conflitos de lista de reprodução não resolvidos.',
@@ -609,6 +714,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '해결되지 않은 재생목록 충돌이 없습니다.',
     '不存在未解决的播放列表冲突。',
     '未解決のプレイリストの競合はありません。',
+    '不存在未解決的播放列表衝突。',
   ],
   'The conflict could not be closed. The playlist remains paused to avoid repeating an uncertain write.':
       <String>[
@@ -617,6 +723,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
         '충돌을 종료할 수 없습니다. 불확실한 쓰기가 반복되는 것을 방지하기 위해 재생목록이 일시중지된 상태로 유지됩니다.',
         '无法关闭冲突。播放列表保持暂停状态，以避免重复不确定的写入。',
         '競合を解決できませんでした。不確実な書き込みを繰り返すのを避けるために、プレイリストは一時停止されたままになります。',
+        '無法關閉衝突。播放列表保持暫停狀態，以避免重複不確定的寫入。',
       ],
   'Switch channel': <String>[
     'Mudar de canal',
@@ -624,6 +731,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '채널 전환',
     '切换频道',
     'チャンネルを切り替える',
+    '切換頻道',
   ],
   'Disconnect YouTube Music': <String>[
     'Desconectar o YouTube Music',
@@ -631,6 +739,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     'YouTube Music 연결 해제',
     '断开 YouTube Music',
     'YouTube Music の接続を解除します',
+    '斷開 YouTube Music',
   ],
   'Google blocked sign-in inside the app. For security, BStream cannot copy the session from your browser. You can keep using the app without an account.': <String>[
     'O Google bloqueou o login dentro do aplicativo. Por segurança, o BStream não pode copiar a sessão do seu navegador. Você pode continuar usando o aplicativo sem uma conta.',
@@ -638,6 +747,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     'Google에서 앱 내부의 로그인을 차단했습니다. 보안을 위해 BStream은 브라우저에서 세션을 복사할 수 없습니다. 계정이 없어도 앱을 계속 사용할 수 있습니다.',
     'Google 阻止了应用内的登录。为了安全起见，BStream 无法从您的浏览器复制会话。您可以在没有帐户的情况下继续使用该应用程序。',
     'Google はアプリ内でのサインインをブロックしました。セキュリティのため、BStream はブラウザからセッションをコピーできません。アカウントなしでアプリを使い続けることができます。',
+    'Google 阻止了應用內的登入。為了安全起見，BStream 無法從您的瀏覽器複製會話。您可以在沒有帳戶的情況下繼續使用該應用程式。',
   ],
   'Continue listening': <String>[
     'Continue ouvindo',
@@ -645,6 +755,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '계속 듣기',
     '继续收听',
     '聴き続けます',
+    '繼續收聽',
   ],
   'Because you listened\u2026': <String>[
     'Porque você ouviu\u2026',
@@ -652,6 +763,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '당신이 들었기 때문입니다...',
     '因为您收听了…',
     'あなたが聴いたからです。',
+    '因為您收聽了…',
   ],
   'Because you listened to ZXQPH0X': <String>[
     'Porque você ouviu ZXQPH0X',
@@ -659,6 +771,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     'ZXQPH0X를 들었기 때문에',
     '因为您收听了 ZXQPH0X',
     'あなたがZXQPH0Xを聴いたからです',
+    '因為您收聽了 ZXQPH0X',
   ],
   'Your mixes': <String>[
     'Suas mixagens',
@@ -666,6 +779,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '당신의 믹스',
     '您的混音',
     'あなたのミックス',
+    '您的混音',
   ],
   'New for you': <String>[
     'Novo para você',
@@ -673,6 +787,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     'New for you',
     '为您提供的新内容',
     '新しいあなたへ',
+    '為您提供的新內容',
   ],
   'Discovery': <String>[
     'Discovery',
@@ -680,6 +795,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     'Discovery',
     '发现',
     'ディスカバリー',
+    '發現',
   ],
   'Recently played': <String>[
     'Tocados recentemente',
@@ -687,6 +803,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '최근에 재생된',
     '最近播放的',
     '最近再生されました',
+    '最近播放的',
   ],
   'My playlists': <String>[
     'Meu playlists',
@@ -694,6 +811,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '내 재생 목록',
     '我的播放列表',
     'マイプレイリスト',
+    '我的播放列表',
   ],
   'This selection could not be loaded.': <String>[
     'Esta seleção não pôde ser carregada.',
@@ -701,6 +819,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '이 선택은 재생할 수 없습니다 로드되었습니다.',
     '此选择无法播放已加载。',
     'この選択はロードできませんでした。',
+    '此選擇無法播放已載入。',
   ],
   'This selection has no available songs.': <String>[
     'Esta seleção não tem músicas disponíveis.',
@@ -708,6 +827,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '이 선택 항목에는 사용 가능한 노래가 없습니다.',
     '此选择没有可用的歌曲。',
     'この選択には利用可能な曲がありません。',
+    '此選擇沒有可用的歌曲。',
   ],
   'No recently played songs yet.': <String>[
     'Nenhuma música tocada recentemente ainda.',
@@ -715,23 +835,26 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '최근에 재생한 노래가 아직 없습니다.',
     '尚未播放最近播放的歌曲。',
     '最近再生した曲はまだありません。',
+    '尚未播放最近播放的歌曲。',
   ],
-  'Search': <String>['Pesquisar', 'Recherche', '검색', '搜索', '検索'],
+  'Search': <String>['Pesquisar', 'Recherche', '검색', '搜索', '検索', '搜尋'],
   'Clear search': <String>[
     'Limpar pesquisa',
     'Effacer la recherche',
     '검색 지우기',
     '清除搜索',
     '検索をクリア',
+    '清除搜尋',
   ],
-  'Player': <String>['Reprodutor', 'Lecteur', '플레이어', '播放器', 'プレーヤー'],
-  'Local': <String>['No dispositivo', 'Appareil', '로컬', '本地', 'ローカル'],
+  'Player': <String>['Reprodutor', 'Lecteur', '플레이어', '播放器', 'プレーヤー', '播放器'],
+  'Local': <String>['No dispositivo', 'Appareil', '로컬', '本地', 'ローカル', '本地'],
   'Local music': <String>[
     'Música local',
     'Musique locale',
     '로컬 음악',
     '本地音乐',
     'ローカル音楽',
+    '本地音樂',
   ],
   'All songs': <String>[
     'Todas as músicas',
@@ -739,14 +862,16 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '모든 노래',
     '所有歌曲',
     'すべての曲',
+    '所有歌曲',
   ],
-  'Folders': <String>['Pastas', 'Dossiers', 'Folders', '文件夹', 'フォルダ'],
+  'Folders': <String>['Pastas', 'Dossiers', 'Folders', '文件夹', 'フォルダ', '資料夾'],
   'No local music found': <String>[
     'Nenhuma música local encontrada',
     'Aucune musique locale trouvée',
     '로컬 음악을 찾을 수 없음',
     '未找到本地音乐',
     'ローカル音楽が見つかりません',
+    '未找到本地音樂',
   ],
   'Add audio files to the device or review the storage filters.': <String>[
     'Adicione arquivos de áudio ao dispositivo ou revise os filtros de armazenamento.',
@@ -754,6 +879,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '기기에 오디오 파일을 추가하거나 저장소 필터를 검토하세요.',
     '将音频文件添加到设备或检查存储过滤器。',
     'オーディオ ファイルをデバイスに追加するか、ストレージ フィルタを確認してください。',
+    '將音訊檔案新增到裝置或檢查儲存過濾器。',
   ],
   'Allow access to your music': <String>[
     'Permitir acesso ao seu música',
@@ -761,6 +887,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '액세스 허용 music',
     '允许访问您的音乐',
     '音楽へのアクセスを許可する',
+    '允許訪問您的音樂',
   ],
   'BStream needs permission to show and play audio files on this device.': <String>[
     'BStream precisa de permissão para mostrar e reproduzir arquivos de áudio neste dispositivo.',
@@ -768,6 +895,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     'BStream에 이 기기에서 오디오 파일을 표시하고 재생하려면 권한이 필요합니다.',
     'BStream 需要权限才能在此设备上显示和播放音频文件设备。',
     'BStream には、このデバイスでオーディオ ファイルを表示および再生する権限が必要です。',
+    'BStream 需要許可權才能在此裝置上顯示和播放音訊檔案裝置。',
   ],
   'Allow access': <String>[
     'Permitir acesso',
@@ -775,6 +903,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '액세스 허용',
     '允许访问',
     'アクセスを許可',
+    '允許訪問',
   ],
   'Device music could not be read.': <String>[
     'A música do dispositivo não pôde ser lida.',
@@ -782,6 +911,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '기기 음악을 읽을 수 없습니다.',
     '无法读取设备音乐。',
     'デバイスの音楽を保存できませんでしたread.',
+    '無法讀取裝置音樂。',
   ],
   'Play all': <String>[
     'Reproduzir tudo',
@@ -789,16 +919,25 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '모두 재생',
     '播放全部',
     'すべて再生',
+    '播放全部',
   ],
-  'Refresh': <String>['Atualizar', 'Actualiser', 'Refresh', '刷新', '更新'],
-  'Library': <String>['Biblioteca', 'Bibliothèque', '라이브러리', '音乐库', 'ライブラリ'],
-  'Settings': <String>['Configurações', 'Paramètres', '설정', '设置', '設定'],
+  'Refresh': <String>['Atualizar', 'Actualiser', 'Refresh', '刷新', '更新', '重新整理'],
+  'Library': <String>[
+    'Biblioteca',
+    'Bibliothèque',
+    '라이브러리',
+    '音乐库',
+    'ライブラリ',
+    '音樂庫',
+  ],
+  'Settings': <String>['Configurações', 'Paramètres', '설정', '设置', '設定', '設定'],
   'Open settings': <String>[
     'Abrir configurações',
     'Ouvrir les paramètres',
     '설정 열기',
     '打开设置',
     '設定を開く',
+    '開啟設定',
   ],
   'Song, artist, or album': <String>[
     'Música, artista ou álbum',
@@ -806,6 +945,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '노래, 아티스트 또는 album',
     '歌曲、艺术家或专辑',
     '曲、アーティスト、またはアルバム',
+    '歌曲、藝術家或專輯',
   ],
   'Search songs, artists, or albums': <String>[
     'Pesquisar músicas, artistas ou álbuns',
@@ -813,6 +953,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '노래, 아티스트 또는 앨범 검색',
     '搜索歌曲、艺术家或专辑',
     '曲、アーティスト、またはアルバムを検索',
+    '搜尋歌曲、藝術家或專輯',
   ],
   'Results will appear here.': <String>[
     'Os resultados aparecerão aqui.',
@@ -820,6 +961,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '결과가 여기에 표시됩니다.',
     '结果将显示在此处。',
     '結果がここに表示されます。',
+    '結果將顯示在此處。',
   ],
   'Browse all': <String>[
     'Procurar tudo',
@@ -827,6 +969,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '모두 찾아보기',
     '浏览全部',
     'すべて参照',
+    '瀏覽全部',
   ],
   'No songs were found in this category.': <String>[
     'Nenhuma música foi encontrada nesta categoria.',
@@ -834,6 +977,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '이 카테고리에서 노래를 찾을 수 없습니다.',
     '此类别中找不到歌曲。',
     'このカテゴリには曲が見つかりませんでした。',
+    '此類別中找不到歌曲。',
   ],
   'This category could not be loaded.': <String>[
     'Esta categoria não pôde ser carregada.',
@@ -841,6 +985,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '이 카테고리를 로드할 수 없습니다.',
     '无法加载此类别。',
     'このカテゴリは読み込めませんでした。',
+    '無法載入此類別。',
   ],
   'Search failed': <String>[
     'Pesquisar falhou',
@@ -848,16 +993,25 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '검색 failed',
     '搜索失败',
     '検索失敗しました',
+    '搜尋失敗',
   ],
-  'Songs': <String>['Músicas', 'Chansons', '노래', '歌曲', '曲'],
-  'Videos': <String>['Vídeos', 'Vidéos', 'Videos', '视频', 'Videos'],
-  'Artists': <String>['Artistas', 'Artistes', 'Artists', '艺术家', 'Artists'],
+  'Songs': <String>['Músicas', 'Chansons', '노래', '歌曲', '曲', '歌曲'],
+  'Videos': <String>['Vídeos', 'Vidéos', 'Videos', '视频', 'Videos', '影片'],
+  'Artists': <String>[
+    'Artistas',
+    'Artistes',
+    'Artists',
+    '艺术家',
+    'Artists',
+    '藝術家',
+  ],
   'No songs matched this search.': <String>[
     'Nenhuma música corresponde a esta pesquisa.',
     'Aucune chanson ne correspond à cette recherche.',
     '이 검색과 일치하는 노래가 없습니다.',
     '没有与此搜索匹配的歌曲。',
     'この検索に一致する曲はありません。',
+    '沒有與此搜尋匹配的歌曲。',
   ],
   'No videos matched this search.': <String>[
     'Nenhum vídeo corresponde a esta pesquisa.',
@@ -865,6 +1019,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '이 검색과 일치하는 동영상이 없습니다.',
     '没有与此搜索匹配的视频。',
     'この検索に一致するビデオはありません。',
+    '沒有與此搜尋匹配的影片。',
   ],
   'No albums matched this search.': <String>[
     'Nenhum álbum corresponde a esta pesquisa.',
@@ -872,6 +1027,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '이 검색과 일치하는 앨범이 없습니다.',
     '没有与此搜索匹配的专辑。',
     'この検索に一致するアルバムはありません。',
+    '沒有與此搜尋匹配的專輯。',
   ],
   'No artists matched this search.': <String>[
     'Nenhum artista corresponde a esta pesquisa.',
@@ -879,6 +1035,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '이 검색과 일치하는 아티스트가 없습니다.',
     '没有与此搜索匹配的艺术家。',
     'この検索に一致するアーティストはありません。',
+    '沒有與此搜尋匹配的藝術家。',
   ],
   'The YouTube Music catalog did not respond. The InnerTube video fallback was used.':
       <String>[
@@ -887,6 +1044,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
         'YouTube Music 카탈로그가 응답하지 않습니다. InnerTube 비디오 대체가 사용되었습니다.',
         'YouTube音乐目录没有回应。使用了 InnerTube 视频后备。',
         'YouTube Music カタログが応答しませんでした。 InnerTube ビデオ フォールバックが使用されました。',
+        'YouTube音樂目錄沒有回應。使用了 InnerTube 影片後備。',
       ],
   'This search uses the InnerTube video fallback and can only show videos.': <String>[
     'Esta pesquisa usa o substituto de vídeo do InnerTube e só pode mostrar vídeos.',
@@ -894,6 +1052,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '이 검색은 InnerTube 비디오 대체를 사용하며 동영상만 표시할 수 있습니다.',
     '此搜索使用 InnerTube 视频后备，只能显示视频。',
     'この検索では InnerTube ビデオ フォールバックが使用され、ビデオのみを表示できます。',
+    '此搜尋使用 InnerTube 影片後備，只能顯示影片。',
   ],
   'Open album ZXQPH0X': <String>[
     'Abrir álbum ZXQPH0X',
@@ -901,6 +1060,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     'ZXQPH0X 앨범 열기',
     '打开专辑 ZXQPH0X',
     'アルバム ZXQPH0X',
+    '開啟專輯 ZXQPH0X',
   ],
   'Open ZXQPH0X': <String>[
     'Abrir ZXQPH0X',
@@ -908,6 +1068,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     'ZXQPH0X 열기',
     '打开 ZXQPH0X',
     'オープン ZXQPH0X',
+    '開啟 ZXQPH0X',
   ],
   'The album songs could not be loaded.': <String>[
     'As músicas do álbum não puderam ser carregadas.',
@@ -915,6 +1076,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '앨범 노래를 로드할 수 없습니다.',
     '专辑歌曲无法加载。',
     'アルバムの曲をロードできませんでした。',
+    '專輯歌曲無法載入。',
   ],
   'This album has no available songs.': <String>[
     'Este álbum não tem músicas disponíveis.',
@@ -922,26 +1084,29 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '이 앨범에는 사용 가능한 노래가 없습니다.',
     '此专辑没有可用歌曲。',
     'このアルバムには利用可能な曲がありません。',
+    '此專輯沒有可用歌曲。',
   ],
-  '1 song': <String>['1 música', '1 chanson', '1 노래', '1 首歌曲', '1 曲 '],
+  '1 song': <String>['1 música', '1 chanson', '1 노래', '1 首歌曲', '1 曲 ', '1 首歌曲'],
   'ZXQPH0X songs': <String>[
     'ZXQPH0X músicas',
     'ZXQPH0X chansons',
     'ZXQPH0X 노래',
     'ZXQPH0X歌曲',
     'ZXQPH0X曲',
+    'ZXQPH0X歌曲',
   ],
-  'Play': <String>['Play', 'Lecture', '재생', '播放', '再生'],
-  'Pause': <String>['Pause', 'Pause', '일시 중지', '暂停', '一時停止'],
-  'Previous': <String>['Anterior', 'Précédent', '이전', '上一个', '前'],
-  'Next': <String>['Próximo', 'Suivant', '다음', '下一个', '次'],
-  'Download': <String>['Download', 'Télécharger', '다운로드', '下载', 'ダウンロード'],
+  'Play': <String>['Play', 'Lecture', '재생', '播放', '再生', '播放'],
+  'Pause': <String>['Pause', 'Pause', '일시 중지', '暂停', '一時停止', '暫停'],
+  'Previous': <String>['Anterior', 'Précédent', '이전', '上一个', '前', '上一個'],
+  'Next': <String>['Próximo', 'Suivant', '다음', '下一个', '次', '下一個'],
+  'Download': <String>['Download', 'Télécharger', '다운로드', '下载', 'ダウンロード', '下載'],
   'Download audio': <String>[
     'Baixar áudio',
     'Télécharger l\'audio',
     '오디오 다운로드',
     '下载音频',
     'オーディオをダウンロード',
+    '下載音訊',
   ],
   'Cancel download': <String>[
     'Cancelar download',
@@ -949,6 +1114,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '다운로드 취소',
     '取消下载',
     'ダウンロードをキャンセル',
+    '取消下載',
   ],
   'Cancel downloads': <String>[
     'Cancelar downloads',
@@ -956,6 +1122,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '다운로드 취소',
     '取消下载',
     'ダウンロードをキャンセル',
+    '取消下載',
   ],
   'Pending downloads cancelled.': <String>[
     'Downloads pendentes cancelado.',
@@ -963,6 +1130,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '다운로드 보류 중 취소되었습니다.',
     '待下载已取消。',
     '保留中のダウンロードがキャンセルされました。',
+    '待下載已取消。',
   ],
   'Could not queue the downloads. Try again.': <String>[
     'Não foi possível enfileirar os downloads. Tente novamente.',
@@ -970,6 +1138,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '다운로드를 대기열에 추가할 수 없습니다. 다시 시도해 보세요.',
     '无法对下载进行排队。请重试。',
     'ダウンロードをキューに入れることができませんでした。もう一度お試しください。',
+    '無法對下載進行排隊。請重試。',
   ],
   'Could not cancel the downloads. Try again.': <String>[
     'Não foi possível cancelar os downloads. Tente novamente.',
@@ -977,6 +1146,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '다운로드를 취소할 수 없습니다. 다시 시도해 보세요.',
     '无法取消下载。再试一次。',
     'ダウンロードをキャンセルできませんでした。もう一度お試しください。',
+    '無法取消下載。再試一次。',
   ],
   'Download cancelled': <String>[
     'Download cancelado',
@@ -984,6 +1154,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '다운로드 취소됨',
     '下载已取消',
     'ダウンロードはキャンセルされました',
+    '下載已取消',
   ],
   'Nothing playing': <String>[
     'Nada tocando',
@@ -991,6 +1162,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '재생 중 없음',
     '没有播放',
     '何も再生されていません',
+    '沒有播放',
   ],
   'Now playing': <String>[
     'Agora tocando',
@@ -998,14 +1170,16 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '현재 재생 중',
     '正在播放',
     '現在再生中',
+    '正在播放',
   ],
-  'Paused': <String>['Pausado', 'En pause', '일시 중지됨', '已暂停', '一時停止中'],
+  'Paused': <String>['Pausado', 'En pause', '일시 중지됨', '已暂停', '一時停止中', '已暫停'],
   'View in list': <String>[
     'Ver na lista',
     'Afficher dans la liste',
     '목록에서 보기',
     '在列表中查看',
     'リストで表示',
+    '在列表中檢視',
   ],
   'Minimize player': <String>[
     'Minimizar player',
@@ -1013,15 +1187,24 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '플레이어 최소화',
     '最小化播放器',
     'プレーヤーを最小化',
+    '最小化播放器',
   ],
-  'Untitled': <String>['Sem título', 'Untitled', '제목 없음', '无标题', '無題'],
-  'Unknown': <String>['Desconhecido', 'Inconnu', '알 수 없음', '未知', 'Unknown'],
+  'Untitled': <String>['Sem título', 'Untitled', '제목 없음', '无标题', '無題', '無標題'],
+  'Unknown': <String>[
+    'Desconhecido',
+    'Inconnu',
+    '알 수 없음',
+    '未知',
+    'Unknown',
+    '未知',
+  ],
   'Playback error': <String>[
     'Erro de reprodução',
     'Erreur de lecture',
     '재생 오류',
     '播放错误',
     '再生エラー',
+    '播放錯誤',
   ],
   'The selected audio will play, but Android did not allow the rest of the folder to be loaded.':
       <String>[
@@ -1030,22 +1213,25 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
         '선택한 오디오가 재생됩니다. 하지만 Android에서는 폴더의 나머지 부분을 로드하는 것을 허용하지 않았습니다.',
         '将播放选定的音频，但 Android 不允许文件夹的其余部分已加载。',
         '選択したオーディオは再生されますが、Android ではフォルダーの残りの部分を読み込むことができませんでした。',
+        '將播放選定的音訊，但 Android 不允許資料夾的其餘部分已載入。',
       ],
-  'Volume': <String>['Volume', 'Volume', '볼륨', '音量', 'ボリューム'],
+  'Volume': <String>['Volume', 'Volume', '볼륨', '音量', 'ボリューム', '音量'],
   'Volume control': <String>[
     'Controle de volume',
     'Contrôle du volume',
     '볼륨 조절',
     '音量控制',
     'ボリューム コントロール',
+    '音量控制',
   ],
-  'Lyrics': <String>['Letras', 'Paroles', 'Lyrics', '歌词', '歌詞'],
+  'Lyrics': <String>['Letras', 'Paroles', 'Lyrics', '歌词', '歌詞', '歌詞'],
   'Finding lyrics...': <String>[
     'Encontrando letras...',
     'Recherche des paroles...',
     '가사 찾는 중...',
     '正在查找歌词...',
     '検索歌詞...',
+    '正在查詢歌詞...',
   ],
   'We could not find lyrics for this song.': <String>[
     'Não foi possível encontrar a letra desta música.',
@@ -1053,6 +1239,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '이 노래의 가사를 찾을 수 없습니다.',
     '我们找不到这首歌的歌词。',
     'この曲の歌詞が見つかりませんでした。',
+    '我們找不到這首歌的歌詞。',
   ],
   'Lyrics could not be loaded.': <String>[
     'A letra não pôde ser carregada.',
@@ -1060,6 +1247,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '가사를 로드할 수 없습니다.',
     '无法加载歌词。',
     '歌詞を読み込めませんでした。',
+    '無法載入歌詞。',
   ],
   'Similar lyrics': <String>[
     'Letras semelhantes',
@@ -1067,6 +1255,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '비슷 가사',
     '相似歌词',
     '類似の歌詞',
+    '相似歌詞',
   ],
   'Finding similar lyrics...': <String>[
     'Encontrando letras semelhantes letras...',
@@ -1074,6 +1263,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '유사한 가사를 찾는 중...',
     '正在查找相似歌词...',
     '類似の歌詞を検索中...',
+    '正在查詢相似歌詞...',
   ],
   'We could not find any safe similar lyrics.': <String>[
     'Não foi possível encontrar nenhuma letra semelhante segura.',
@@ -1081,6 +1271,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '안전하고 유사한 가사를 찾을 수 없습니다.',
     '我们找不到任何安全相似的歌词。',
     '安全な類似の歌詞が見つかりませんでした。',
+    '我們找不到任何安全相似的歌詞。',
   ],
   'Choose the correct match': <String>[
     'Escolha a correspondência correta',
@@ -1088,6 +1279,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '정확한 일치 선택',
     '选择正确匹配',
     '正しい一致を選択してください',
+    '選擇正確匹配',
   ],
   'Search by another title': <String>[
     'Pesquise por outro título',
@@ -1095,6 +1287,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '다른 제목으로 검색',
     '按其他标题搜索',
     '別のタイトルで検索',
+    '按其他標題搜尋',
   ],
   'Search lyrics': <String>[
     'Pesquisar letras',
@@ -1102,6 +1295,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '가사 검색',
     '搜索歌词',
     '歌詞を検索',
+    '搜尋歌詞',
   ],
   'Synchronized': <String>[
     'Sincronizado',
@@ -1109,6 +1303,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '동기화됨',
     '已同步',
     '同期済み',
+    '已同步',
   ],
   'Not synchronized': <String>[
     'Não sincronizado',
@@ -1116,14 +1311,16 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '동기화되지 않음',
     '未同步',
     '同期していません',
+    '未同步',
   ],
-  'Back': <String>['Voltar', 'Retour', '뒤로', '返回', '戻る'],
+  'Back': <String>['Voltar', 'Retour', '뒤로', '返回', '戻る', '返回'],
   'No Internet connection.': <String>[
     'Sem conexão com a Internet.',
     'Pas de connexion Internet.',
     '인터넷 없음 연결.',
     '没有互联网连接。',
     'インターネット接続がありません。',
+    '沒有網際網路連線。',
   ],
   'This track is marked as instrumental.': <String>[
     'Esta faixa está marcada como instrumental.',
@@ -1131,6 +1328,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '이 트랙은 악기로 표시됩니다.',
     '此曲目被标记为乐器。',
     'これトラックはインストゥルメンタルとしてマークされています。',
+    '此曲目被標記為樂器。',
   ],
   'These lyrics do not include synchronized timing.': <String>[
     'Essas letras não incluem tempo sincronizado.',
@@ -1138,14 +1336,16 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '이 가사에는 동기화된 타이밍이 포함되어 있지 않습니다.',
     '这些歌词不包括同步计时。',
     'これらの歌詞には同期されたタイミングが含まれていません。',
+    '這些歌詞不包括同步計時。',
   ],
-  'Offset': <String>['Offset', 'Offset', 'Offset', '偏移', 'オフセット'],
+  'Offset': <String>['Offset', 'Offset', 'Offset', '偏移', 'オフセット', '偏移'],
   'Lyrics options': <String>[
     'Opções de letras',
     'Options de paroles',
     '가사 옵션',
     '歌词选项',
     '歌詞オプション',
+    '歌詞選項',
   ],
   'Available for synchronized lyrics.': <String>[
     'Disponível para letras sincronizadas.',
@@ -1153,6 +1353,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '동기화된 가사에 사용할 수 있습니다.',
     '可用于同步歌词。',
     '同期歌詞に使用できます。',
+    '可用於同步歌詞。',
   ],
   'Translate lyrics': <String>[
     'Traduzir letras',
@@ -1160,6 +1361,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '가사 번역',
     '翻译歌词',
     '歌詞を翻訳',
+    '翻譯歌詞',
   ],
   'To the app language \u00B7 Google Translate': <String>[
     'Para o idioma do aplicativo · Google Translate',
@@ -1167,6 +1369,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '앱 언어로 \u00B7 Google 번역',
     '到应用程序语言·谷歌翻译',
     'アプリの言語へ · Google 翻訳',
+    '到應用程式語言·谷歌翻譯',
   ],
   'Translating\u2026': <String>[
     'Traduzindo\u2026',
@@ -1174,6 +1377,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '번역 중…',
     '翻译……',
     '翻訳中....',
+    '翻譯……',
   ],
   'Unable to translate. The original lyrics remain available.': <String>[
     'Não é possível traduzir. As letras originais permanecem disponíveis.',
@@ -1181,6 +1385,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '번역할 수 없습니다. 원본 가사는 그대로 유지됩니다.',
     '无法翻译。原始歌词仍然可用。',
     '翻訳できません。元の歌詞はそのまま利用できます。',
+    '無法翻譯。原始歌詞仍然可用。',
   ],
   'The lyrics are already in the app language.': <String>[
     'As letras já estão no idioma do aplicativo.',
@@ -1188,6 +1393,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '가사는 이미 앱 언어에 있습니다.',
     '歌词已采用应用程序语言。',
     '歌詞はすでにアプリの言語で表示されています。',
+    '歌詞已採用應用程式語言。',
   ],
   'Automatic translation: Google Translate': <String>[
     'Tradução automática: Google Translate',
@@ -1195,6 +1401,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '자동 번역: Google 번역',
     '自动翻译：谷歌翻译',
     '自動翻訳: Google 翻訳',
+    '自動翻譯：谷歌翻譯',
   ],
   'Adjust it if the lyrics appear before or after the vocals.': <String>[
     'Ajuste se a letra aparecer antes ou depois dos vocais.',
@@ -1202,6 +1409,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '가사가 보컬 앞이나 뒤에 나타나는지 조정합니다.',
     '如果歌词出现在人声之前或之后，请调整它。',
     '歌詞がボーカルの前後に表示される場合は調整してください。',
+    '如果歌詞出現在人聲之前或之後，請調整它。',
   ],
   'Reset offset': <String>[
     'Redefinir deslocamento',
@@ -1209,6 +1417,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '오프셋 재설정',
     '重置偏移',
     'オフセットをリセット',
+    '重置偏移',
   ],
   'Lyrics alignment': <String>[
     'Alinhamento das letras',
@@ -1216,6 +1425,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '가사 정렬',
     '歌词对齐',
     '歌詞の配置',
+    '歌詞對齊',
   ],
   'Center lyrics': <String>[
     'Center letras',
@@ -1223,6 +1433,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '가사 가운데',
     '居中歌词',
     '歌詞を中央に配置',
+    '居中歌詞',
   ],
   'Use normal alignment': <String>[
     'Use normal alinhamento',
@@ -1230,15 +1441,17 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '일반 사용 alignment',
     '使用正常对齐',
     '通常の配置を使用',
+    '使用正常對齊',
   ],
-  'Normal': <String>['Normal', 'Normal', 'Normal', '正常', '通常の'],
-  'Centered': <String>['Centrado', 'Centré', 'Centered', '居中', '中央揃え'],
+  'Normal': <String>['Normal', 'Normal', 'Normal', '正常', '通常の', '正常'],
+  'Centered': <String>['Centrado', 'Centré', 'Centered', '居中', '中央揃え', '居中'],
   'Lyrics appearance': <String>[
     'Aparência da letra',
     'Apparence des paroles',
     '가사 모습',
     '歌词外观',
     '歌詞の外観',
+    '歌詞外觀',
   ],
   'Customize lyrics animation, alignment, and romanization.': <String>[
     'Personalize a animação, o alinhamento e a romanização das letras.',
@@ -1246,6 +1459,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '가사 애니메이션, 정렬 및 로마자 표기를 사용자 정의합니다.',
     '自定义歌词动画、对齐方式和罗马化。',
     '歌詞のアニメーション、配置、およびローマ字化をカスタマイズします。',
+    '自定義歌詞動畫、對齊方式和羅馬化。',
   ],
   'Animation': <String>[
     'Animação',
@@ -1253,15 +1467,17 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     'Animation',
     '动画',
     'Animation',
+    '動畫',
   ],
-  'Smooth': <String>['Smooth', 'Smooth', 'Smooth', '平滑', 'Smooth'],
-  'Slide': <String>['Slide', 'Slide', 'Slide', '幻灯片', 'Slide'],
+  'Smooth': <String>['Smooth', 'Smooth', 'Smooth', '平滑', 'Smooth', '平滑'],
+  'Slide': <String>['Slide', 'Slide', 'Slide', '幻灯片', 'Slide', '幻燈片'],
   'Highlight': <String>[
     'Highlight',
     'Highlight',
     'Highlight',
     '高亮',
     'Highlight',
+    '高亮',
   ],
   'Romanization': <String>[
     'Romanization',
@@ -1269,6 +1485,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     'Romanization',
     '罗马化',
     'Romanization',
+    '羅馬化',
   ],
   'Romanize lyrics': <String>[
     'Romanize letras',
@@ -1276,6 +1493,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '가사 로마자화',
     '罗马化歌词',
     '歌詞のローマ字化',
+    '羅馬化歌詞',
   ],
   'Convert the selected languages to the Latin alphabet.': <String>[
     'Converta os idiomas selecionados para o alfabeto latino.',
@@ -1283,6 +1501,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '선택한 언어를 라틴 알파벳으로 변환합니다.',
     '将所选语言转换为拉丁字母。',
     '選択した言語をラテン文字に変換します。',
+    '將所選語言轉換為拉丁字母。',
   ],
   'Languages to romanize': <String>[
     'Idiomas para romanizar',
@@ -1290,20 +1509,29 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     'Languages to romanize',
     '语言为罗马化',
     'Languages to romanize',
+    '語言為羅馬化',
   ],
-  'Japanese': <String>['Japonês', 'Japonais', '일본어', '日语', '日本語'],
-  'Korean': <String>['Coreano', 'Coréen', '한국어', '韩语', '韓国語'],
-  'Chinese': <String>['Chinês', 'Chinois', '중국어', '中文', '中国語'],
-  'Cyrillic': <String>['Cirílico', 'Cyrillique', '키릴어', '西里尔语', 'キリル文字'],
-  'Arabic': <String>['Árabe', 'Arabe', '아랍어', '阿拉伯语', 'アラビア語'],
-  'Hebrew': <String>['Hebraico', 'Hébreu', '히브리어', '希伯来语', 'ヘブライ語'],
-  'Preview': <String>['Prévia', 'Aperçu', '미리 보기', '预览', 'プレビュー'],
+  'Japanese': <String>['Japonês', 'Japonais', '일본어', '日语', '日本語', '日語'],
+  'Korean': <String>['Coreano', 'Coréen', '한국어', '韩语', '韓国語', '韓語'],
+  'Chinese': <String>['Chinês', 'Chinois', '중국어', '中文', '中国語', '中文'],
+  'Cyrillic': <String>[
+    'Cirílico',
+    'Cyrillique',
+    '키릴어',
+    '西里尔语',
+    'キリル文字',
+    '西里爾語',
+  ],
+  'Arabic': <String>['Árabe', 'Arabe', '아랍어', '阿拉伯语', 'アラビア語', '阿拉伯語'],
+  'Hebrew': <String>['Hebraico', 'Hébreu', '히브리어', '希伯来语', 'ヘブライ語', '希伯來語'],
+  'Preview': <String>['Prévia', 'Aperçu', '미리 보기', '预览', 'プレビュー', '預覽'],
   'The night begins to glow': <String>[
     'A noite começa a brilhar',
     'La nuit commence à briller',
     '밤이 빛나기 시작합니다',
     '夜晚开始发光',
     '夜が輝き始める',
+    '夜晚開始發光',
   ],
   'We sing this song together': <String>[
     'Nós cantamos essa música juntos',
@@ -1311,6 +1539,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '우리는 이 노래를 함께 부릅니다',
     '我们一起唱这首歌',
     '一緒にこの歌を歌う',
+    '我們一起唱這首歌',
   ],
   'And the rhythm starts again': <String>[
     'E o ritmo começa novamente',
@@ -1318,6 +1547,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '리듬이 시작됩니다 다시',
     '节奏再次开始',
     'そしてまたリズムが始まる',
+    '節奏再次開始',
   ],
   'Play animation': <String>[
     'Reproduzir animação',
@@ -1325,14 +1555,23 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '애니메이션 재생',
     '播放动画',
     'アニメーションを再生',
+    '播放動畫',
   ],
-  'Retry': <String>['Tentar novamente', 'Réessayer', '재시도', '重试', 'Retry'],
+  'Retry': <String>[
+    'Tentar novamente',
+    'Réessayer',
+    '재시도',
+    '重试',
+    'Retry',
+    '重試',
+  ],
   'Lyrics provided by LRCLIB': <String>[
     'Letra fornecida por LRCLIB',
     'Paroles fournies par LRCLIB',
     'LRCLIB에서 제공하는 가사',
     'LRCLIB提供的歌词',
     'Lyrics provided by LRCLIB',
+    'LRCLIB提供的歌詞',
   ],
   'Tap a line to seek to that moment.': <String>[
     'Toque em uma linha para buscar aquele momento.',
@@ -1340,14 +1579,16 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '그 순간을 탐색하려면 줄을 탭하세요.',
     '点击一条线寻找那一刻。',
     '行をタップしてそこを探しますmoment.',
+    '點選一條線尋找那一刻。',
   ],
-  'Close': <String>['Fechar', 'Fermer', '닫기', '关闭', '閉じる'],
+  'Close': <String>['Fechar', 'Fermer', '닫기', '关闭', '閉じる', '關閉'],
   'More options': <String>[
     'Mais opções',
     'Plus d\'options',
     '추가 옵션',
     '更多选项',
     'その他のオプション',
+    '更多選項',
   ],
   'Share song': <String>[
     'Compartilhar música',
@@ -1355,6 +1596,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '노래 공유',
     '分享歌曲',
     '曲を共有',
+    '分享歌曲',
   ],
   'Listen to "ZXQPH0X" by ZXQPH1X.': <String>[
     'Ouça "ZXQPH0X" de ZXQPH1X.',
@@ -1362,6 +1604,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '"ZXQPH0X" 듣기 ZXQPH1X.',
     '聆听ZXQPH1X的“ZXQPH0X”。',
     'ZXQPH1Xの「ZXQPH0X」を聴く。',
+    '聆聽ZXQPH1X的“ZXQPH0X”。',
   ],
   'The song could not be shared.': <String>[
     'A música não pôde ser compartilhada.',
@@ -1369,6 +1612,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '노래를 공유할 수 없습니다.',
     '歌曲无法分享。',
     '曲を共有できませんでした。',
+    '歌曲無法分享。',
   ],
   'Shared song': <String>[
     'Música compartilhada',
@@ -1376,6 +1620,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '노래 공유',
     '已分享歌曲',
     '曲を共有',
+    '已分享歌曲',
   ],
   'Share playlist': <String>[
     'Compartilhar playlist',
@@ -1383,6 +1628,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '재생목록 공유',
     '分享播放列表',
     'プレイリストを共有',
+    '分享播放列表',
   ],
   'CSV file': <String>[
     'Arquivo .csv',
@@ -1390,6 +1636,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     'CSV 파일',
     'CSV 文件',
     'CSVファイル',
+    'CSV 檔案',
   ],
   'YouTube Music URL': <String>[
     'URL do YouTube Music',
@@ -1397,6 +1644,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     'YouTube Music URL',
     'YouTube Music 链接',
     'YouTube MusicのURL',
+    'YouTube Music 連結',
   ],
   'Share a list of the songs in this playlist, without audio files.': <String>[
     'Compartilhe a lista de músicas desta playlist, sem arquivos de áudio.',
@@ -1404,6 +1652,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '오디오 파일 없이 이 재생목록의 곡 목록을 공유합니다.',
     '分享此播放列表中的歌曲清单，不含音频文件。',
     '音声ファイルを含めずに、このプレイリストの曲リストを共有します。',
+    '分享此播放列表中的歌曲清單，不含音訊檔案。',
   ],
   'Share the link to this playlist synced with YouTube Music.': <String>[
     'Compartilhe o link desta playlist sincronizada com o YouTube Music.',
@@ -1411,6 +1660,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     'YouTube Music과 동기화된 이 재생목록의 링크를 공유합니다.',
     '分享此已与 YouTube Music 同步的播放列表链接。',
     'YouTube Musicと同期したこのプレイリストのリンクを共有します。',
+    '分享此已與 YouTube Music 同步的播放列表連結。',
   ],
   'Sync this playlist with YouTube Music first to share its URL.': <String>[
     'Sincronize esta playlist com o YouTube Music para compartilhar sua URL.',
@@ -1418,6 +1668,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     'URL을 공유하려면 먼저 이 재생목록을 YouTube Music과 동기화하세요.',
     '请先将此播放列表与 YouTube Music 同步，再分享其链接。',
     'URLを共有するには、まずこのプレイリストをYouTube Musicと同期してください。',
+    '請先將此播放列表與 YouTube Music 同步，再分享其連結。',
   ],
   'YouTube Music favorites do not have a public link. Share them as CSV.': <String>[
     'Os favoritos do YouTube Music não têm um link público. Compartilhe-os como CSV.',
@@ -1425,6 +1676,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     'YouTube Music 즐겨찾기에는 공개 링크가 없습니다. CSV 파일로 공유하세요.',
     'YouTube Music 收藏没有公开链接。请以 CSV 文件分享。',
     'YouTube Musicのお気に入りには公開リンクがありません。CSVファイルで共有してください。',
+    'YouTube Music 收藏沒有公開連結。請以 CSV 檔案分享。',
   ],
   'Listen to my "ZXQPH0X" playlist on YouTube Music.': <String>[
     'Ouça minha playlist "ZXQPH0X" no YouTube Music.',
@@ -1432,6 +1684,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     'YouTube Music에서 내 "ZXQPH0X" 재생목록을 들어보세요.',
     '在 YouTube Music 上收听我的“ZXQPH0X”播放列表。',
     'YouTube Musicで私の「ZXQPH0X」プレイリストを聴いてください。',
+    '在 YouTube Music 上收聽我的“ZXQPH0X”播放列表。',
   ],
   'This playlist is private. To share it, its visibility will change to Unlisted. Anyone with the link can view and reshare it, but it will not appear in searches.': <String>[
     'Esta playlist é privada. Para compartilhá-lo, sua visibilidade mudará para Não listado. Qualquer pessoa com o link pode visualizá-lo e compartilhá-lo novamente, mas ele não aparecerá nas pesquisas.',
@@ -1439,6 +1692,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '이 재생목록은 비공개입니다. 공유하려면 공개 상태가 미등록으로 변경됩니다. 링크가 있는 사람은 누구나 보고 다시 공유할 수 있지만 검색에는 표시되지 않습니다.',
     '此播放列表是私人的。要共享它，其可见性将更改为“不公开”。知道该链接的任何人都可以查看和转发它，但它不会出现在搜索中。',
     'このプレイリストは非公開です。共有すると、公開設定が非公開に変わります。リンクを知っている人は誰でも表示および再共有できますが、検索には表示されません。',
+    '此播放列表是私人的。要共享它，其可見性將更改為“不公開”。知道該連結的任何人都可以檢視和轉發它，但它不會出現在搜尋中。',
   ],
   'Change and share': <String>[
     'Alterar e compartilhar',
@@ -1446,6 +1700,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '변경 및 공유',
     '更改并共享',
     '変更して共有',
+    '更改並共享',
   ],
   'Preparing link...': <String>[
     'Preparando link...',
@@ -1453,6 +1708,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '링크 준비 중...',
     '正在准备链接...',
     'リンクを準備中...',
+    '正在準備連結...',
   ],
   'The playlist could not be changed to Unlisted. The link was not shared.': <String>[
     'A lista de reprodução não pôde ser alterada para Não listada. O link não foi compartilhado.',
@@ -1460,6 +1716,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '재생목록을 미등록으로 변경할 수 없습니다. 링크가 공유되지 않았습니다.',
     '播放列表无法更改为不公开。链接未共享。',
     'プレイリストを限定公開に変更できませんでした。リンクは共有されませんでした。',
+    '播放列表無法更改為不公開。連結未共享。',
   ],
   'The playlist is now Unlisted, but the share menu could not be opened.': <String>[
     'A lista de reprodução agora está não listada, mas o menu de compartilhamento não pôde ser aberto.',
@@ -1467,6 +1724,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '재생목록이 비공개로 설정되었으나 공유 메뉴를 열 수 없습니다.',
     '播放列表现已不列出，但无法打开共享菜单。',
     'プレイリストは非公開になりましたが、共有メニューを開けませんでした。',
+    '播放列表現已不列出，但無法開啟共享選單。',
   ],
   'The playlist could not be shared.': <String>[
     'A lista de reprodução não pôde ser compartilhada.',
@@ -1474,6 +1732,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '재생목록을 공유할 수 없습니다.',
     '无法共享播放列表。',
     'プレイリストを共有できませんでした。',
+    '無法共享播放列表。',
   ],
   'Add to playlist': <String>[
     'Adicionar à lista de reprodução',
@@ -1481,6 +1740,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '재생목록에 추가',
     '添加到播放列表',
     'プレイリストに追加',
+    '新增到播放列表',
   ],
   'Could not add to the playlist. Try again.': <String>[
     'Não foi possível adicionar à lista de reprodução. Tente novamente.',
@@ -1488,6 +1748,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '재생목록에 추가할 수 없습니다. 다시 시도해 보세요.',
     '无法添加到播放列表。再试一次。',
     'プレイリストに追加できませんでした。もう一度お試しください。',
+    '無法新增到播放列表。再試一次。',
   ],
   'Download all': <String>[
     'Baixar tudo',
@@ -1495,6 +1756,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '모두 다운로드',
     '下载所有',
     'すべてダウンロード',
+    '下載所有',
   ],
   'Song added to the download queue.': <String>[
     'Música adicionada à fila de download.',
@@ -1502,6 +1764,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '노래가 다운로드 대기열에 추가되었습니다.',
     '已添加到下载队列的歌曲。',
     'ダウンロード キューに曲が追加されました。',
+    '已新增到下載佇列的歌曲。',
   ],
   'ZXQPH0X songs added to the download queue.': <String>[
     'ZXQPH0X músicas adicionadas à fila de download.',
@@ -1509,6 +1772,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     'ZXQPH0X곡이 다운로드 대기열에 추가되었습니다.',
     'ZXQPH0X 歌曲已添加到下载队列。',
     'ZXQPH0X 曲がダウンロード キューに追加されました。',
+    'ZXQPH0X 歌曲已新增到下載佇列。',
   ],
   'There are no songs left to download.': <String>[
     'Não há mais músicas para download.',
@@ -1516,6 +1780,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '다운로드할 노래가 남아 있지 않습니다.',
     '没有剩余歌曲可供下载。',
     'ダウンロードする曲が残っていません。',
+    '沒有剩餘歌曲可供下載。',
   ],
   'Could not queue the playlist download. Try again.': <String>[
     'Não foi possível colocar o download da lista de reprodução na fila. Tente novamente.',
@@ -1523,14 +1788,16 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '재생 목록 다운로드를 대기열에 추가할 수 없습니다. 다시 시도해 보세요.',
     '无法对播放列表下载进行排队。再试一次。',
     'プレイリストのダウンロードをキューに追加できませんでした。もう一度お試しください。',
+    '無法對播放列表下載進行排隊。再試一次。',
   ],
-  'Favorites': <String>['Favoritos', 'Favoris', '즐겨찾기', '收藏夹', 'お気に入り'],
+  'Favorites': <String>['Favoritos', 'Favoris', '즐겨찾기', '收藏夹', 'お気に入り', '收藏夾'],
   'Add to favorites': <String>[
     'Adicionar aos favoritos',
     'Ajouter aux favoris',
     '즐겨찾기에 추가',
     '添加到收藏夹',
     'お気に入りに追加',
+    '新增到收藏夾',
   ],
   'Remove from favorites': <String>[
     'Remover dos favoritos',
@@ -1538,6 +1805,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '즐겨찾기에서 제거',
     '从收藏夹中删除',
     'お気に入りから削除',
+    '從收藏夾中刪除',
   ],
   'Song added to favorites.': <String>[
     'Música adicionada aos favoritos.',
@@ -1545,6 +1813,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '노래가 즐겨찾기에 추가되었습니다.',
     '歌曲已添加到收藏夹。',
     '曲をお気に入りに追加しました。',
+    '歌曲已新增到收藏夾。',
   ],
   'Song removed from favorites.': <String>[
     'Música removida dos favoritos.',
@@ -1552,6 +1821,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '노래가 즐겨찾기에서 제거되었습니다.',
     '歌曲从收藏夹中删除。',
     '曲をお気に入りから削除しました。',
+    '歌曲從收藏夾中刪除。',
   ],
   'Choose playlist': <String>[
     'Escolher lista de reprodução',
@@ -1559,6 +1829,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '재생목록 선택',
     '选择播放列表',
     'プレイリストを選択',
+    '選擇播放列表',
   ],
   '1 song selected': <String>[
     '1 música selecionada',
@@ -1566,6 +1837,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '1곡이 선택됨',
     '已选择 1 首歌曲',
     '1 曲を選択しました',
+    '已選擇 1 首歌曲',
   ],
   'ZXQPH0X songs selected': <String>[
     'ZXQPH0X músicas selecionada',
@@ -1573,6 +1845,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     'ZXQPH0X곡 selected',
     'ZXQPH0X 已选择歌曲',
     'ZXQPH0X 曲を選択しました',
+    'ZXQPH0X 已選擇歌曲',
   ],
   'Song added to playlist.': <String>[
     'Música adicionada à lista de reprodução.',
@@ -1580,6 +1853,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '노래가 재생목록에 추가되었습니다.',
     '已添加歌曲播放列表。',
     '曲をプレイリストに追加しました。',
+    '已新增歌曲播放列表。',
   ],
   'ZXQPH0X songs added to playlist.': <String>[
     'ZXQPH0X músicas adicionadas à lista de reprodução.',
@@ -1587,6 +1861,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     'ZXQPH0X노래가 재생목록에 추가되었습니다.',
     'ZXQPH0X 歌曲已添加到播放列表。',
     'ZXQPH0X 曲をプレイリストに追加しました。',
+    'ZXQPH0X 歌曲已新增到播放列表。',
   ],
   'The selected songs are already in that playlist.': <String>[
     'As músicas selecionadas já estão nessa lista de reprodução.',
@@ -1594,6 +1869,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '선택한 노래가 이미 해당 재생목록에 있습니다.',
     '所选歌曲已在该播放列表中。',
     '選択した曲はすでにその中にありますplaylist.',
+    '所選歌曲已在該播放列表中。',
   ],
   'Create a playlist first.': <String>[
     'Crie uma lista de reprodução primeiro.',
@@ -1601,6 +1877,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '먼저 재생목록을 만드세요.',
     '先创建播放列表。',
     '最初にプレイリストを作成してください。',
+    '先建立播放列表。',
   ],
   'The song could not be added to the download queue.': <String>[
     'A música não pôde ser adicionada à fila de download.',
@@ -1608,14 +1885,16 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '노래를 다운로드 대기열에 추가할 수 없습니다.',
     '该歌曲无法添加到下载队列。',
     '曲をダウンロード キューに追加できませんでした。',
+    '該歌曲無法新增到下載佇列。',
   ],
-  'Error': <String>['Erro', 'Erreur', 'Error', '错误', 'エラー'],
+  'Error': <String>['Erro', 'Erreur', 'Error', '错误', 'エラー', '錯誤'],
   'Downloads': <String>[
     'Downloads',
     'Téléchargements',
     'Downloads',
     '下载',
     'ダウンロード',
+    '下載',
   ],
   'Downloaded songs': <String>[
     'Downloaded músicas',
@@ -1623,6 +1902,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     'Downloaded 노래',
     '已下载歌曲',
     'ダウンロードされた曲',
+    '已下載歌曲',
   ],
   'Not downloaded; connection required': <String>[
     'Não baixado; conexão necessária',
@@ -1630,14 +1910,16 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '다운로드되지 않음; 연결 필요',
     '未下载；需要连接',
     'ダウンロードされませんでした。接続が必要です',
+    '未下載；需要連線',
   ],
-  'LIVE': <String>['LIVE', 'LIVE', 'LIVE', 'LIVE', 'LIVE'],
+  'LIVE': <String>['LIVE', 'LIVE', 'LIVE', 'LIVE', 'LIVE', 'LIVE'],
   'LIVE queue': <String>[
     'Fila LIVE',
     'File d\'attente LIVE',
     'LIVE 대기열',
     'LIVE 队列',
     'LIVE キュー',
+    'LIVE 佇列',
   ],
   'Playback queue': <String>[
     'Fila de reprodução',
@@ -1645,6 +1927,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '재생 대기열',
     '播放队列',
     '再生キュー',
+    '播放佇列',
   ],
   'There are no songs in the current queue.': <String>[
     'Não há músicas na fila atual.',
@@ -1652,6 +1935,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '현재 대기열에 노래가 없습니다.',
     '当前队列中没有歌曲。',
     '現在のキューに曲はありません。',
+    '當前佇列中沒有歌曲。',
   ],
   'Live !play requests will appear here.': <String>[
     'As solicitações de reprodução ao vivo aparecerão aqui.',
@@ -1659,6 +1943,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     'Live !play 요청이 여기에 표시됩니다.',
     'Live !播放请求将出现在此处。',
     'ライブ ! 再生リクエストがここに表示されます。',
+    'Live !播放請求將出現在此處。',
   ],
   'Clear LIVE queue': <String>[
     'Limpar fila LIVE',
@@ -1666,6 +1951,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     'LIVE 대기열 지우기',
     '清除 LIVE 队列',
     'LIVE キューをクリア',
+    '清除 LIVE 佇列',
   ],
   'Remove from queue': <String>[
     'Remover da fila',
@@ -1673,6 +1959,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '대기열에서 제거',
     '从队列中移除',
     'キューから削除',
+    '從佇列中移除',
   ],
   'Requested by': <String>[
     'Solicitado por',
@@ -1680,33 +1967,72 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '요청자',
     '请求者',
     'リクエスト者',
+    '請求者',
   ],
-  'Moderator': <String>['Moderador', 'Modérateur', '조정자', '版主', 'モデレーター'],
+  'Moderator': <String>['Moderador', 'Modérateur', '조정자', '版主', 'モデレーター', '版主'],
   'Who can use commands': <String>[
     'Quem pode usar comandos',
     'Qui peut utiliser commandes',
     '사용할 수 있는 사람 명령',
     '谁可以使用命令',
     '誰が使用できますかコマンド',
+    '誰可以使用命令',
   ],
-  'Everyone': <String>['Todos', 'Tout le monde', 'Everyone', '每个人', 'Everyone'],
-  'Follower': <String>['Seguidor', 'Suiveur', 'Follower', '关注者', 'フォロワー'],
-  'Followers': <String>['Seguidores', 'Suiveurs', 'Followers', '关注者', 'フォロワー'],
+  'Everyone': <String>[
+    'Todos',
+    'Tout le monde',
+    'Everyone',
+    '每个人',
+    'Everyone',
+    '每個人',
+  ],
+  'Follower': <String>[
+    'Seguidor',
+    'Suiveur',
+    'Follower',
+    '关注者',
+    'フォロワー',
+    '關注者',
+  ],
+  'Followers': <String>[
+    'Seguidores',
+    'Suiveurs',
+    'Followers',
+    '关注者',
+    'フォロワー',
+    '關注者',
+  ],
   'Moderators': <String>[
     'Moderadores',
     'Modérateurs',
     'Moderators',
     '版主',
     'モデレーター',
+    '版主',
   ],
-  'Subscriber': <String>['Assinante', 'Abonné', 'Subscriber', '订阅者', '購読者'],
-  'Subscribers': <String>['Assinantes', 'Abonnés', 'Subscribers', '订阅者', '購読者'],
+  'Subscriber': <String>[
+    'Assinante',
+    'Abonné',
+    'Subscriber',
+    '订阅者',
+    '購読者',
+    '訂閱者',
+  ],
+  'Subscribers': <String>[
+    'Assinantes',
+    'Abonnés',
+    'Subscribers',
+    '订阅者',
+    '購読者',
+    '訂閱者',
+  ],
   'Commands available to any viewer.': <String>[
     'Comandos disponíveis para qualquer visualizador.',
     'Commandes disponibles pour tout spectateur.',
     '모든 시청자가 사용할 수 있는 명령.',
     '任何查看者都可以使用的命令。',
     'コマンドはすべての視聴者が使用できます。',
+    '任何檢視者都可以使用的命令。',
   ],
   'Additional permissions for followers.': <String>[
     'Permissões adicionais para seguidores.',
@@ -1714,6 +2040,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '팔로워에 대한 추가 권한.',
     '关注者的附加权限。',
     'フォロワーへの追加の権限。',
+    '關注者的附加許可權。',
   ],
   'Additional permissions for moderators.': <String>[
     'Permissões adicionais para moderadores.',
@@ -1721,6 +2048,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '에 대한 추가 권한 중재자.',
     '版主的附加权限。',
     'モデレーターへの追加の権限。',
+    '版主的附加許可權。',
   ],
   'Additional permissions for subscribers.': <String>[
     'Permissões adicionais para assinantes.',
@@ -1728,6 +2056,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '구독자를 위한 추가 권한.',
     '订阅者。',
     '購読者への追加の権限。',
+    '訂閱者。',
   ],
   'Already available to everyone.': <String>[
     'Já disponível para todos.',
@@ -1735,8 +2064,10 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '이미 모든 사람이 사용할 수 있습니다.',
     '已经可供所有人使用。',
     'すでに全員が利用可能です。',
+    '已經可供所有人使用。',
   ],
   '!play <song>': <String>[
+    '!play <song>',
     '!play <song>',
     '!play <song>',
     '!play <song>',
@@ -1749,8 +2080,10 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     'LIVE 대기열에 노래를 추가합니다.',
     '将一首歌曲添加到 LIVE 队列中。',
     ' LIVE キュー。',
+    '將一首歌曲新增到 LIVE 佇列中。',
   ],
   '!skip / !next': <String>[
+    '!skip / !next',
     '!skip / !next',
     '!skip / !next',
     '!skip / !next',
@@ -1763,9 +2096,11 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     'LIVE 대기열의 다음 노래로 건너뜁니다.',
     '跳到 LIVE 队列中的下一首歌曲。',
     'LIVE キューの次の曲にスキップします。',
+    '跳到 LIVE 佇列中的下一首歌曲。',
   ],
   '!revoke / revoke!': <String>[
     '!revoke / revogar!',
+    '!revoke / revoke!',
     '!revoke / revoke!',
     '!revoke / revoke!',
     '!revoke / revoke!',
@@ -1777,14 +2112,16 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     'LIVE 대기열에서 마지막 요청을 제거합니다.',
     '从 LIVE 中删除最后一个请求队列。',
     'LIVE キューから最後のリクエストを削除します。',
+    '從 LIVE 中刪除最後一個請求佇列。',
   ],
-  '!stop': <String>['!stop', '!stop', '!stop', '!stop', '!stop'],
+  '!stop': <String>['!stop', '!stop', '!stop', '!stop', '!stop', '!stop'],
   'Pauses the current LIVE song.': <String>[
     'Pausa a música AO VIVO atual.',
     'Mette en pause la chanson LIVE en cours.',
     '현재 LIVE 노래를 일시 중지합니다.',
     '暂停当前的 LIVE 歌曲。',
     '現在の LIVE 曲を一時停止します。',
+    '暫停當前的 LIVE 歌曲。',
   ],
   'Already downloaded': <String>[
     'Já baixada',
@@ -1792,14 +2129,23 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '이미 다운로드됨',
     '已下载',
     '既にダウンロードされています',
+    '已下載',
   ],
-  'Playlist': <String>['Playlist', 'Playlist', '재생 목록', '播放列表', 'プレイリスト'],
+  'Playlist': <String>[
+    'Playlist',
+    'Playlist',
+    '재생 목록',
+    '播放列表',
+    'プレイリスト',
+    '播放列表',
+  ],
   'New playlist': <String>[
     'Nova playlist',
     'Nouvelle playlist',
     '새 재생 목록',
     '新播放列表',
     '新しいプレイリスト',
+    '新播放列表',
   ],
   'Create playlist': <String>[
     'Criar lista de reprodução',
@@ -1807,16 +2153,18 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '재생목록 만들기',
     '创建播放列表',
     'プレイリストの作成',
+    '建立播放列表',
   ],
-  'Create': <String>['Criar', 'Créer', 'Create', '创建', '作成'],
-  'Cancel': <String>['Cancelar', 'Annuler', '취소', '取消', 'キャンセル'],
-  'Name': <String>['Nome', 'Nom', '이름', '名称', '名前'],
+  'Create': <String>['Criar', 'Créer', 'Create', '创建', '作成', '建立'],
+  'Cancel': <String>['Cancelar', 'Annuler', '취소', '取消', 'キャンセル', '取消'],
+  'Name': <String>['Nome', 'Nom', '이름', '名称', '名前', '名稱'],
   'Filter songs': <String>[
     'Filtrar músicas',
     'Filtrer les chansons',
     '노래 필터링',
     '过滤歌曲',
     '曲のフィルタリング',
+    '過濾歌曲',
   ],
   'Search songs': <String>[
     'Buscar música',
@@ -1824,6 +2172,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '노래 검색',
     '搜索歌曲',
     '曲を検索',
+    '搜尋歌曲',
   ],
   'Drag to reorder': <String>[
     'Arraste para reordenar',
@@ -1831,6 +2180,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '드래그하여 재정렬',
     '拖动重新排序',
     'ドラッグして並べ替え',
+    '拖動重新排序',
   ],
   'No songs to show.': <String>[
     'Nenhuma música para mostrar.',
@@ -1838,6 +2188,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '표시할 노래가 없습니다.',
     '没有要显示的歌曲。',
     '表示する曲はありません。',
+    '沒有要顯示的歌曲。',
   ],
   'There are no local playlists yet.': <String>[
     'Ainda não há listas de reprodução locais.',
@@ -1845,6 +2196,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '아직 로컬 재생목록이 없습니다.',
     '尚未有本地播放列表。',
     'ローカル プレイリストはまだありません。',
+    '尚未有本地播放列表。',
   ],
   'This playlist no longer exists.': <String>[
     'Esta lista de reprodução não existe mais.',
@@ -1852,6 +2204,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '이 재생목록은 더 이상 존재하지 않습니다.',
     '此播放列表不再存在。',
     'このプレイリストはもう存在しません。',
+    '此播放列表不再存在。',
   ],
   'Delete song': <String>[
     'Excluir música',
@@ -1859,6 +2212,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '삭제 song',
     '删除歌曲',
     '曲を削除',
+    '刪除歌曲',
   ],
   'Delete songs': <String>[
     'Excluir músicas',
@@ -1866,6 +2220,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '노래 삭제',
     '删除歌曲',
     '曲を削除',
+    '刪除歌曲',
   ],
   'The downloaded song and its file will be deleted.': <String>[
     'A música baixada e seu arquivo serão excluídos.',
@@ -1873,6 +2228,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '다운로드한 노래와 해당 파일이 삭제됩니다.',
     '下载的歌曲及其文件将被删除已删除。',
     'ダウンロードした曲とそのファイルは削除されます。',
+    '下載的歌曲及其檔案將被刪除已刪除。',
   ],
   'ZXQPH0X downloaded songs and their files will be deleted.': <String>[
     'ZXQPH0X músicas baixadas e seus arquivos serão excluídos.',
@@ -1880,6 +2236,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     'ZXQPH0X개의 다운로드된 노래와 해당 파일이 삭제됩니다.',
     'ZXQPH0X 下载的歌曲及其文件将被删除。',
     'ZXQPH0X 個のダウンロードされた曲とそのファイルは削除されます。削除されました。',
+    'ZXQPH0X 下載的歌曲及其檔案將被刪除。',
   ],
   'Song deleted.': <String>[
     'Música excluída.',
@@ -1887,6 +2244,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '노래가 삭제됩니다.',
     '歌曲已删除。',
     '曲を削除しました。',
+    '歌曲已刪除。',
   ],
   'ZXQPH0X songs deleted.': <String>[
     'ZXQPH0X músicas excluídas.',
@@ -1894,15 +2252,17 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     'ZXQPH0X개의 노래가 삭제됩니다.',
     'ZXQPH0X 歌曲已删除。',
     'ZXQPH0X 曲を削除しました。',
+    'ZXQPH0X 歌曲已刪除。',
   ],
-  'Delete': <String>['Excluir', 'Supprimer', 'Delete', '删除', '削除'],
-  'Rename': <String>['Renomear', 'Renommer', '이름 바꾸기', '重命名', '名前を変更'],
+  'Delete': <String>['Excluir', 'Supprimer', 'Delete', '删除', '削除', '刪除'],
+  'Rename': <String>['Renomear', 'Renommer', '이름 바꾸기', '重命名', '名前を変更', '重新命名'],
   'Rename song': <String>[
     'Renomear música',
     'Renommer chanson',
     '이름 바꾸기 song',
     '重命名歌曲',
     '曲の名前を変更',
+    '重新命名歌曲',
   ],
   'Rename playlist': <String>[
     'Renomear lista de reprodução',
@@ -1910,6 +2270,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '재생목록 이름 바꾸기',
     '重命名播放列表',
     'プレイリストの名前を変更',
+    '重新命名播放列表',
   ],
   'Delete playlist': <String>[
     'Excluir lista de reprodução',
@@ -1917,6 +2278,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '재생목록 삭제',
     '删除播放列表',
     'プレイリストを削除',
+    '刪除播放列表',
   ],
   'Song renamed.': <String>[
     'Música renomeada.',
@@ -1924,6 +2286,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '노래 이름이 변경되었습니다.',
     '重命名的歌曲。',
     '曲の名前を変更しました。',
+    '重新命名的歌曲。',
   ],
   'Playlist renamed.': <String>[
     'Playlist renomeada.',
@@ -1931,6 +2294,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '재생목록 이름이 변경되었습니다.',
     '播放列表重命名。',
     'プレイリストの名前を変更しました。',
+    '播放列表重新命名。',
   ],
   'Playlist deleted.': <String>[
     'Playlist excluída.',
@@ -1938,6 +2302,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '재생목록이 삭제되었습니다.',
     '播放列表已删除。',
     'プレイリストを削除しました。',
+    '播放列表已刪除。',
   ],
   'Remove only from BStream': <String>[
     'Remover apenas do BStream',
@@ -1945,6 +2310,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     'BStream에서만 제거',
     '仅从 BStream 中删除',
     'BStream からのみ削除',
+    '僅從 BStream 中刪除',
   ],
   'Also delete from YouTube Music': <String>[
     'Excluir também do YouTube Music',
@@ -1952,6 +2318,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     'YouTube Music에서도 삭제',
     '同时从 YouTube Music 中删除',
     'YouTube Music からも削除します',
+    '同時從 YouTube Music 中刪除',
   ],
   'This playlist is synced with YouTube Music. You can remove it only from BStream or also delete the playlist from your account. Downloaded songs will not be deleted.': <String>[
     'Esta lista de reprodução é sincronizada com o YouTube Music. Você pode removê-lo apenas do BStream ou também excluir a playlist da sua conta. As músicas baixadas não serão excluídas.',
@@ -1959,6 +2326,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '이 재생목록은 YouTube Music과 동기화됩니다. BStream에서만 제거하거나 계정에서 재생 목록을 삭제할 수도 있습니다. 다운로드한 노래는 삭제되지 않습니다.',
     '此播放列表与 YouTube Music 同步。您只能从 BStream 中删除它，也可以从您的帐户中删除播放列表。下载的歌曲不会被删除。',
     'このプレイリストは YouTube Music と同期されています。 BStream からのみ削除することも、アカウントからプレイリストを削除することもできます。ダウンロードした曲は削除されません。',
+    '此播放列表與 YouTube Music 同步。您只能從 BStream 中刪除它，也可以從您的帳戶中刪除播放列表。下載的歌曲不會被刪除。',
   ],
   'This playlist is linked to YouTube Music, but the active account cannot delete it there. It will only be removed from BStream and will not be imported automatically again.': <String>[
     'Esta playlist está vinculada ao YouTube Music, mas a conta ativa não pode excluí-la lá. Ela só será removida do BStream e não será importada automaticamente novamente.',
@@ -1966,6 +2334,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '이 재생목록은 YouTube Music에 연결되어 있지만 활성 계정에서는 삭제할 수 없습니다. BStream에서만 제거되며 자동으로 다시 가져오지 않습니다.',
     '此播放列表链接到 YouTube Music，但活动帐户无法在那里删除它。它只会从 BStream 中删除，不会再次自动导入。',
     'このプレイリストは YouTube Music にリンクされていますが、アクティブなアカウントはそこから削除できません。 BStream から削除されるだけで、自動的に再度インポートされることはありません。',
+    '此播放列表連結到 YouTube Music，但活動帳戶無法在那裡刪除它。它只會從 BStream 中刪除，不會再次自動匯入。',
   ],
   'The playlist was removed from BStream. Its YouTube Music deletion is scheduled for the next sync.':
       <String>[
@@ -1974,6 +2343,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
         '재생 목록이 BStream에서 제거되었습니다. 다음 동기화 시 YouTube Music 삭제가 예정되어 있습니다.',
         '播放列表已从 BStream 中删除。其 YouTube 音乐删除计划在下次同步时进行。',
         'プレイリストは BStream から削除されました。 YouTube Music の削除は次回の同期にスケジュールされています。',
+        '播放列表已從 BStream 中刪除。其 YouTube 音樂刪除計劃在下次同步時進行。',
       ],
   'This does not delete downloaded songs.': <String>[
     'Isso não exclui músicas baixadas.',
@@ -1981,6 +2351,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '다운로드한 노래는 삭제되지 않습니다.',
     '这不会删除下载的歌曲。',
     'ダウンロードした曲は削除されません。',
+    '這不會刪除下載的歌曲。',
   ],
   'Remove from playlist': <String>[
     'Remover da lista de reprodução',
@@ -1988,6 +2359,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '재생 목록에서 제거',
     '从播放列表中删除',
     'プレイリストから削除',
+    '從播放列表中刪除',
   ],
   'Remove the song from Favorites?': <String>[
     'Remover a música dos Favoritos?',
@@ -1995,6 +2367,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '즐겨찾기에서 노래를 제거하시겠습니까?',
     '从收藏夹中删除歌曲？',
     'お気に入りから曲を削除しますか?',
+    '從收藏夾中刪除歌曲？',
   ],
   'Remove ZXQPH0X songs from Favorites?': <String>[
     'Remover músicas do ZXQPH0X dos Favoritos?',
@@ -2002,6 +2375,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     'ZXQPH0X 노래를 즐겨찾기에서 제거하시겠습니까?',
     '从收藏夹中删除 ZXQPH0X 歌曲？',
     'お気に入りから ZXQPH0X の曲を削除しますか?',
+    '從收藏夾中刪除 ZXQPH0X 歌曲？',
   ],
   'Remove the song from this playlist?': <String>[
     'Remover a música desta lista de reprodução?',
@@ -2009,6 +2383,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '이 재생 목록에서 노래를 제거하시겠습니까?',
     '从此播放列表中删除歌曲？',
     'このプレイリストから曲を削除しますか?',
+    '從此播放列表中刪除歌曲？',
   ],
   'Remove ZXQPH0X songs from this playlist?': <String>[
     'Remover músicas do ZXQPH0X desta playlist?',
@@ -2016,6 +2391,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '이 노래에서 ZXQPH0X 노래를 제거하세요. 재생 목록?',
     '从此播放列表中删除 ZXQPH0X 歌曲？',
     'このプレイリストから ZXQPH0X 曲を削除しますか?',
+    '從此播放列表中刪除 ZXQPH0X 歌曲？',
   ],
   'Song removed from Favorites.': <String>[
     'Música removida dos favoritos.',
@@ -2023,6 +2399,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '노래가 즐겨찾기에서 제거되었습니다.',
     '从收藏夹。',
     'お気に入りから曲を削除しました。',
+    '從收藏夾。',
   ],
   'ZXQPH0X songs removed from Favorites.': <String>[
     'Músicas do ZXQPH0X removidas dos favoritos.',
@@ -2030,6 +2407,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     'ZXQPH0X개의 노래가 즐겨찾기에서 제거되었습니다.',
     'ZXQPH0X 歌曲从收藏夹中删除。',
     'ZXQPH0X 曲をお気に入りから削除しました。',
+    'ZXQPH0X 歌曲從收藏夾中刪除。',
   ],
   'Song removed from playlist.': <String>[
     'Música removida da playlist.',
@@ -2037,6 +2415,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '노래가 재생 목록에서 제거되었습니다.',
     '从播放列表中删除歌曲。',
     'プレイリストから削除した曲。',
+    '從播放列表中刪除歌曲。',
   ],
   'ZXQPH0X songs removed from playlist.': <String>[
     'Músicas do ZXQPH0X removidas da playlist.',
@@ -2044,16 +2423,18 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     'ZXQPH0X개의 노래가 재생 목록에서 제거되었습니다.',
     'ZXQPH0X 歌曲从播放列表中删除。',
     'ZXQPH0X 曲をプレイリストから削除しました。',
+    'ZXQPH0X 歌曲從播放列表中刪除。',
   ],
-  'Folder': <String>['Pasta', 'Dossier', 'Folder', '文件夹', 'フォルダー'],
-  'Export': <String>['Exportar', 'Exporter', '내보내기', '导出', 'エクスポート'],
-  'Import': <String>['Importar', 'Importer', '가져오기', '导入', 'インポート'],
+  'Folder': <String>['Pasta', 'Dossier', 'Folder', '文件夹', 'フォルダー', '資料夾'],
+  'Export': <String>['Exportar', 'Exporter', '내보내기', '导出', 'エクスポート', '匯出'],
+  'Import': <String>['Importar', 'Importer', '가져오기', '导入', 'インポート', '匯入'],
   'Import from local backup': <String>[
     'Importar do backup local',
     'Importer depuis local sauvegarde',
     '로컬에서 가져오기 백업',
     '从本地备份导入',
     'ローカル バックアップからインポート',
+    '從本地備份匯入',
   ],
   'Restore and replace the library from a ZIP that includes the audio.': <String>[
     'Restaurar e substituir a biblioteca de um ZIP que inclui o áudio.',
@@ -2061,6 +2442,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '오디오가 포함된 ZIP에서 라이브러리를 복원하고 교체합니다.',
     '从包含以下内容的 ZIP 中恢复并替换库音频。',
     'オーディオを含む ZIP からライブラリを復元して置き換えます。',
+    '從包含以下內容的 ZIP 中恢復並替換庫音訊。',
   ],
   'Import from a .csv file': <String>[
     'Importar de um arquivo .csv',
@@ -2068,6 +2450,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '.csv 파일에서 가져오기',
     '从 .csv 文件导入',
     'インポート.csv ファイルから',
+    '從 .csv 檔案匯入',
   ],
   'Merge lists, favorites, and metadata without downloading audio.': <String>[
     'Mescle listas, favoritos e metadados sem baixar áudio.',
@@ -2075,6 +2458,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '오디오를 다운로드하지 않고 목록, 즐겨찾기 및 메타데이터를 병합합니다.',
     '合并列表、收藏和元数据，无需下载音频。',
     '音声をダウンロードせずに、リスト、お気に入り、メタデータを結合します。',
+    '合併列表、收藏和後設資料，無需下載音訊。',
   ],
   'Export local backup': <String>[
     'Exportar backup local',
@@ -2082,6 +2466,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '로컬 백업 내보내기',
     '导出本地备份',
     'ローカル バックアップをエクスポート',
+    '匯出本地備份',
   ],
   'Create a ZIP with the library, its data, and the audio files.': <String>[
     'Crie um ZIP com a biblioteca, seus dados e os arquivos de áudio.',
@@ -2089,6 +2474,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '라이브러리, 해당 데이터 및 오디오 파일이 포함된 ZIP을 만듭니다.',
     '使用库、其数据和音频文件创建 ZIP。',
     'ライブラリ、そのデータ、およびオーディオ ファイルを含む ZIP を作成します。',
+    '使用庫、其資料和音訊檔案建立 ZIP。',
   ],
   'Export a .csv file': <String>[
     'Exporte um arquivo .csv',
@@ -2096,6 +2482,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '.csv 파일 내보내기',
     '导出 .csv 文件',
     '.csv ファイルをエクスポート',
+    '匯出 .csv 檔案',
   ],
   'Compatible with MetroList, Harmony, and common formats; no audio included.':
       <String>[
@@ -2104,6 +2491,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
         'MetroList, Harmony 및 일반 형식과 호환됩니다. 오디오는 포함되어 있지 않습니다.',
         '与 MetroList、Harmony 和常见格式兼容；不包含音频。',
         'MetroList、Harmony、および一般的な形式と互換性があります。オーディオは含まれていません。',
+        '與 MetroList、Harmony 和常見格式相容；不包含音訊。',
       ],
   'Import songs': <String>[
     'Importar músicas',
@@ -2111,6 +2499,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '노래 가져오기',
     '导入歌曲',
     '曲をインポート',
+    '匯入歌曲',
   ],
   'ZXQPH0X songs and ZXQPH1X playlists were found. ZXQPH2X invalid rows will be skipped and ZXQPH3X repeated rows will be merged. Lists, favorites, and metadata will be merged without downloading audio. Existing songs will be reused.': <String>[
     'Foram encontradas ZXQPH0X músicas e ZXQPH1X listas de reprodução. ZXQPH2X linhas inválidas serão ignoradas e ZXQPH3X linhas repetidas serão mescladas. Listas, favoritos e metadados serão mesclados sem baixar áudio. As músicas existentes serão reutilizadas.',
@@ -2118,6 +2507,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '노래 ZXQPH0X곡과 재생 목록 ZXQPH1X개를 찾았습니다. 유효하지 않은 행 ZXQPH2X개는 건너뛰고 중복 행 ZXQPH3X개는 병합합니다. 오디오를 다운로드하지 않고 목록, 즐겨찾기 및 메타데이터를 병합합니다. 기존 노래는 재사용합니다.',
     '找到 ZXQPH0X 首歌曲和 ZXQPH1X 个播放列表。将跳过 ZXQPH2X 个无效行并合并 ZXQPH3X 个重复行。列表、收藏和元数据将被合并，无需下载音频。现有歌曲将被重复使用。',
     'ZXQPH0X 曲と ZXQPH1X 個のプレイリストが見つかりました。ZXQPH2X 個の無効な行をスキップし、ZXQPH3X 個の重複行を結合します。音声をダウンロードせずに、リスト、お気に入り、メタデータを結合します。既存の曲は再利用します。',
+    '找到 ZXQPH0X 首歌曲和 ZXQPH1X 個播放列表。將跳過 ZXQPH2X 個無效行併合並 ZXQPH3X 個重複行。列表、收藏和後設資料將被合併，無需下載音訊。現有歌曲將被重複使用。',
   ],
   'Metadata lookup may use your Internet connection. You can download songs later.':
       <String>[
@@ -2126,6 +2516,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
         '메타데이터 조회에 인터넷 연결을 사용할 수 있습니다. 노래는 나중에 다운로드할 수 있습니다.',
         '查找元数据可能会使用您的互联网连接。您可以稍后下载歌曲。',
         'メタデータの検索にインターネット接続を使用する場合があります。曲は後でダウンロードできます。',
+        '查詢後設資料可能會使用您的網際網路連線。您可以稍後下載歌曲。',
       ],
   'Importing library': <String>[
     'Importando biblioteca',
@@ -2133,6 +2524,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '라이브러리 가져오기',
     '正在导入音乐库',
     'ライブラリをインポートしています',
+    '正在匯入音樂庫',
   ],
   'ZXQPH0X of ZXQPH1X songs': <String>[
     'ZXQPH0X de ZXQPH1X músicas',
@@ -2140,6 +2532,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '총 ZXQPH1X곡 중 ZXQPH0X곡',
     'ZXQPH0X / ZXQPH1X 首歌曲',
     'ZXQPH0X/ZXQPH1X曲',
+    'ZXQPH0X / ZXQPH1X 首歌曲',
   ],
   'Stop after active imports': <String>[
     'Parar após as importações ativas',
@@ -2147,6 +2540,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '진행 중인 가져오기 후 중지',
     '当前导入完成后停止',
     '実行中のインポート後に停止',
+    '當前匯入完成後停止',
   ],
   'The import will stop after the active imports finish.': <String>[
     'A importação será interrompida após o término das importações ativas.',
@@ -2154,6 +2548,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '진행 중인 가져오기가 완료된 후 가져오기가 중지됩니다.',
     '当前导入完成后将停止导入。',
     '実行中のインポートが終了するとインポートが停止します。',
+    '當前匯入完成後將停止匯入。',
   ],
   'Import complete': <String>[
     'Importar completo',
@@ -2161,6 +2556,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '가져오기 완료',
     '导入完成',
     'インポートが完了しました',
+    '匯入完成',
   ],
   'ZXQPH0X imported, ZXQPH1X reused, ZXQPH2X failed, and ZXQPH3X playlists updated.':
       <String>[
@@ -2169,6 +2565,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
         'ZXQPH0X곡 가져옴, ZXQPH1X곡 재사용, ZXQPH2X곡 실패, 재생 목록 ZXQPH3X개 업데이트.',
         'ZXQPH0X 首已导入，ZXQPH1X 首已重复使用，ZXQPH2X 首失败，ZXQPH3X 个播放列表已更新。',
         'ZXQPH0X 曲をインポート、ZXQPH1X 曲を再利用、ZXQPH2X 曲が失敗、ZXQPH3X 個のプレイリストを更新しました。',
+        'ZXQPH0X 首已匯入，ZXQPH1X 首已重複使用，ZXQPH2X 首失敗，ZXQPH3X 個播放列表已更新。',
       ],
   'The import stopped. Completed items were kept.': <String>[
     'A importação foi interrompida. Os itens concluídos foram mantidos.',
@@ -2176,6 +2573,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '가져오기가 중지되었습니다. 완료된 항목이 보관되었습니다.',
     '导入已停止。已完成的项目已保留。',
     'インポートが停止しました。完了したアイテムは保持されました。',
+    '匯入已停止。已完成的專案已保留。',
   ],
   'The CSV contains no compatible songs.': <String>[
     'O CSV não contém músicas compatíveis.',
@@ -2183,6 +2581,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     'CSV에 호환 가능한 노래가 없습니다.',
     'CSV 不包含兼容歌曲。',
     'CSV には互換性のある曲が含まれていません。',
+    'CSV 不包含相容歌曲。',
   ],
   'The CSV file could not be imported.': <String>[
     'O arquivo CSV não pôde ser importado.',
@@ -2190,6 +2589,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     'CSV 파일을 가져올 수 없습니다.',
     '无法导入 CSV 文件。',
     'CSV ファイルをインポートできませんでした。',
+    '無法匯入 CSV 檔案。',
   ],
   'CSV file format': <String>[
     'Formato de arquivo CSV',
@@ -2197,6 +2597,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     'CSV 파일 형식',
     'CSV 文件格式',
     'CSV ファイル形式',
+    'CSV 檔案格式',
   ],
   'CSV file exported.': <String>[
     'Arquivo CSV exportado.',
@@ -2204,6 +2605,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     'CSV 파일을 내보냈습니다.',
     'CSV 文件已导出。',
     'CSV ファイルをエクスポートしました。',
+    'CSV 檔案已匯出。',
   ],
   'The CSV file could not be exported.': <String>[
     'O arquivo CSV não pôde ser exportado.',
@@ -2211,6 +2613,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     'CSV 파일을 내보낼 수 없습니다.',
     '无法导出 CSV 文件。',
     'CSV ファイルをエクスポートできませんでした。',
+    '無法匯出 CSV 檔案。',
   ],
   'Export backup': <String>[
     'Exportar backup',
@@ -2218,6 +2621,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '백업 내보내기',
     '导出备份',
     'バックアップのエクスポート',
+    '匯出備份',
   ],
   'Import backup': <String>[
     'Importar backup',
@@ -2225,6 +2629,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '백업 가져오기',
     '导入备份',
     'バックアップのインポート',
+    '匯入備份',
   ],
   'Backup exported.': <String>[
     'Backup exportado.',
@@ -2232,6 +2637,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '백업을 내보냈습니다.',
     '已导出备份。',
     'バックアップがエクスポートされました。',
+    '已匯出備份。',
   ],
   'Backup imported.': <String>[
     'Backup importado.',
@@ -2239,6 +2645,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '백업을 가져왔습니다.',
     '已导入备份。',
     'バックアップがインポートされました。',
+    '已匯入備份。',
   ],
   'Operation cancelled.': <String>[
     'Operação cancelada.',
@@ -2246,6 +2653,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '작업이 취소되었습니다.',
     '操作已取消。',
     '操作がキャンセルされました。',
+    '操作已取消。',
   ],
   'Backup failed.': <String>[
     'Falha no backup.',
@@ -2253,6 +2661,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '백업에 실패했습니다.',
     '备份失败。',
     'バックアップに失敗しました。',
+    '備份失敗。',
   ],
   'Replace library': <String>[
     'Substituir biblioteca',
@@ -2260,6 +2669,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '라이브러리 교체',
     '替换库',
     'ライブラリを置き換えます',
+    '替換庫',
   ],
   'This backup will replace the current library, playlists, and audio files. This action cannot be undone.':
       <String>[
@@ -2268,6 +2678,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
         '이 백업은 현재 라이브러리, 재생 목록 및 오디오 파일을 교체합니다. 이 작업은 실행 취소할 수 없습니다.',
         '此备份将替换当前库、播放列表和音频文件。此操作无法撤消。',
         'このバックアップは、現在のライブラリ、プレイリスト、およびオーディオ ファイルを置き換えます。この操作は元に戻すことができません。',
+        '此備份將替換當前庫、播放列表和音訊檔案。此操作無法撤消。',
       ],
   'Restore and replace': <String>[
     'Restaurar e substituir',
@@ -2275,27 +2686,37 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '복원 및 교체',
     '恢复和替换',
     '復元と置換',
+    '恢復和替換',
   ],
-  'Language': <String>['Idioma', 'Langue', '언어', '语言', '言語'],
-  'General': <String>['Geral', 'Général', '일반', '常规', '一般'],
-  'Appearance': <String>['Aparência', 'Apparence', 'Appearance', '外观', '外観'],
-  'Theme': <String>['Tema', 'Thème', 'Theme', '主题', 'テーマ'],
+  'Language': <String>['Idioma', 'Langue', '언어', '语言', '言語', '語言'],
+  'General': <String>['Geral', 'Général', '일반', '常规', '一般', '常規'],
+  'Appearance': <String>[
+    'Aparência',
+    'Apparence',
+    'Appearance',
+    '外观',
+    '外観',
+    '外觀',
+  ],
+  'Theme': <String>['Tema', 'Thème', 'Theme', '主题', 'テーマ', '主題'],
   'Theme and accent color': <String>[
     'Tema e cor de destaque',
     'Thème et couleur d\'accent',
     '테마 및 강조 색상',
     '主题和强调色',
     'テーマとアクセントカラー',
+    '主題和強調色',
   ],
-  'System': <String>['Sistema', 'Système', 'System', '系统', 'システム'],
-  'Light': <String>['Claro', 'Clair', '밝게', '浅色', 'ライト'],
-  'Dark': <String>['Escuro', 'Sombre', '어둡게', '深色', 'ダーク'],
+  'System': <String>['Sistema', 'Système', 'System', '系统', 'システム', '系統'],
+  'Light': <String>['Claro', 'Clair', '밝게', '浅色', 'ライト', '淺色'],
+  'Dark': <String>['Escuro', 'Sombre', '어둡게', '深色', 'ダーク', '深色'],
   'Accent color': <String>[
     'Accent cor',
     'Accent couleur',
     'Accent color',
     '强调色',
     'アクセントカラー',
+    '強調色',
   ],
   'Surface effects': <String>[
     'Efeitos de superfície',
@@ -2303,6 +2724,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '표면 효과',
     '表面效果',
     '表面効果',
+    '表面效果',
   ],
   'Surface style': <String>[
     'Estilo de superfície',
@@ -2310,6 +2732,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '표면 스타일',
     '表面样式',
     '表面スタイル',
+    '表面樣式',
   ],
   'App background': <String>[
     'Fundo do aplicativo',
@@ -2317,6 +2740,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '앱 배경',
     '应用程序背景',
     'アプリの背景',
+    '應用程式背景',
   ],
   'No background': <String>[
     'Sem fundo',
@@ -2324,23 +2748,40 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '배경 없음',
     '无背景',
     '背景なし',
+    '無背景',
   ],
-  'Custom': <String>['Personalizado', 'Personnalisé', 'Custom', '自定义', 'カスタム'],
+  'Custom': <String>[
+    'Personalizado',
+    'Personnalisé',
+    'Custom',
+    '自定义',
+    'カスタム',
+    '自定義',
+  ],
   'Could not use that photo. Try another image.': <String>[
     'Não foi possível usar essa foto. Tente outra imagem.',
     'Impossible d\'utiliser cette photo. Essayez une autre image.',
     '해당 사진을 사용할 수 없습니다. 다른 이미지를 사용해 보세요.',
     '无法使用该照片。尝试另一个图像。',
     'それは使用できませんでした写真。別の画像をお試しください。',
+    '無法使用該照片。嘗試另一個影象。',
   ],
-  'Accent': <String>['Accent', 'Accent', 'Accent', '重音', 'アクセント'],
-  'Transparent': <String>['Transparente', 'Transparent', '투명', '透明', '透明'],
+  'Accent': <String>['Accent', 'Accent', 'Accent', '重音', 'アクセント', '重音'],
+  'Transparent': <String>[
+    'Transparente',
+    'Transparent',
+    '투명',
+    '透明',
+    '透明',
+    '透明',
+  ],
   'App font': <String>[
     'Fonte do aplicativo',
     'Police de l\'application',
     '앱 글꼴',
     '应用程序字体',
     'アプリのフォント',
+    '應用程式字型',
   ],
   'The font already used by the app': <String>[
     'A fonte já usada pelo aplicativo',
@@ -2348,6 +2789,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '앱에서 이미 사용하고 있는 글꼴',
     '应用程序已使用的字体',
     'アプリですでに使用されているフォント',
+    '應用程式已使用的字型',
   ],
   'Rounded and warm': <String>[
     'Arredondada e quente',
@@ -2355,6 +2797,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '둥글고 따뜻함',
     '圆润温暖',
     '丸みを帯びた温かみのある',
+    '圓潤溫暖',
   ],
   'Elegant, with serifs': <String>[
     'Elegante, com serifas',
@@ -2362,6 +2805,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '세리프가 있는 우아함',
     '优雅，带衬线',
     'エレガントでセリフ付き',
+    '優雅，帶襯線',
   ],
   'Monospaced and retro': <String>[
     'Monoespaçada e retrô',
@@ -2369,6 +2813,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '고정폭 및 복고풍',
     '等宽复古',
     '等幅でレトロ',
+    '等寬復古',
   ],
   'Rounded and playful': <String>[
     'Arredondada e divertido',
@@ -2376,14 +2821,16 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '둥근 및 장난기 있음',
     '圆润俏皮',
     '丸みを帯びて遊び心がある',
+    '圓潤俏皮',
   ],
-  'Style': <String>['Estilo', 'Style', 'Style', '风格', 'スタイル'],
+  'Style': <String>['Estilo', 'Style', 'Style', '风格', 'スタイル', '風格'],
   'Show codec and quality': <String>[
     'Mostrar codec e qualidade',
     'Afficher le codec et la qualité',
     '코덱 및 품질 표시',
     '显示编解码器和质量',
     'コーデックと品質を表示',
+    '顯示編解碼器和質量',
   ],
   'Shows the codec, sample rate, bitrate and channels when available.': <String>[
     'Mostra o codec, taxa de amostragem, taxa de bits e canais quando disponíveis.',
@@ -2391,14 +2838,16 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '가능한 경우 코덱, 샘플 속도, 비트 전송률 및 채널을 표시합니다.',
     '显示编解码器、采样率、比特率和通道（如果可用）。',
     'コーデック、サンプル レート、ビットレート、およびチャンネルを表示します。利用可能です。',
+    '顯示編解碼器、取樣率、位元率和通道（如果可用）。',
   ],
-  'Stereo': <String>['Estéreo', 'Stéréo', '스테레오', '立体声', 'ステレオ'],
+  'Stereo': <String>['Estéreo', 'Stéréo', '스테레오', '立体声', 'ステレオ', '立體聲'],
   'ZXQPH0X channels': <String>[
     'Canais ZXQPH0X',
     'ZXQPH0X canaux',
     'ZXQPH0X 채널',
     'ZXQPH0X 通道',
     'ZXQPH0Xチャンネル',
+    'ZXQPH0X 通道',
   ],
   'Classic Vinyl': <String>[
     'Vinil clássico',
@@ -2406,6 +2855,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '클래식 비닐',
     '经典乙烯基',
     'Classic Vinyl',
+    '經典乙烯基',
   ],
   'Artwork motion': <String>[
     'Movimento de arte',
@@ -2413,6 +2863,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '아트워크 모션',
     '图稿运动',
     'アートワークモーション',
+    '圖稿運動',
   ],
   'Adds subtle motion, depth, and zoom to the player artwork.': <String>[
     'Adiciona movimento sutil, profundidade e zoom ao arte do jogador.',
@@ -2420,6 +2871,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '플레이어에 미묘한 동작, 깊이 및 확대/축소 추가 Artwork.',
     '为播放器图稿添加微妙的运动、深度和缩放。',
     'プレーヤーのアートワークに微妙な動き、奥行き、ズームを追加します。',
+    '為播放器圖稿新增微妙的運動、深度和縮放。',
   ],
   'Artwork style': <String>[
     'Estilo de arte',
@@ -2427,15 +2879,31 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '아트워크 스타일',
     '图稿风格',
     'アートワークスタイル',
+    '圖稿風格',
   ],
-  'Classic': <String>['Clássico', 'Classique', 'Classic', '经典', 'Classic'],
-  'Expanded': <String>['Expandido', 'Expansé', 'Expanded', '扩展', 'Expanded'],
+  'Classic': <String>[
+    'Clássico',
+    'Classique',
+    'Classic',
+    '经典',
+    'Classic',
+    '經典',
+  ],
+  'Expanded': <String>[
+    'Expandido',
+    'Expansé',
+    'Expanded',
+    '扩展',
+    'Expanded',
+    '擴充套件',
+  ],
   'Unavailable on Linux; the cover remains visible.': <String>[
     'Não disponível no Linux; a capa permanece visível.',
     'Indisponible sous Linux ; le couvercle reste visible.',
     'Linux에서는 사용할 수 없습니다. 표지는 그대로 보입니다.',
     '在 Linux 上不可用；封面仍然可见。',
     'Linuxでは利用できません。カバーは表示されたままです。',
+    '在 Linux 上不可用；封面仍然可見。',
   ],
   'Mini player': <String>[
     'Mini player',
@@ -2443,43 +2911,60 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '미니 플레이어',
     '迷你播放器',
     'ミニ プレーヤー',
+    '迷你播放器',
   ],
-  'Floating': <String>['Flutuante', 'Floating', '플로팅', '浮动', 'フローティング'],
+  'Floating': <String>['Flutuante', 'Floating', '플로팅', '浮动', 'フローティング', '浮動'],
   'Mini player background': <String>[
     'Fundo do mini player',
     'Fond du mini lecteur',
     '미니 플레이어 배경',
     '迷你播放器背景',
     'ミニ プレーヤーの背景',
+    '迷你播放器背景',
   ],
-  'Artwork': <String>['Capa', 'Pochette', '커버', '封面', 'カバー'],
-  'White': <String>['Branco', 'Blanc', 'White', '白色', '白'],
-  'Green': <String>['Verde', 'Vert', 'Green', '绿色', '緑'],
-  'Blue': <String>['Azul', 'Bleu', 'Blue', '蓝色', '青'],
-  'Purple': <String>['Roxo', 'Violet', '퍼플', '紫色', 'パープル'],
-  'Orange': <String>['Laranja', 'Orange', '오렌지', '橙色', 'オレンジ'],
-  'Red': <String>['Vermelho', 'Rouge', '레드', '红色', 'レッド'],
-  'Yellow': <String>['Amarelo', 'Jaune', '옐로우', '黄色', 'イエロー'],
-  'Pink': <String>['Rosa', 'Rose', '핑크', '粉色', 'ピンク'],
-  'Teal': <String>['Teal', 'Sarcelle', '청록색', '青色', 'ティール'],
-  'Cyan': <String>['Ciano', 'Cyan', '시안', '青色', 'シアン'],
-  'Indigo': <String>['Indigo', 'Indigo', '인디고', '靛蓝', 'インディゴ'],
-  'Lime': <String>['Lime', 'Lime', '라임', '青柠', 'ライム'],
-  'Mint': <String>['Mint', 'Mint', '민트', '薄荷色', 'ミント'],
-  'Magenta': <String>['Magenta', 'Magenta', '마젠타', '洋红色', 'マゼンタ'],
-  'Coral': <String>['Coral', 'Corail', '코랄', '珊瑚色', 'コーラル'],
-  'Brown': <String>['Brown', 'Marron', 'Brown', '棕色', 'ブラウン'],
-  'Lavender': <String>['Lavender', 'Lavande', 'Lavender', '薰衣草', 'ラベンダー'],
-  'Ocean': <String>['Ocean', 'Océan', 'Ocean', '海洋', 'オーシャン'],
-  'Spanish': <String>['Espanhol', 'Espagnol', 'Spanish', '西班牙语', 'スペイン語'],
-  'Playback': <String>['Playback', 'Lecture', 'Playback', '播放', '再生'],
-  'Album': <String>['Álbum', 'Album', 'Album', '专辑', 'アルバム'],
+  'Artwork': <String>['Capa', 'Pochette', '커버', '封面', 'カバー', '封面'],
+  'White': <String>['Branco', 'Blanc', 'White', '白色', '白', '白色'],
+  'Green': <String>['Verde', 'Vert', 'Green', '绿色', '緑', '綠色'],
+  'Blue': <String>['Azul', 'Bleu', 'Blue', '蓝色', '青', '藍色'],
+  'Purple': <String>['Roxo', 'Violet', '퍼플', '紫色', 'パープル', '紫色'],
+  'Orange': <String>['Laranja', 'Orange', '오렌지', '橙色', 'オレンジ', '橙色'],
+  'Red': <String>['Vermelho', 'Rouge', '레드', '红色', 'レッド', '紅色'],
+  'Yellow': <String>['Amarelo', 'Jaune', '옐로우', '黄色', 'イエロー', '黃色'],
+  'Pink': <String>['Rosa', 'Rose', '핑크', '粉色', 'ピンク', '粉色'],
+  'Teal': <String>['Teal', 'Sarcelle', '청록색', '青色', 'ティール', '青色'],
+  'Cyan': <String>['Ciano', 'Cyan', '시안', '青色', 'シアン', '青色'],
+  'Indigo': <String>['Indigo', 'Indigo', '인디고', '靛蓝', 'インディゴ', '靛藍'],
+  'Lime': <String>['Lime', 'Lime', '라임', '青柠', 'ライム', '青檸'],
+  'Mint': <String>['Mint', 'Mint', '민트', '薄荷色', 'ミント', '薄荷色'],
+  'Magenta': <String>['Magenta', 'Magenta', '마젠타', '洋红色', 'マゼンタ', '洋紅色'],
+  'Coral': <String>['Coral', 'Corail', '코랄', '珊瑚色', 'コーラル', '珊瑚色'],
+  'Brown': <String>['Brown', 'Marron', 'Brown', '棕色', 'ブラウン', '棕色'],
+  'Lavender': <String>[
+    'Lavender',
+    'Lavande',
+    'Lavender',
+    '薰衣草',
+    'ラベンダー',
+    '薰衣草',
+  ],
+  'Ocean': <String>['Ocean', 'Océan', 'Ocean', '海洋', 'オーシャン', '海洋'],
+  'Spanish': <String>[
+    'Espanhol',
+    'Espagnol',
+    'Spanish',
+    '西班牙语',
+    'スペイン語',
+    '西班牙語',
+  ],
+  'Playback': <String>['Playback', 'Lecture', 'Playback', '播放', '再生', '播放'],
+  'Album': <String>['Álbum', 'Album', 'Album', '专辑', 'アルバム', '專輯'],
   'Privacy and recommendations': <String>[
     'Privacidade e recomendações',
     'Confidentialité et recommandations',
     '개인 정보 보호 및 추천',
     '隐私和推荐',
     'プライバシーと推奨事項',
+    '隱私和推薦',
   ],
   'Recommendation history': <String>[
     'Histórico de recomendações',
@@ -2487,6 +2972,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '추천 기록',
     '推荐历史',
     '推奨履歴',
+    '推薦歷史',
   ],
   'BStream learns from the songs you listen to in order to personalize Home.': <String>[
     'BStream aprende com as músicas que você ouve para personalizar a página inicial.',
@@ -2494,6 +2980,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     'BStream은 홈을 개인화하기 위해 사용자가 듣는 노래를 학습합니다.',
     'BStream 从您收听的歌曲中学习，以便对主页进行个性化设置。',
     'BStreamは、ホームをカスタマイズするために、あなたが聞いた曲から学習します。',
+    'BStream 從您收聽的歌曲中學習，以便對主頁進行個性化設定。',
   ],
   'New plays will not be used to personalize Home.': <String>[
     'Novas peças não será usado para personalizar a página inicial.',
@@ -2501,6 +2988,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '새로운 재생은 홈을 개인화하는 데 사용하지 마십시오.',
     '新剧不会用于对主页进行个性化设置。',
     '新しい再生は、ホームのカスタマイズには使用されません。',
+    '新劇不會用於對主頁進行個性化設定。',
   ],
   'Clear history and recommendations': <String>[
     'Limpar histórico e recomendações',
@@ -2508,6 +2996,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '기록 및 권장 사항 지우기',
     '清除历史记录和建议',
     '履歴と推奨事項を消去します',
+    '清除歷史記錄和建議',
   ],
   'Deletes local signals and the personalized cache without removing downloads, favorites, or playlists.':
       <String>[
@@ -2516,6 +3005,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
         '다운로드, 즐겨찾기 또는 재생 목록을 제거하지 않고 지역 신호 및 개인화된 캐시를 삭제합니다.',
         '删除本地信号和个性化缓存，而不删除下载、收藏夹或播放列表。',
         'ダウンロード、お気に入り、またはプレイリストを削除せずに、ローカル信号と個人用キャッシュを削除します。',
+        '刪除本地訊號和個性化快取，而不刪除下載、收藏夾或播放列表。',
       ],
   'Clear history and recommendations?': <String>[
     'Limpar histórico e recomendações?',
@@ -2523,6 +3013,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '기록 및 권장 사항을 지우시겠습니까?',
     '清除历史记录和推荐？',
     '履歴と推奨事項を消去しますか?',
+    '清除歷史記錄和推薦？',
   ],
   'BStream will forget what it learned from your listening. Downloads, favorites, and playlists will remain intact.':
       <String>[
@@ -2531,6 +3022,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
         'BStream은 귀하의 청취를 통해 배운 내용을 잊어버릴 것입니다. 다운로드, 즐겨찾기 및 재생 목록은 그대로 유지됩니다.',
         'BStream 会忘记它从您的聆听中学到的内容。下载、收藏夹和播放列表将保持不变。',
         'BStreamは、聞いて学んだことを忘れてしまいます。ダウンロード、お気に入り、プレイリストはそのまま残ります。',
+        'BStream 會忘記它從您的聆聽中學到的內容。下載、收藏夾和播放列表將保持不變。',
       ],
   'History and recommendations cleared.': <String>[
     'Histórico e recomendações apagados.',
@@ -2538,6 +3030,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '기록 및 권장 사항이 삭제되었습니다.',
     '历史记录和推荐已清除。',
     '履歴とおすすめは消去されます。',
+    '歷史記錄和推薦已清除。',
   ],
   'Sleep timer': <String>[
     'Temporizador',
@@ -2545,14 +3038,16 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '수면 타이머',
     '睡眠定时器',
     'スリープ タイマー',
+    '睡眠定時器',
   ],
-  'Storage': <String>['Armazenamento', 'Stockage', '저장소', '存储', 'ストレージ'],
+  'Storage': <String>['Armazenamento', 'Stockage', '저장소', '存储', 'ストレージ', '儲存'],
   'Local music filters': <String>[
     'Filtros de música locais',
     'Filtres de musique locale',
     '로컬 음악 필터',
     '本地音乐过滤器',
     'ローカル音楽フィルタ',
+    '本地音樂過濾器',
   ],
   'No active filters': <String>[
     'Sem filtros ativos',
@@ -2560,6 +3055,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '활성 필터 없음',
     '无活动过滤器',
     'アクティブなフィルタなし',
+    '無活動過濾器',
   ],
   '1 active filter': <String>[
     '1 filtro ativo',
@@ -2567,6 +3063,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '1 활성 필터',
     '1 个活动过滤器',
     '1つのアクティブなフィルタ',
+    '1 個活動過濾器',
   ],
   'ZXQPH0X active filters': <String>[
     'ZXQPH0X filtros ativos',
@@ -2574,6 +3071,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     'ZXQPH0X 활성 필터',
     'ZXQPH0X 活动过滤器',
     'ZXQPH0Xアクティブなフィルタ',
+    'ZXQPH0X 活動過濾器',
   ],
   'Hide WhatsApp audio': <String>[
     'Ocultar WhatsApp áudio',
@@ -2581,6 +3079,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     'WhatsApp 숨기기 audio',
     '隐藏 WhatsApp 音频',
     'WhatsAppの音声を非表示',
+    '隱藏 WhatsApp 音訊',
   ],
   'Hide voice notes and audio stored in WhatsApp folders.': <String>[
     'Ocultar notas de voz e áudio armazenados nas pastas do WhatsApp.',
@@ -2588,6 +3087,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     'WhatsApp 폴더에 저장된 음성 메모 및 오디오 숨기기',
     '隐藏 WhatsApp 中存储的语音注释和音频文件夹。',
     'WhatsAppフォルダに保存されているボイスメモと音声を非表示にします。',
+    '隱藏 WhatsApp 中儲存的語音註釋和音訊資料夾。',
   ],
   'Hide Telegram audio': <String>[
     'Ocultar áudio do Telegram',
@@ -2595,6 +3095,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     'Telegram 오디오 숨기기',
     '隐藏 Telegram 音频',
     '電報を非表示にしますaudio',
+    '隱藏 Telegram 音訊',
   ],
   'Hide voice notes and audio stored in Telegram folders.': <String>[
     'Ocultar notas de voz e áudio armazenados nas pastas do Telegram.',
@@ -2602,6 +3103,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     'Telegram 폴더에 저장된 음성 메모 및 오디오 숨기기',
     '隐藏 Telegram 文件夹中存储的语音笔记和音频。',
     'Telegram フォルダーに保存されているボイスメモと音声を非表示にします。',
+    '隱藏 Telegram 資料夾中儲存的語音筆記和音訊。',
   ],
   'Hide audio recordings': <String>[
     'Ocultar gravações de áudio',
@@ -2609,6 +3111,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '오디오 녹음 숨기기',
     '隐藏录音',
     '音声録音を非表示にします。',
+    '隱藏錄音',
   ],
   'Hide files saved by voice and call recorder apps.': <String>[
     'Ocultar arquivos salvos por aplicativos de gravação de voz e chamadas.',
@@ -2616,6 +3119,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '음성 및 통화 녹음기 앱에 저장된 파일 숨기기',
     '隐藏语音和通话录音应用保存的文件。',
     '音声および通話レコーダー アプリによって保存されたファイルを非表示にします。',
+    '隱藏語音和通話錄音應用儲存的檔案。',
   ],
   'Hide songs shorter than 30 seconds': <String>[
     'Ocultar músicas com menos de 30 segundos',
@@ -2623,6 +3127,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '30초보다 짧은 노래 숨기기',
     '隐藏短于 30 秒的歌曲',
     '30 秒未満の曲を非表示にします',
+    '隱藏短於 30 秒的歌曲',
   ],
   'Avoid ringtones, short recordings, and other brief audio.': <String>[
     'Evite toques curtos gravações e outros áudios breves.',
@@ -2630,6 +3135,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '벨소리 방지, 짧게 녹음 및 기타 간단한 오디오.',
     '避免铃声、短录音和其他简短音频。',
     '着信音、短い録音、その他の短い音声は避けてください。',
+    '避免鈴聲、短錄音和其他簡短音訊。',
   ],
   'Backup and restore': <String>[
     'Fazer backup e restaurar',
@@ -2637,6 +3143,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '백업 및 복원',
     '备份和恢复',
     'バックアップと復元',
+    '備份和恢復',
   ],
   'Export or restore your library and settings.': <String>[
     'Exportar ou restaurar sua biblioteca e configurações.',
@@ -2644,14 +3151,23 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '라이브러리 및 설정 내보내기 또는 복원',
     '导出或恢复您的音乐库和设置。',
     'ライブラリと設定をエクスポートまたは復元します。',
+    '匯出或恢復您的音樂庫和設定。',
   ],
-  'Integrations': <String>['Integrações', 'Intégrations', '통합', '集成', '統合'],
+  'Integrations': <String>[
+    'Integrações',
+    'Intégrations',
+    '통합',
+    '集成',
+    '統合',
+    '整合',
+  ],
   'Open supported links': <String>[
     'Abrir links suportados',
     'Ouvrir les liens pris en charge',
     '지원되는 링크 열기',
     '打开支持的链接',
     'サポートされているリンクを開く',
+    '開啟支援的連結',
   ],
   'Choose BStream to open YouTube and YouTube Music links.': <String>[
     'Escolha BStream para abrir links do YouTube e do YouTube Music.',
@@ -2659,6 +3175,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     'YouTube 및 YouTube Music 링크를 열려면 BStream을 선택하세요.',
     '选择 BStream 打开 YouTube 和 YouTube Music 链接。',
     'BStream を選択してくださいYouTube と YouTube Music のリンクを開くことができます。',
+    '選擇 BStream 開啟 YouTube 和 YouTube Music 連結。',
   ],
   'Could not open the supported links settings.': <String>[
     'Não foi possível abrir as configurações de links suportados.',
@@ -2666,6 +3183,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '지원되는 링크 설정을 열 수 없습니다.',
     '无法打开支持的链接设置。',
     'サポートされているリンク設定を開けませんでした。',
+    '無法開啟支援的連結設定。',
   ],
   'Automatic shutdown': <String>[
     'Automático shutdown',
@@ -2673,14 +3191,16 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '자동 shutdown',
     '自动关闭',
     '自動シャットダウン',
+    '自動關閉',
   ],
-  'Off': <String>['Off', 'Off', 'Off', '关闭', 'Off'],
+  'Off': <String>['Off', 'Off', 'Off', '关闭', 'Off', '關閉'],
   'Smoothly overlaps the end of one song with the start of the next.': <String>[
     'Sobrepõe suavemente o final de uma música com o início da próxima.',
     'Superpose en douceur la fin d\'une chanson avec le début de la suivante.',
     '한 곡의 끝 부분과 다음 곡의 시작 부분이 매끄럽게 겹칩니다.',
     '将一首歌曲的结尾与下一首歌曲的开头平滑重叠。',
     'ある曲の終わりと次の曲の始まりをスムーズにオーバーラップさせます。',
+    '將一首歌曲的結尾與下一首歌曲的開頭平滑重疊。',
   ],
   'Crossfade duration': <String>[
     'Duração do crossfade',
@@ -2688,6 +3208,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '크로스페이드 지속 시간',
     '交叉淡入淡出持续时间',
     'クロスフェードの長さ',
+    '交叉淡入淡出持續時間',
   ],
   'Skip silence': <String>[
     'Pular silêncio',
@@ -2695,6 +3216,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '무음 건너뛰기',
     '跳过静音',
     '無音をスキップ',
+    '跳過靜音',
   ],
   'Automatically shortens detected silence so songs start and transition without waiting.':
       <String>[
@@ -2703,22 +3225,25 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
         '감지된 무음을 자동으로 단축하여 노래가 기다리지 않고 시작 및 전환되도록 합니다.',
         '自动缩短检测到的静音，以便歌曲无需等待即可开始和转换。',
         '検出された無音を自動的に短くし、待たずに曲が開始して移行できるようにします。',
+        '自動縮短檢測到的靜音，以便歌曲無需等待即可開始和轉換。',
       ],
-  'Apply': <String>['Aplicar', 'Appliquer', 'Apply', '应用', '適用'],
+  'Apply': <String>['Aplicar', 'Appliquer', 'Apply', '应用', '適用', '應用'],
   'Timer duration': <String>[
     'Duração do temporizador',
     'Durée de la minuterie',
     '타이머 지속 시간',
     '计时器持续时间',
     'タイマーの長さ',
+    '計時器持續時間',
   ],
-  'Start': <String>['Iniciar', 'Démarrer', 'Start', '开始', '開始'],
+  'Start': <String>['Iniciar', 'Démarrer', 'Start', '开始', '開始', '開始'],
   'Enter a duration between 1 and 720 minutes.': <String>[
     'Insira uma duração entre 1 e 720 minutos.',
     'Entrez une durée comprise entre 1 et 720 minutes.',
     '1~720분 사이의 지속 시간을 입력하세요.',
     '输入 1 到 720 分钟之间的持续时间。',
     '1 ～ 720 分の期間を入力します。',
+    '輸入 1 到 720 分鐘之間的持續時間。',
   ],
   'LIVE connection': <String>[
     'Conexão AO VIVO',
@@ -2726,6 +3251,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     'LIVE 연결',
     'LIVE 连接',
     'ライブ接続',
+    'LIVE 連線',
   ],
   'Connect a LIVE and choose who can request songs.': <String>[
     'Conecte um LIVE e escolha quem pode solicitar músicas.',
@@ -2733,6 +3259,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     'LIVE를 연결하고 요청할 수 있는 사람을 선택하세요 노래.',
     '连接 LIVE 并选择谁可以请求歌曲。',
     'ライブに接続し、曲をリクエストできる人を選択します。',
+    '連線 LIVE 並選擇誰可以請求歌曲。',
   ],
   'LIVE connection is not available on this device.': <String>[
     'A conexão LIVE não está disponível neste dispositivo.',
@@ -2740,8 +3267,10 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '이 장치에서는 라이브 연결을 사용할 수 없습니다.',
     'LIVE 连接在此设备。',
     'このデバイスではライブ接続は利用できません。',
+    'LIVE 連線在此裝置。',
   ],
   'TikTok LIVE': <String>[
+    'TikTok LIVE',
     'TikTok LIVE',
     'TikTok LIVE',
     'TikTok LIVE',
@@ -2754,6 +3283,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '@사용자 또는 라이브 링크',
     '@用户或直播链接',
     '@userまたはライブ リンク',
+    '@使用者或直播連結',
   ],
   'Save LIVE requests to Library': <String>[
     'Salve solicitações LIVE na Biblioteca',
@@ -2761,6 +3291,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '라이브 요청을 라이브러리에 저장',
     '将直播请求保存到库',
     'LIVE リクエストをライブラリに保存',
+    '將直播請求儲存到庫',
   ],
   'Download and save each request to Library before playing it.': <String>[
     'Baixe e salve cada solicitação na Biblioteca antes de reproduzi-la.',
@@ -2768,6 +3299,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '재생하기 전에 각 요청을 다운로드하여 라이브러리에 저장하세요.',
     '播放前下载每个请求并将其保存到库。',
     '再生前に各リクエストをダウンロードしてライブラリに保存します。',
+    '播放前下載每個請求並將其儲存到庫。',
   ],
   'Play remotely with temporary cache, without adding it to Library.': <String>[
     'Jogue remotamente com cache temporário, sem adicioná-lo à Biblioteca.',
@@ -2775,6 +3307,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '라이브러리에 추가하지 않고 임시 캐시로 원격으로 재생합니다.',
     '使用临时缓存远程播放，而不将其添加到库。',
     'ライブラリに追加せずに、一時キャッシュを使用してリモートで再生します。',
+    '使用臨時快取遠端播放，而不將其新增到庫。',
   ],
   'Clear the LIVE queue to change this option.': <String>[
     'Limpe a fila LIVE para altere esta opção.',
@@ -2782,6 +3315,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '이를 변경하려면 라이브 대기열을 지우세요 option.',
     '清除直播队列以更改此选项。',
     'このオプションを変更するには、LIVE キューをクリアします。',
+    '清除直播佇列以更改此選項。',
   ],
   'Ready for remote playback': <String>[
     'Pronto para reprodução remota',
@@ -2789,14 +3323,16 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '원격 재생 준비됨',
     '准备远程播放',
     'リモート再生の準備が整いました',
+    '準備遠端播放',
   ],
-  'Connect': <String>['Conectar', 'Connecter', 'Connect', '连接', '接続'],
+  'Connect': <String>['Conectar', 'Connecter', 'Connect', '连接', '接続', '連線'],
   'Disconnect': <String>[
     'Desconectar',
     'Déconnecter',
     'Disconnect',
     '断开连接',
     '切断',
+    '斷開連線',
   ],
   'Local LIVE overlay': <String>[
     'Sobreposição local ao vivo',
@@ -2804,6 +3340,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '로컬 라이브 오버레이',
     '本地直播覆盖',
     'ローカル LIVE オーバーレイ',
+    '本地直播覆蓋',
   ],
   'Live widget': <String>[
     'Widget ao vivo',
@@ -2811,6 +3348,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '라이브 위젯',
     '直播小部件',
     'ライブ ウィジェット',
+    '直播小部件',
   ],
   'Choose the design shown on your stream. It uses the app accent color.': <String>[
     'Escolha o design mostrado em seu stream. Ele usa a cor de destaque do aplicativo.',
@@ -2818,14 +3356,16 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '스트림에 표시되는 디자인을 선택하세요. 앱 강조 색상을 사용합니다.',
     '选择流上显示的设计。它使用应用程序强调色。',
     'ストリームに表示されるデザインを選択してください。アプリのアクセント カラーを使用します。',
+    '選擇流上顯示的設計。它使用應用程式強調色。',
   ],
-  'Wave': <String>['Wave', 'Wave', 'Wave', 'Wave', 'Wave'],
+  'Wave': <String>['Wave', 'Wave', 'Wave', 'Wave', 'Wave', 'Wave'],
   'Compact cards with artwork and progress.': <String>[
     'Cartões compactos com arte e progresso.',
     'Cartes compactes avec illustrations et progression.',
     '아트워크와 진행 상황이 포함된 컴팩트 카드',
     '带有图稿和进度的紧凑卡片。',
     'アートワークと進行状況を備えたコンパクトなカード。',
+    '帶有圖稿和進度的緊湊卡片。',
   ],
   'Large artwork, animated wave, and a bottom progress bar.': <String>[
     'Arte grande, onda animada e uma barra de progresso inferior.',
@@ -2833,6 +3373,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '큰 아트워크, 애니메이션 웨이브 및 하단 진행률 표시줄',
     '大型图稿、动画波形和底部进度条。',
     '大きなアートワーク、アニメーション化されたウェーブ、下部の進行状況バー。',
+    '大型圖稿、動畫波形和底部進度條。',
   ],
   'SEARCHING': <String>[
     'SEARCHING',
@@ -2840,8 +3381,16 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     'SEARCHING',
     'SEARCHING',
     'SEARCHING',
+    'SEARCHING',
   ],
-  'LOADING': <String>['LOADING', 'LOADING', 'LOADING', 'LOADING', 'LOADING'],
+  'LOADING': <String>[
+    'LOADING',
+    'LOADING',
+    'LOADING',
+    'LOADING',
+    'LOADING',
+    'LOADING',
+  ],
   'Enable the local browser source whenever you want; no LIVE connection is required.':
       <String>[
         'Ative a fonte do navegador local sempre que quiser; nenhuma conexão LIVE é necessária.',
@@ -2849,6 +3398,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
         '원할 때마다 로컬 브라우저 소스를 활성화합니다. 라이브 연결이 필요하지 않습니다.',
         '随时启用本地浏览器源；不需要实时连接。',
         '必要に応じていつでもローカル ブラウザー ソースを有効にできます。 LIVE 接続は必要ありません。',
+        '隨時啟用本地瀏覽器源；不需要實時連線。',
       ],
   'Enable a transparent browser source with the active queue. No LIVE connection is required. The first time, Windows will request permission to configure its local domain.': <String>[
     'Ative uma fonte de navegador transparente com a fila ativa. Nenhuma conexão AO VIVO é necessária. Na primeira vez, o Windows solicitará permissão para configurar seu domínio local.',
@@ -2856,6 +3406,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '활성 대기열을 사용하여 투명한 브라우저 소스를 활성화합니다. 라이브 연결이 필요하지 않습니다. 처음으로 Windows는 로컬 도메인을 구성하기 위한 권한을 요청합니다.',
     '启用具有活动队列的透明浏览器源。无需实时连接。第一次，Windows 将请求配置其本地域的权限。',
     'アクティブなキューで透過的なブラウザ ソースを有効にします。 LIVE接続は必要ありません。初めて、Windows はローカル ドメインを構成するための許可を要求します。',
+    '啟用具有活動佇列的透明瀏覽器源。無需實時連線。第一次，Windows 將請求配置其本地域的許可權。',
   ],
   'Server active at ZXQPH0X. Add it as a browser source in TikTok LIVE Studio.':
       <String>[
@@ -2864,6 +3415,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
         'ZXQPH0X에서 서버가 활성화되었습니다. TikTok LIVE Studio에서 브라우저 소스로 추가하세요.',
         '服务器在 ZXQPH0X 上处于活动状态。将其添加为 TikTok LIVE Studio 中的浏览器源。',
         'サーバーは ZXQPH0X でアクティブです。 TikTok LIVE Studio のブラウザー ソースとして追加します。',
+        '伺服器在 ZXQPH0X 上處於活動狀態。將其新增為 TikTok LIVE Studio 中的瀏覽器源。',
       ],
   'Preparing the local domain for TikTok LIVE Studio...': <String>[
     'Preparando o domínio local para o TikTok LIVE Studio...',
@@ -2871,6 +3423,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     'TikTok LIVE Studio용 로컬 도메인 준비 중...',
     '正在为 TikTok LIVE Studio 准备本地域...',
     'TikTok LIVE Studio のローカル ドメインを準備しています...',
+    '正在為 TikTok LIVE Studio 準備本地域...',
   ],
   'Stopping the local overlay...': <String>[
     'Parando a sobreposição local...',
@@ -2878,6 +3431,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '로컬 오버레이 중지 중...',
     '停止本地 Overlay...',
     'ローカル オーバーレイを停止しています...',
+    '停止本地 Overlay...',
   ],
   'This feature is available only in the PC version.': <String>[
     'Este recurso está disponível apenas na versão para PC.',
@@ -2885,6 +3439,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '이 기능은 PC 버전에서만 사용할 수 있습니다.',
     '此功能仅在 PC 版本中可用。',
     'この機能は PC バージョンでのみ利用できます。',
+    '此功能僅在 PC 版本中可用。',
   ],
   'The local overlay server could not be started.': <String>[
     'O servidor de sobreposição local não pôde ser iniciado.',
@@ -2892,6 +3447,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '로컬 오버레이 서버를 시작할 수 없습니다.',
     '本地 Overlay 服务器无法启动。',
     'ローカル オーバーレイ サーバーを開始できませんでした。',
+    '本地 Overlay 伺服器無法啟動。',
   ],
   'Windows could not configure the local domain. Try again and accept the administrator permission.':
       <String>[
@@ -2900,6 +3456,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
         'Windows에서 로컬 도메인을 구성할 수 없습니다. 다시 시도하고 관리자 권한을 수락하세요.',
         'Windows 无法配置本地域。请重试并接受管理员权限。',
         'Windows でローカル ドメインを構成できませんでした。もう一度試して、管理者権限を受け入れてください。',
+        'Windows 無法配置本地域。請重試並接受管理員許可權。',
       ],
   'Windows did not show or complete the permission request in time. Try again and check whether the User Account Control (UAC) prompt appeared behind another window.': <String>[
     'O Windows não mostrou ou concluiu a solicitação de permissão a tempo. Tente novamente e verifique se o prompt do Controle de Conta de Usuário (UAC) apareceu atrás de outra janela.',
@@ -2907,6 +3464,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     'Windows에서 시간 내에 권한 요청을 표시하거나 완료하지 못했습니다. 다시 시도하여 다른 창 뒤에 사용자 계정 컨트롤(UAC) 프롬프트가 나타나는지 확인하세요.',
     'Windows 未及时显示或完成权限请求。再试一次，检查另一个窗口后面是否出现用户帐户控制（UAC）提示。',
     'Windows が時間内に権限要求を表示または完了しませんでした。もう一度試して、ユーザー アカウント制御 (UAC) プロンプトが別のウィンドウの背後に表示されるかどうかを確認してください。',
+    'Windows 未及時顯示或完成許可權請求。再試一次，檢查另一個視窗後面是否出現使用者帳戶控制（UAC）提示。',
   ],
   'The administrator permission was cancelled. The overlay made no changes.': <String>[
     'A permissão do administrador foi cancelada. A sobreposição não fez alterações.',
@@ -2914,6 +3472,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '관리자 권한이 취소되었습니다. 오버레이는 변경되지 않았습니다.',
     '管理员权限被取消。覆盖层没有进行任何更改。',
     '管理者権限が取り消されました。オーバーレイは変更を加えませんでした。',
+    '管理員許可權被取消。覆蓋層沒有進行任何更改。',
   ],
   'A Windows security policy blocked the overlay configuration. On a managed PC, an administrator must allow it.': <String>[
     'Uma política de segurança do Windows bloqueou a configuração da sobreposição. Em um PC gerenciado, um administrador deve permitir isso.',
@@ -2921,6 +3480,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     'Windows 보안 정책이 오버레이 구성을 차단했습니다. 관리되는 PC에서는 관리자가 이를 허용해야 합니다.',
     'Windows 安全策略阻止了覆盖层配置。在受管理的 PC 上，管理员必须允许它。',
     'A Windows セキュリティ ポリシーにより、オーバーレイ構成がブロックされました。管理対象 PC では、管理者がこれを許可する必要があります。',
+    'Windows 安全策略阻止了覆蓋層配置。在受管理的 PC 上，管理員必須允許它。',
   ],
   'Windows PowerShell 5.1 is unavailable. Enable it or ask the administrator to configure the overlay.':
       <String>[
@@ -2929,6 +3489,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
         'Windows PowerShell 5.1을 사용할 수 없습니다. 활성화하거나 관리자에게 오버레이 구성을 요청하세요.',
         'Windows PowerShell 5.1 不可用。启用它或要求管理员配置覆盖。',
         'Windows PowerShell 5.1 は使用できません。有効にするか、管理者にオーバーレイの構成を依頼してください。',
+        'Windows PowerShell 5.1 不可用。啟用它或要求管理員配置覆蓋。',
       ],
   'The overlay configuration conflicts with the hosts file. Correct the ZXQPH0X entry and try again.':
       <String>[
@@ -2937,6 +3498,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
         '오버레이 구성이 호스트 파일과 충돌합니다. ZXQPH0X 항목을 수정하고 다시 시도하십시오.',
         '覆盖配置与主机文件冲突。更正 ZXQPH0X 条目并重试。',
         'オーバーレイ構成はホスト ファイルと競合します。 ZXQPH0X エントリを修正して、再試行してください。',
+        '覆蓋配置與主機檔案衝突。更正 ZXQPH0X 條目並重試。',
       ],
   'Windows could not verify the local domain. Restart BStream and try again.': <String>[
     'O Windows não conseguiu verificar o domínio local. Reinicie o BStream e tente novamente.',
@@ -2944,6 +3506,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     'Windows에서 로컬 도메인을 확인할 수 없습니다. BStream을 다시 시작하고 다시 시도하세요.',
     'Windows 无法验证本地域。重新启动 BStream 并重试。',
     'Windows はローカル ドメインを確認できませんでした。 BStream を再起動して、もう一度お試しください。',
+    'Windows 無法驗證本地域。重新啟動 BStream 並重試。',
   ],
   'The domain was configured, but BStream could not open the overlay through DNS or HTTP. Check the proxy, VPN, or antivirus and try again.': <String>[
     'O domínio foi configurado, mas o BStream não conseguiu abrir a sobreposição por meio de DNS ou HTTP. Verifique o proxy, VPN ou antivírus e tente novamente.',
@@ -2951,6 +3514,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '도메인이 구성되었지만 BStream이 DNS 또는 HTTP를 통해 오버레이를 열 수 없습니다. 프록시, VPN 또는 바이러스 백신을 확인하고 다시 시도하세요.',
     '域已配置，但 BStream 无法通过 DNS 或 HTTP 打开覆盖。检查代理、VPN 或防病毒软件，然后重试。',
     'ドメインは構成されましたが、BStream は DNS または HTTP 経由でオーバーレイを開くことができませんでした。プロキシ、VPN、またはウイルス対策ソフトウェアを確認して、再試行してください。',
+    '域已配置，但 BStream 無法透過 DNS 或 HTTP 開啟覆蓋。檢查代理、VPN 或防病毒軟體，然後重試。',
   ],
   'Another application is already using port 80. Close it and enable the overlay again.':
       <String>[
@@ -2959,6 +3523,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
         '다른 애플리케이션이 이미 포트 80을 사용하고 있습니다. 해당 애플리케이션을 닫고 오버레이를 다시 활성화하세요.',
         '另一个应用程序已在使用端口 80。将其关闭并再次启用覆盖。',
         '別のアプリケーションがすでにポート 80 を使用しています。それを閉じて、オーバーレイを再度有効にしてください。',
+        '另一個應用程式已在使用埠 80。將其關閉並再次啟用覆蓋。',
       ],
   'Windows blocked or reserved port 80. Check system policies or reservations and try again.':
       <String>[
@@ -2967,6 +3532,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
         'Windows에서 포트 80을 차단했거나 예약했습니다. 시스템 정책이나 예약을 확인하고 다시 시도하세요.',
         'Windows 阻止或保留端口 80。检查系统策略或保留，然后重试。',
         'Windows がブロックしたか、予約されているポート 80。システム ポリシーまたは予約を確認して、再試行してください。',
+        'Windows 阻止或保留埠 80。檢查系統策略或保留，然後重試。',
       ],
   'Port 80 is unavailable. Close the application using it and try again.': <String>[
     'A porta 80 não está disponível. Feche o aplicativo usando-o e tente novamente.',
@@ -2974,6 +3540,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '포트 80을 사용할 수 없습니다. 이를 사용하여 응용 프로그램을 닫고 다시 시도하십시오.',
     '端口 80 不可用。使用它关闭应用程序，然后重试。',
     'ポート 80 は使用できません。それを使用しているアプリケーションを閉じて、もう一度お試しください。',
+    '埠 80 不可用。使用它關閉應用程式，然後重試。',
   ],
   'Copy URL': <String>[
     'Copiar URL',
@@ -2981,6 +3548,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     'URL 복사',
     '复制 URL',
     'URL をコピー',
+    '複製 URL',
   ],
   'Open preview': <String>[
     'Abrir visualização',
@@ -2988,14 +3556,23 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '미리 보기 열기',
     '打开预览',
     'プレビューを開く',
+    '開啟預覽',
   ],
-  'connected': <String>['conectado', 'connecté', 'connected', '已连接', '接続'],
+  'connected': <String>[
+    'conectado',
+    'connecté',
+    'connected',
+    '已连接',
+    '接続',
+    '已連線',
+  ],
   'disconnected': <String>[
     'disconectado',
     'déconnecté',
     'disconnected',
     '已断开连接',
     '切断',
+    '已斷開連線',
   ],
   'Last command': <String>[
     'Último comando',
@@ -3003,6 +3580,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '마지막 명령',
     '最后一个命令',
     '最後のコマンド',
+    '最後一個命令',
   ],
   'Pending requests': <String>[
     'Solicitações pendentes',
@@ -3010,6 +3588,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '대기 중인 요청',
     '待处理请求',
     '保留中のリクエスト',
+    '待處理請求',
   ],
   'Browse folder': <String>[
     'Procurar pasta',
@@ -3017,6 +3596,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '폴더 찾아보기',
     '浏览文件夹',
     'フォルダーの参照',
+    '瀏覽資料夾',
   ],
   'The downloads folder could not be saved.': <String>[
     'A pasta de downloads não pôde ser salva.',
@@ -3024,6 +3604,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '다운로드 폴더를 저장할 수 없습니다.',
     '无法保存下载文件夹。',
     'ダウンロード フォルダーを保存できませんでした。',
+    '無法儲存下載資料夾。',
   ],
   'not found': <String>[
     'não encontrada',
@@ -3031,6 +3612,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '찾을 수 없음',
     '未找到',
     '見つかりませんでした。',
+    '未找到',
   ],
   'Select downloads folder': <String>[
     'Selecione a pasta de downloads',
@@ -3038,6 +3620,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '다운로드 폴더 선택',
     '选择下载文件夹',
     'ダウンロード フォルダーを選択します',
+    '選擇下載資料夾',
   ],
   'Queued': <String>[
     'Em fila',
@@ -3045,6 +3628,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     'Queued',
     '排队',
     'キューに登録されました',
+    '排隊',
   ],
   'Downloading': <String>[
     'Downloading',
@@ -3052,14 +3636,16 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '다운로드 중',
     '下载',
     'ダウンロード中',
+    '下載',
   ],
-  'Completed': <String>['Completed', 'Terminé', '완료', '已完成', '完了'],
+  'Completed': <String>['Completed', 'Terminé', '완료', '已完成', '完了', '已完成'],
   'Enable shuffle': <String>[
     'Ativar shuffle',
     'Activer la lecture aléatoire',
     '셔플 활성화',
     '启用随机播放',
     'シャッフルを有効にする',
+    '啟用隨機播放',
   ],
   'Disable shuffle': <String>[
     'Desativar shuffle',
@@ -3067,6 +3653,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '셔플 비활성화',
     '禁用随机播放',
     'シャッフルを無効にする',
+    '禁用隨機播放',
   ],
   'Repeat queue': <String>[
     'Repetir fila',
@@ -3074,6 +3661,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '반복 대기열',
     '重复队列',
     'リピート キュー',
+    '重複佇列',
   ],
   'Repeat one': <String>[
     'Repetir um',
@@ -3081,6 +3669,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '한 번 반복',
     '重复一个',
     '1 つ繰り返す',
+    '重複一個',
   ],
   'Disable repeat': <String>[
     'Desativar repetição',
@@ -3088,6 +3677,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '반복 비활성화',
     '禁用重复',
     'リピートを無効にする',
+    '禁用重複',
   ],
   'The player will stop in ZXQPH0X': <String>[
     'O player irá parar em ZXQPH0X',
@@ -3095,6 +3685,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '플레이어가 다음 단계에서 중지됩니다. ZXQPH0X',
     '播放器将停止在ZXQPH0X',
     'プレーヤーは ZXQPH0X',
+    '播放器將停止在ZXQPH0X',
   ],
   'ZXQPH0X min': <String>[
     'ZXQPH0X min',
@@ -3102,6 +3693,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     'ZXQPH0X min',
     'ZXQPH0X分钟',
     'ZXQPH0X 分で停止します',
+    'ZXQPH0X分鐘',
   ],
   'Application information': <String>[
     'Informações do aplicativo',
@@ -3109,6 +3701,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '응용 프로그램 정보',
     '应用程序信息',
     'アプリケーション情報',
+    '應用程式資訊',
   ],
   'About the app': <String>[
     'Sobre o aplicativo',
@@ -3116,6 +3709,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '앱 정보',
     '关于应用程序',
     'アプリについて',
+    '關於應用程式',
   ],
   'Version, support, and repository': <String>[
     'Versão, suporte e repositório',
@@ -3123,14 +3717,16 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '버전, 지원 및 저장소',
     '版本、支持和存储库',
     'バージョン、サポート、およびリポジトリ',
+    '版本、支援和儲存庫',
   ],
-  'Version': <String>['Versão', 'Version', 'Version', '版本', 'バージョン'],
+  'Version': <String>['Versão', 'Version', 'Version', '版本', 'バージョン', '版本'],
   'New version available': <String>[
     'Nova versão disponível',
     'Nouvelle version disponible',
     '새 버전 사용 가능',
     '可用新版本',
     '新しいバージョンが利用可能',
+    '可用新版本',
   ],
   'BStream Music ZXQPH0X is available. Current version: ZXQPH1X.': <String>[
     'BStream Music ZXQPH0X está disponível. Versão atual: ZXQPH1X.',
@@ -3138,6 +3734,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     'BStream Music ZXQPH0X를 사용할 수 있습니다. 현재 버전: ZXQPH1X.',
     'BStream Music ZXQPH0X 已发布。当前版本：ZXQPH1X。',
     'BStream Music ZXQPH0X が利用可能です。現在のバージョン: ZXQPH1X。',
+    'BStream Music ZXQPH0X 已釋出。當前版本：ZXQPH1X。',
   ],
   'What’s new in ZXQPH0X': <String>[
     'Novidades da versão ZXQPH0X',
@@ -3145,6 +3742,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     'ZXQPH0X의 새로운 기능',
     'ZXQPH0X 更新内容',
     'ZXQPH0X の新機能',
+    'ZXQPH0X 更新內容',
   ],
   'Translating release notes…': <String>[
     'Traduzindo novidades…',
@@ -3152,6 +3750,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '업데이트 내용을 번역하는 중…',
     '正在翻译更新说明…',
     '更新内容を翻訳中…',
+    '正在翻譯更新說明…',
   ],
   'This release does not include release notes.': <String>[
     'Esta versão não inclui notas de atualização.',
@@ -3159,6 +3758,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '이 버전에는 업데이트 내용이 없습니다.',
     '此版本未提供更新说明。',
     'このリリースには更新内容の説明がありません。',
+    '此版本未提供更新說明。',
   ],
   'Translation unavailable. Showing the original release notes.': <String>[
     'Não foi possível traduzir. As notas originais são exibidas.',
@@ -3166,6 +3766,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '번역할 수 없습니다. 원본 업데이트 내용을 표시합니다.',
     '翻译不可用。正在显示原始更新说明。',
     '翻訳できませんでした。元の更新内容を表示しています。',
+    '翻譯不可用。正在顯示原始更新說明。',
   ],
   'You already have the latest version.': <String>[
     'Você já tem a versão mais recente.',
@@ -3173,6 +3774,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '이미 최신 버전이 있습니다.',
     '您已经拥有最新版本。',
     '既に最新バージョンを持っています。',
+    '您已經擁有最新版本。',
   ],
   'Could not check for a new version.': <String>[
     'Não foi possível verificar se há uma nova versão.',
@@ -3180,6 +3782,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '새 버전을 확인할 수 없습니다.',
     '无法检查新版本。',
     '新しいバージョンを確認できませんでした。',
+    '無法檢查新版本。',
   ],
   'The download page could not be opened.': <String>[
     'A página de download não pôde ser aberta.',
@@ -3187,6 +3790,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '다운로드 페이지를 열 수 없습니다.',
     '无法打开下载页面。',
     'ダウンロード ページを開けませんでした。',
+    '無法開啟下載頁面。',
   ],
   'Support development': <String>[
     'Desenvolvimento de suporte',
@@ -3194,6 +3798,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '개발 지원',
     '支持开发',
     'サポート開発',
+    '支援開發',
   ],
   'Help maintain BStream Music and keep adding features.': <String>[
     'Ajude a manter o BStream Music e continue adicionando recursos.',
@@ -3201,6 +3806,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     'BStream Music을 유지 관리하고 기능을 계속 추가하도록 도와주세요.',
     '帮助维护BStream Music并不断添加功能。',
     'BStream Music の保守と機能の追加を支援します。',
+    '幫助維護BStream Music並不斷新增功能。',
   ],
   'The support page could not be opened.': <String>[
     'A página de suporte não pôde ser aberto.',
@@ -3208,6 +3814,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '지원 페이지를 열 수 없습니다.',
     '无法打开支持页面。',
     'サポート ページを開けませんでした。',
+    '無法開啟支援頁面。',
   ],
   'GitHub repository': <String>[
     'Repositório GitHub',
@@ -3215,6 +3822,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     'GitHub 저장소',
     'GitHub存储库',
     'GitHub リポジトリ',
+    'GitHub儲存庫',
   ],
   'Source code and contributions': <String>[
     'Código fonte e contribuições',
@@ -3222,6 +3830,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '소스 코드 및 기여',
     '源代码和贡献',
     'ソース コードと貢献',
+    '原始碼和貢獻',
   ],
   'The GitHub repository could not be opened.': <String>[
     'O repositório GitHub não pôde ser aberto.',
@@ -3229,6 +3838,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     'GitHub 저장소를 열 수 없습니다.',
     'GitHub 存储库无法打开。',
     'GitHub リポジトリを開くことができませんでした',
+    'GitHub 儲存庫無法開啟。',
   ],
   'ZXQPH0X song': <String>[
     'ZXQPH0X song',
@@ -3236,6 +3846,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     'ZXQPH0X song',
     'ZXQPH0X 歌曲',
     'ZXQPH0X 曲',
+    'ZXQPH0X 歌曲',
   ],
   'ZXQPH0X Song': <String>[
     'ZXQPH0X Song',
@@ -3243,6 +3854,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     'ZXQPH0X Song',
     'ZXQPH0X 歌曲',
     'ZXQPH0X 曲',
+    'ZXQPH0X 歌曲',
   ],
   'ZXQPH0X Songs': <String>[
     'ZXQPH0X Songs',
@@ -3250,6 +3862,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     'ZXQPH0X Songs',
     'ZXQPH0X 歌曲',
     'ZXQPH0X 曲',
+    'ZXQPH0X 歌曲',
   ],
   'Playback Queue - ZXQPH0X Song': <String>[
     'Fila de reprodução - ZXQPH0X Música',
@@ -3257,6 +3870,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '재생 대기열 - ZXQPH0X 노래',
     '播放队列 - ZXQPH0X 歌曲',
     '再生キュー - ZXQPH0X 曲',
+    '播放佇列 - ZXQPH0X 歌曲',
   ],
   'Playback Queue - ZXQPH0X Songs': <String>[
     'Fila de reprodução - Músicas ZXQPH0X',
@@ -3264,6 +3878,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '재생 대기열 - ZXQPH0X 노래',
     '播放队列 - ZXQPH0X 歌曲',
     '再生キュー - ZXQPH0X 曲',
+    '播放佇列 - ZXQPH0X 歌曲',
   ],
   'ZXQPH0X requests - ZXQPH1X ready - ZXQPH2X pending': <String>[
     'Solicitações ZXQPH0X - ZXQPH1X pronto - ZXQPH2X pendente',
@@ -3271,6 +3886,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     'ZXQPH0X 요청 - ZXQPH1X 준비됨 - ZXQPH2X 보류 중',
     'ZXQPH0X 请求 - ZXQPH1X 就绪 - ZXQPH2X 等待',
     'ZXQPH0X リクエスト - ZXQPH1X 準備完了 - ZXQPH2X 保留中',
+    'ZXQPH0X 請求 - ZXQPH1X 就緒 - ZXQPH2X 等待',
   ],
   'Press once to exit.': <String>[
     'Pressione uma vez para sair.',
@@ -3278,6 +3894,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '종료하려면 한 번 누르세요.',
     '按一次即可退出。',
     '1 回押して終了します。',
+    '按一次即可退出。',
   ],
   'Press ZXQPH0X more times to exit.': <String>[
     'Pressione ZXQPH0X mais vezes para sair.',
@@ -3285,10 +3902,12 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '종료하려면 ZXQPH0X를 여러 번 누르세요.',
     '再按 ZXQPH0X 次即可退出。',
     'Press終了まであと ZXQPH0X 回です。',
+    '再按 ZXQPH0X 次即可退出。',
   ],
   'ZXQPH0X: ZXQPH1X': <String>[
     'ZXQPH0X: ZXQPH1X',
     'ZXQPH0X : ZXQPH1X',
+    'ZXQPH0X: ZXQPH1X',
     'ZXQPH0X: ZXQPH1X',
     'ZXQPH0X: ZXQPH1X',
     'ZXQPH0X: ZXQPH1X',
@@ -3299,6 +3918,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     'ZXQPH0X: ZXQPH1X - ZXQPH2X 대기 중',
     'ZXQPH0X: ZXQPH1X - ZXQPH2X 已排队',
     'ZXQPH0X: ZXQPH1X - ZXQPH2X キューに登録されました',
+    'ZXQPH0X: ZXQPH1X - ZXQPH2X 已排隊',
   ],
   'The player widget is now available for your home screen.': <String>[
     'O widget do player agora está disponível para sua tela inicial.',
@@ -3306,6 +3926,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '플레이어 위젯을 이제 홈 화면에서 사용할 수 있습니다.',
     '播放器小部件现在可在您的主屏幕上使用。',
     'ホーム画面でプレーヤー ウィジェットが利用できるようになりました。',
+    '播放器小部件現在可在您的主螢幕上使用。',
   ],
   'Personalize the app background with an image from your gallery.': <String>[
     'Personalize o plano de fundo do aplicativo com uma imagem de sua galeria.',
@@ -3313,6 +3934,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '갤러리의 이미지로 앱 배경을 맞춤 설정하세요.',
     '使用您的图像个性化应用程序背景画廊。',
     'ギャラリーの画像を使用してアプリの背景をカスタマイズします。',
+    '使用您的影象個性化應用程式背景畫廊。',
   ],
   'You can now change the font throughout the app.': <String>[
     'Agora você pode alterar a fonte em todo o aplicativo.',
@@ -3320,6 +3942,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '이제 앱 전체에서 글꼴을 변경할 수 있습니다.',
     '您现在可以更改整个应用程序的字体。',
     'アプリ全体のフォントを変更できるようになりました。',
+    '您現在可以更改整個應用程式的字型。',
   ],
   'Animated artwork performance has been optimized.': <String>[
     'O desempenho da arte animada foi melhorado otimizado.',
@@ -3327,6 +3950,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '애니메이션 아트워크 성능이 최적화되었습니다.',
     '动画艺术作品性能已得到优化。',
     'アニメーション アートワークのパフォーマンスが最適化されました。',
+    '動畫藝術作品效能已得到最佳化。',
   ],
   'Select multiple songs in albums, mixes, and search results to add them to a playlist or download them.':
       <String>[
@@ -3335,6 +3959,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
         '앨범, 믹스 및 검색 결과에서 여러 노래를 선택하여 재생 목록에 추가하거나 다운로드합니다.',
         '在专辑、混音和搜索结果中选择多首歌曲，将其添加到播放列表或下载。',
         '選択アルバム、ミックス、検索結果内の複数の曲をプレイリストに追加したり、ダウンロードしたりできます。',
+        '在專輯、混音和搜尋結果中選擇多首歌曲，將其新增到播放列表或下載。',
       ],
   'Interface performance and smoothness have been improved.': <String>[
     'O desempenho e a fluidez da interface foram melhorados.',
@@ -3342,6 +3967,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '성능과 유연성을 높이기 위해 앱 인터페이스를 개선했습니다.',
     '我们优化了应用界面，提升了性能和流畅度。',
     'パフォーマンスと操作の滑らかさを向上させるため、アプリのインターフェースを改善しました。',
+    '我們最佳化了應用介面，提升了效能和流暢度。',
   ],
   'Album, mix, and artist pages now inherit colors from their cover art.': <String>[
     'As páginas de álbuns, mixes e artistas agora usam tons derivados das capas como fundo.',
@@ -3349,6 +3975,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '이제 앨범, 믹스, 아티스트 화면의 배경이 커버 색상을 이어받습니다.',
     '专辑、混音和艺人页面的背景现在会沿用封面的色调。',
     'アルバム、ミックス、アーティストの背景に、カバー画像の色合いが反映されるようになりました。',
+    '專輯、混音和藝人頁面的背景現在會沿用封面的色調。',
   ],
   'Portuguese, French, Korean, Chinese, and Japanese are now supported.': <String>[
     'O aplicativo agora também oferece suporte a português, francês, coreano, chinês e japonês.',
@@ -3356,6 +3983,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '이제 포르투갈어, 프랑스어, 한국어, 중국어, 일본어를 지원합니다.',
     '现已支持葡萄牙语、法语、韩语、中文和日语。',
     'ポルトガル語、フランス語、韓国語、中国語、日本語に対応しました。',
+    '現已支援葡萄牙語、法語、韓語、中文和日語。',
   ],
   'Widget, customization, performance, languages, and more': <String>[
     'Widget, personalização, desempenho, idiomas e muito mais.',
@@ -3363,6 +3991,7 @@ const Map<String, List<String>> _appStringTranslations = <String, List<String>>{
     '위젯, 사용자 지정, 성능, 언어 등 다양한 기능을 확인하세요.',
     '小组件、自定义、性能优化、新增语言等更多内容。',
     'ウィジェット、カスタマイズ、パフォーマンス、言語などの新機能。',
+    '小元件、自定義、效能最佳化、新增語言等更多內容。',
   ],
 };
 
@@ -3372,6 +4001,9 @@ const Map<String, int> _appStringLanguageIndex = <String, int>{
   'ko': 2,
   'zh': 3,
   'ja': 4,
+  'zh_TW': 5,
+  'zh_HK': 5,
+  'zh-Hant': 5,
 };
 
 final List<_AppStringTranslationTemplate> _dynamicAppStringTranslations = () {
@@ -3386,7 +4018,10 @@ String? translateAppString(String english, String languageCode) {
   final index = _appStringLanguageIndex[languageCode];
   if (index == null) return null;
   final exact = _appStringTranslations[english];
-  if (exact != null) return exact[index];
+  if (exact != null) {
+    final safeIndex = index < exact.length ? index : 3;
+    return exact[safeIndex];
+  }
   for (final template in _dynamicAppStringTranslations) {
     final match = template.matcher.firstMatch(english);
     if (match == null) continue;
@@ -3394,7 +4029,8 @@ String? translateAppString(String english, String languageCode) {
     for (var i = 0; i < template.markerIndexes.length; i++) {
       substitutions[template.markerIndexes[i]] = match.group(i + 1) ?? '';
     }
-    return template.translations[index].replaceAllMapped(
+    final safeIndex = index < template.translations.length ? index : 3;
+    return template.translations[safeIndex].replaceAllMapped(
       RegExp(r'ZXQPH(\d+)X'),
       (marker) => substitutions[int.parse(marker.group(1)!)] ?? marker[0]!,
     );

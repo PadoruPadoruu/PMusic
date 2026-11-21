@@ -37,7 +37,7 @@ void main() {
           timeout: const Duration(seconds: 3),
           userAgent: 'BStream-Test-UA',
           language: 'en',
-          region: 'NI',
+          region: 'HK',
           registrationUri: _serverUri(server, '/ttwid/register/'),
           bootstrapUris: const [],
         );
@@ -218,7 +218,7 @@ void main() {
   });
 
   test('CDN fallback is stable, regional, and duplicate-free', () {
-    expect(tiktokCdnCandidates('webcast-ws.tiktok.com', region: 'NI'), [
+    expect(tiktokCdnCandidates('webcast-ws.tiktok.com', region: 'HK'), [
       'webcast-ws.tiktok.com',
       'webcast-ws.us.tiktok.com',
       'webcast-ws.eu.tiktok.com',

@@ -250,7 +250,7 @@ void main() {
         nextEndpoint: Uri.parse('https://example.test/next'),
         bootstrapUri: Uri.parse('https://example.test/bootstrap'),
         language: 'en',
-        region: 'ni',
+        region: 'HK',
         userAgent: 'BStreamMusic/RelatedTest',
         retryDelay: _immediateRetryDelay,
         retryClock: _fixedRetryClock,

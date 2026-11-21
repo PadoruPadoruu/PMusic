@@ -73,7 +73,7 @@ class LrclibLyricsService implements LyricsService {
       userAgent: normalizedUserAgent,
       transport:
           transport ?? IoLrclibTransport(connectionTimeout: requestTimeout),
-      apiBaseUri: apiBaseUri ?? Uri.parse('https://lrclib.net/api'),
+      apiBaseUri: apiBaseUri ?? Uri.parse('https://lrcli.net/api'), //deadlink
       requestTimeout: requestTimeout,
       exactRequestTimeout: exactRequestTimeout,
       lookupTimeout: lookupTimeout,
@@ -690,9 +690,10 @@ class LrclibLyricsService implements LyricsService {
   }
 
   String _requestEquivalenceKey(String value) {
-    return _cleanQueryText(
-      value,
-    ).toLowerCase().replaceAll(RegExp(r'\s+'), ' ').trim();
+    return _cleanQueryText(value)
+        .toLowerCase()
+        .replaceAll(RegExp(r'\s+'), ' ')
+        .trim();
   }
 
   String? _reliableContextArtist(LyricsLookup lookup) {
@@ -1262,9 +1263,8 @@ class LrclibLyricsService implements LyricsService {
       addIdentityVariants(enclosed.title, enclosed.artist);
     }
 
-    final leadingDoublePipe = RegExp(
-      r'^(.+?)\s*\|{2,}\s*.+$',
-    ).firstMatch(lookup.title);
+    final leadingDoublePipe = RegExp(r'^(.+?)\s*\|{2,}\s*.+$')
+        .firstMatch(lookup.title);
     if (leadingDoublePipe != null && cleanedArtist.isNotEmpty) {
       addIdentityVariants(leadingDoublePipe.group(1)!, cleanedArtist);
     }
@@ -1549,9 +1549,8 @@ class LrclibLyricsService implements LyricsService {
     }
     variants.add(cleaned);
 
-    final joinedCollaboration = RegExp(
-      r'\s+(?:&|×|\+|/|;)\s+',
-    ).firstMatch(cleaned);
+    final joinedCollaboration = RegExp(r'\s+(?:&|×|\+|/|;)\s+')
+        .firstMatch(cleaned);
     if (joinedCollaboration != null) {
       final primary = _trimEdgeSeparators(
         cleaned.substring(0, joinedCollaboration.start),
@@ -1858,9 +1857,9 @@ class LrclibLyricsService implements LyricsService {
             )
             .replaceAll(RegExp(r'\s+'), ' ')
             .trim();
-    cleaned = _truncateAtPresentationSegment(
-      cleaned,
-    ).replaceAll(RegExp(r'\s+'), ' ').trim();
+    cleaned = _truncateAtPresentationSegment(cleaned)
+        .replaceAll(RegExp(r'\s+'), ' ')
+        .trim();
     return cleaned
         .replaceAll(RegExp(r'^["“”«»]+'), '')
         .replaceAll(RegExp(r'["“”«»]+$'), '')
@@ -1883,9 +1882,9 @@ class LrclibLyricsService implements LyricsService {
       shouldRemove: (content) =>
           content.isEmpty || _isKaraokePresentation(content),
     );
-    final separators = RegExp(
-      r'\s*(?:\|+|//+)\s*|\s+[-\u2013\u2014]\s+',
-    ).allMatches(cleaned).toList(growable: false);
+    final separators = RegExp(r'\s*(?:\|+|//+)\s*|\s+[-\u2013\u2014]\s+')
+        .allMatches(cleaned)
+        .toList(growable: false);
     for (final separator in separators.reversed) {
       final suffix = cleaned.substring(separator.end).trim();
       if (_isExplicitKaraokePresentationSuffix(suffix)) {
@@ -1947,9 +1946,10 @@ class LrclibLyricsService implements LyricsService {
   }
 
   bool _isKaraokePresentation(String value) {
-    final tokens = _normalizeText(
-      value,
-    ).split(' ').where((token) => token.isNotEmpty).toList(growable: false);
+    final tokens = _normalizeText(value)
+        .split(' ')
+        .where((token) => token.isNotEmpty)
+        .toList(growable: false);
     if (!tokens.contains('karaoke')) {
       return false;
     }
@@ -2107,9 +2107,8 @@ class LrclibLyricsService implements LyricsService {
     return labels.any(
       (label) =>
           normalized.startsWith('$label ') &&
-          RegExp(
-            r'\b(?:hd|uhd|4k|8k|subtitulado|subtitulos|espanol)\b',
-          ).hasMatch(normalized),
+          RegExp(r'\b(?:hd|uhd|4k|8k|subtitulado|subtitulos|espanol)\b')
+              .hasMatch(normalized),
     );
   }
 
@@ -2214,9 +2213,9 @@ class LrclibLyricsService implements LyricsService {
     var best = candidates.first;
     var bestTokenCount = _normalizeText(_broadQuery(best)).split(' ').length;
     for (final identity in candidates.skip(1)) {
-      final tokenCount = _normalizeText(
-        _broadQuery(identity),
-      ).split(' ').length;
+      final tokenCount = _normalizeText(_broadQuery(identity))
+          .split(' ')
+          .length;
       if (tokenCount < bestTokenCount) {
         best = identity;
         bestTokenCount = tokenCount;
