@@ -72,3 +72,4 @@ app.*.map.json
 *.db
 *.sqlite
 *.sqlite3
+pubspec.lock
