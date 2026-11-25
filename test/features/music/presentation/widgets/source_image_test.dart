@@ -10,6 +10,92 @@ import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
+  testWidgets(
+    'custom artwork painting reuses decoded cover and fallback pixels',
+    (tester) async {
+      final directory = Directory.systemTemp.createTempSync(
+        'bstream-reflection-',
+      );
+      addTearDown(() async {
+        await tester.pumpWidget(const SizedBox.shrink());
+        PaintingBinding.instance.imageCache
+          ..clear()
+          ..clearLiveImages();
+        directory.deleteSync(recursive: true);
+      });
+      final file = File('${directory.path}/cover.png')
+        ..writeAsBytesSync(
+          base64Decode(
+            'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=',
+          ),
+        );
+      RawImage? reflectedPixels;
+      RawImage? fallbackPixels;
+      const plainKey = ValueKey('plain-cover');
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Row(
+            children: [
+              Expanded(
+                child: SourceImage(
+                  key: plainKey,
+                  source: file.path,
+                  cacheWidth: 32,
+                  fallback: const SizedBox.shrink(),
+                ),
+              ),
+              Expanded(
+                child: SourceImage(
+                  source: file.path,
+                  cacheWidth: 32,
+                  imageBuilder: (context, image) {
+                    reflectedPixels = image;
+                    return const SizedBox.expand();
+                  },
+                  fallback: const SizedBox.shrink(),
+                ),
+              ),
+              Expanded(
+                child: SourceImage(
+                  source: '${directory.path}/missing.png',
+                  fallbackSource: file.path,
+                  cacheWidth: 32,
+                  imageBuilder: (context, image) {
+                    fallbackPixels = image;
+                    return const SizedBox.expand();
+                  },
+                  fallback: const SizedBox.shrink(),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+      await tester.runAsync(
+        () => precacheImage(
+          ResizeImage(FileImage(file), width: 32),
+          tester.element(find.byKey(plainKey)),
+        ),
+      );
+      await tester.pumpAndSettle();
+      // The missing primary mounts its fallback only after its existence
+      // check; let the fallback's own filesystem check finish as well.
+      await tester.runAsync(() => file.exists());
+      await tester.pumpAndSettle();
+      final plainPixels = tester.widget<RawImage>(
+        find.descendant(
+          of: find.byKey(plainKey),
+          matching: find.byType(RawImage),
+        ),
+      );
+      expect(reflectedPixels?.image, isNotNull);
+      expect(fallbackPixels?.image, isNotNull);
+      expect(plainPixels.image!.isCloneOf(reflectedPixels!.image!), isTrue);
+      expect(plainPixels.image!.isCloneOf(fallbackPixels!.image!), isTrue);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
   testWidgets('artwork opacity is applied directly and updates in place', (
     tester,
   ) async {

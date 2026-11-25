@@ -48,6 +48,80 @@ void main() {
     }
   });
 
+  test(
+    'audio extension labels are translated for every supported language',
+    () {
+      List<String> labels(AppStrings strings) => [
+        strings.addAudioSource,
+        strings.audioExtensionUrl,
+        strings.audioExtensionUrlHelp,
+        strings.audioExtensionInvalidUrl,
+        strings.audioExtensionUnavailable,
+        strings.audioExtensionUnsupported,
+        strings.audioExtensionRestricted,
+        strings.audioExtensionOfficialClientOnly,
+        strings.audioExtensionOutputRequired,
+        strings.audioExtensionModuleIndex,
+        strings.audioExtensionNoAvailableSources,
+        strings.audioExtensionStreamingOnly,
+        strings.audioExtensionsWithFallback,
+        strings.removeAudioSource,
+      ];
+      final english = labels(const AppStrings(AppLanguage.english));
+      for (final language in AppLanguage.values) {
+        final translated = labels(AppStrings(language));
+        expect(translated, everyElement(isNotEmpty), reason: language.code);
+        if (language == AppLanguage.english) continue;
+        for (var index = 0; index < english.length; index++) {
+          expect(
+            translated[index],
+            isNot(english[index]),
+            reason: language.code,
+          );
+        }
+      }
+    },
+  );
+
+  test(
+    'playlist artwork controls are localized in every supported language',
+    () {
+      List<String> labels(AppStrings strings) => [
+        strings.playlistArtworkTitle,
+        strings.playlistArtworkRandom,
+        strings.playlistArtworkCustom,
+        strings.playlistArtworkEdit,
+        strings.playlistArtworkSaveFailed,
+      ];
+      final english = labels(const AppStrings(AppLanguage.english));
+      final spanish = labels(const AppStrings(AppLanguage.spanish));
+      expect(spanish[1], 'Aleatorio');
+      expect(spanish[2], 'Personalizada');
+      for (final language in AppLanguage.values) {
+        final localized = labels(AppStrings(language));
+        expect(localized, hasLength(5));
+        for (var index = 0; index < localized.length; index++) {
+          expect(localized[index].trim(), isNotEmpty, reason: language.code);
+          if (language != AppLanguage.english) {
+            expect(
+              localized[index],
+              isNot(english[index]),
+              reason: language.code,
+            );
+          }
+          if (language != AppLanguage.spanish &&
+              language != AppLanguage.english) {
+            expect(
+              localized[index],
+              isNot(spanish[index]),
+              reason: language.code,
+            );
+          }
+        }
+      }
+    },
+  );
+
   test('new release highlights are translated for every added language', () {
     const highlights = <(String, String)>[
       (
@@ -75,6 +149,92 @@ void main() {
         final translated = strings.choose(spanish, english);
         expect(translated, isNot(english), reason: language.code);
         expect(translated, isNot(spanish), reason: language.code);
+      }
+    }
+  });
+
+  test('1.3.1 release notes cover every supported language offline', () {
+    const english = AppStrings(AppLanguage.english);
+    const spanish = AppStrings(AppLanguage.spanish);
+    const expectedEnglish = <String>[
+      'Added support for external audio source add-ons.',
+      'A 10-band equalizer is now available.',
+      'Support for higher quality audio whenever available.',
+      'Improved and optimized player style layouts.',
+      'Added the new Spotify Style player.',
+      'Added filtering options to the Local music tab.',
+      'Added word-by-word synchronized lyrics when timing is available.',
+      'Improved the Settings tab layout.',
+      'Customize playlist artwork with an image from your gallery.',
+    ];
+    expect(english.whatsNewHighlights, expectedEnglish);
+    expect(
+      english.whatsNewSummary,
+      'Player styles, local music filters, lyrics, and settings',
+    );
+    expect(spanish.whatsNewHighlights, hasLength(expectedEnglish.length));
+    expect(
+      spanish.whatsNewHighlights.first,
+      'Se agregó compatibilidad con complementos de fuentes de audio externas.',
+    );
+    expect(
+      spanish.whatsNewHighlights[1],
+      'Ahora está disponible un ecualizador de 10 bandas.',
+    );
+    expect(
+      spanish.whatsNewHighlights[2],
+      'Compatibilidad con audio de mayor calidad, siempre que esté disponible.',
+    );
+    expect(
+      spanish.whatsNewHighlights.last,
+      'Personaliza la portada de tus playlists con una imagen de tu galería.',
+    );
+
+    for (final language in AppLanguage.values) {
+      final strings = AppStrings(language);
+      final highlights = strings.whatsNewHighlights;
+      final title = strings.whatsNewTitle('1.3.1');
+      expect(title, contains('1.3.1'), reason: language.code);
+      expect(
+        highlights,
+        hasLength(expectedEnglish.length),
+        reason: language.code,
+      );
+      expect(strings.whatsNewSummary.trim(), isNotEmpty, reason: language.code);
+      expect(highlights[4], contains('Spotify Style'), reason: language.code);
+      for (var index = 0; index < highlights.length; index++) {
+        expect(highlights[index].trim(), isNotEmpty, reason: language.code);
+        if (language != AppLanguage.english) {
+          expect(
+            highlights[index],
+            isNot(expectedEnglish[index]),
+            reason: '${language.code}: release item $index must be translated',
+          );
+        }
+        if (language != AppLanguage.spanish &&
+            language != AppLanguage.english) {
+          expect(
+            highlights[index],
+            isNot(spanish.whatsNewHighlights[index]),
+            reason: '${language.code}: do not fall back to Spanish',
+          );
+        }
+      }
+      if (language != AppLanguage.english) {
+        expect(title, isNot(english.whatsNewTitle('1.3.1')));
+        expect(
+          strings.whatsNewSummary,
+          isNot(english.whatsNewSummary),
+          reason: language.code,
+        );
+      }
+      if (language != AppLanguage.spanish && language != AppLanguage.english) {
+        expect(title, isNot(spanish.whatsNewTitle('1.3.1')));
+        expect(
+          strings.whatsNewSummary,
+          isNot(spanish.whatsNewSummary),
+          reason: language.code,
+        );
       }
     }
   });

@@ -1,5 +1,5 @@
 #ifndef MyAppVersion
-  #define MyAppVersion "1.2.9"
+  #define MyAppVersion "1.3.1"
 #endif
 
 #define MyAppName "BStream Music"

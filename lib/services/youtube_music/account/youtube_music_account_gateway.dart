@@ -79,7 +79,7 @@ class YouTubeMusicAccountGateway
     YouTubeMusicAccountRetryDelay retryDelay =
         defaultYouTubeMusicAccountRetryDelay,
     Duration requestTimeout = const Duration(seconds: 12),
-    int maxReadPages = 40,
+    int maxReadPages = 256,
   }) {
     if (clientContext.isEmpty) {
       throw ArgumentError.value(
@@ -179,6 +179,13 @@ class YouTubeMusicAccountGateway
         response,
         _AccountCollectionPageParser(_parser).playlists,
       );
+      if (!page.isRecognized || (pagesFetched > 1 && page.items.isEmpty)) {
+        return RemotePlaylistCollection(
+          playlists: playlists.values.toList(growable: false),
+          termination: RemotePaginationTermination.invalidResponse,
+          pagesFetched: pagesFetched,
+        );
+      }
       for (final playlist in page.items) {
         playlists.putIfAbsent(playlist.playlistId, () => playlist);
       }
@@ -236,6 +243,13 @@ class YouTubeMusicAccountGateway
         response,
         _AccountCollectionPageParser(_parser).artists,
       );
+      if (!page.isRecognized || (pagesFetched > 1 && page.items.isEmpty)) {
+        return RemoteSubscribedArtistCollection(
+          artists: artists.values.toList(growable: false),
+          termination: RemotePaginationTermination.invalidResponse,
+          pagesFetched: pagesFetched,
+        );
+      }
       for (final artist in page.items) {
         artists.putIfAbsent(artist.identity, () => artist);
       }
@@ -273,6 +287,7 @@ class YouTubeMusicAccountGateway
   Future<RemotePlaylistSnapshot> getPlaylist(String playlistId) async {
     final normalizedPlaylistId = _requiredPlaylistId(playlistId);
     final entries = <RemotePlaylistEntry>[];
+    final observedSetVideoIds = <String>{};
     final requestedContinuations = <String>{};
     RemotePlaylistSummary? summary;
     var pagesFetched = 0;
@@ -293,6 +308,37 @@ class YouTubeMusicAccountGateway
         ).parse,
       );
       summary ??= page.summary;
+      var repeatedOccurrence = false;
+      if (page.isRecognized) {
+        for (final entry in page.entries) {
+          final setVideoId = entry.setVideoId?.trim();
+          if (setVideoId != null &&
+              setVideoId.isNotEmpty &&
+              !observedSetVideoIds.add(setVideoId)) {
+            repeatedOccurrence = true;
+          }
+        }
+      }
+      // An occurrence ID identifies one playlist row. Receiving it twice is
+      // a replayed/overlapping page, even if the server rotates its token.
+      // Repeated video IDs with distinct occurrence IDs remain untouched.
+      final declaredCount = summary?.itemCount;
+      final verifiedEmptyEnd =
+          page.entries.isEmpty &&
+          page.continuations.isEmpty &&
+          declaredCount != null &&
+          declaredCount == entries.length;
+      if (!page.isRecognized ||
+          repeatedOccurrence ||
+          (pagesFetched > 1 && page.entries.isEmpty && !verifiedEmptyEnd)) {
+        return RemotePlaylistSnapshot(
+          playlistId: normalizedPlaylistId,
+          summary: summary,
+          entries: entries,
+          termination: RemotePaginationTermination.invalidResponse,
+          pagesFetched: pagesFetched,
+        );
+      }
       entries.addAll(page.entries);
 
       final continuationTokens = page.continuations;
@@ -301,12 +347,23 @@ class YouTubeMusicAccountGateway
         requestedContinuations,
       );
       if (continuation == null) {
+        // YouTube's header includes hidden/unavailable tracks that are absent
+        // from otherwise complete pages (observed 383 advertised / 382 rows).
+        // A validated, nonempty paginated terminal is therefore authoritative.
+        // The full first 100-row page remains suspicious when a larger header
+        // count is present but no continuation was obtained at all.
+        final suspiciousFirstPage =
+            pagesFetched == 1 &&
+            entries.length >= 100 &&
+            (declaredCount ?? 0) > entries.length;
         return RemotePlaylistSnapshot(
           playlistId: normalizedPlaylistId,
           summary: summary,
           entries: entries,
           termination: continuationTokens.isNotEmpty
               ? RemotePaginationTermination.repeatedContinuation
+              : suspiciousFirstPage
+              ? RemotePaginationTermination.invalidResponse
               : RemotePaginationTermination.exhausted,
           pagesFetched: pagesFetched,
         );
@@ -823,9 +880,14 @@ Future<T> _parseAccountResponse<T>(
 );
 
 class _AccountCollectionPage<T> {
-  const _AccountCollectionPage(this.items, this.continuations);
+  const _AccountCollectionPage(
+    this.items,
+    this.continuations,
+    this.isRecognized,
+  );
   final List<T> items;
   final List<String> continuations;
+  final bool isRecognized;
 }
 
 class _AccountCollectionPageParser {
@@ -836,20 +898,28 @@ class _AccountCollectionPageParser {
       _AccountCollectionPage(
         parser.parsePlaylistSummaries(body),
         parser.parseSavedPlaylistContinuationTokens(body),
+        parser.isSavedPlaylistPage(body),
       );
 
   _AccountCollectionPage<RemoteSubscribedArtist> artists(Object? body) =>
       _AccountCollectionPage(
         parser.parseSubscribedArtists(body),
         parser.parseSubscribedArtistContinuationTokens(body),
+        parser.isSubscribedArtistPage(body),
       );
 }
 
 class _AccountPlaylistPage {
-  const _AccountPlaylistPage(this.summary, this.entries, this.continuations);
+  const _AccountPlaylistPage(
+    this.summary,
+    this.entries,
+    this.continuations,
+    this.isRecognized,
+  );
   final RemotePlaylistSummary? summary;
   final List<RemotePlaylistEntry> entries;
   final List<String> continuations;
+  final bool isRecognized;
 }
 
 class _AccountPlaylistPageParser {
@@ -872,6 +942,7 @@ class _AccountPlaylistPageParser {
     includeHeader ? header(body) : null,
     parser.parsePlaylistEntries(body, startingPosition: startingPosition),
     parser.parsePlaylistEntryContinuationTokens(body),
+    parser.isPlaylistEntryPage(body),
   );
 }
 

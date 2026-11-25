@@ -3,6 +3,7 @@ import '../../../../core/theme/app_theme.dart';
 import '../../../../core/platform/app_platform.dart';
 import '../../domain/entities/lyrics_romanization_language.dart';
 import 'lyrics_animation_style.dart';
+import 'lyrics_background_style.dart';
 import 'live_widget_style.dart';
 import 'mini_player_background_mode.dart';
 import 'mini_player_mode.dart';
@@ -10,6 +11,7 @@ import 'player_artwork_style.dart';
 import 'player_style.dart';
 import 'player_font.dart';
 import 'app_strings_translation_catalog.dart';
+import '../../../../services/player/player_equalizer.dart';
 
 enum AppLanguage {
   english,
@@ -84,6 +86,18 @@ class AppStrings {
   }
 
   String get audioOutput => choose('Salida Multimedia', 'Media output');
+  String get playerAudioOutput => choose('Salida de audio', 'Audio output');
+  String get playerAudioOutputHint => choose(
+    'Elige dónde escuchar BStream. Solo afecta al audio del reproductor.',
+    'Choose where to listen to BStream. Only the player audio is affected.',
+  );
+  String get systemDefaultAudioOutput =>
+      choose('Predeterminada del sistema', 'System default');
+  String get playerVolume => choose('Volumen del reproductor', 'Player volume');
+  String get playerAudioControlFailed => choose(
+    'No se pudo actualizar el audio del reproductor.',
+    'Could not update the player audio.',
+  );
   String get thisPhone => choose('Este teléfono', 'This phone');
   String get castTo => choose('Transmitir a', 'Cast to');
   String get mediaVolume => choose('Volumen multimedia', 'Media volume');
@@ -128,6 +142,8 @@ class AppStrings {
       choose('Refrescar recomendaciones', 'Refresh recommendations');
   String get refreshingHomeRecommendations =>
       choose('Refrescando recomendaciones', 'Refreshing recommendations');
+  String get loadingHomeRecommendations =>
+      choose('Cargando recomendaciones', 'Loading recommendations');
   String get popularArtists => choose('Artistas populares', 'Popular artists');
   String get recommendedArtists =>
       choose('Artistas recomendados', 'Recommended artists');
@@ -411,6 +427,7 @@ class AppStrings {
     count == 1 ? '1 song' : '$count songs',
   );
   String get play => choose('Reproducir', 'Play');
+  String get playbackLoading => choose('Cargando canción', 'Loading song');
   String get pause => choose('Pausar', 'Pause');
   String get previous => choose('Anterior', 'Previous');
   String get next => choose('Siguiente', 'Next');
@@ -498,6 +515,12 @@ class AppStrings {
   String get lyricsShareBlur => choose('Desenfoque', 'Blur');
   String get lyricsShareCover => choose('Portada', 'Artwork');
   String get lyricsShareGradient => choose('Gradiente', 'Gradient');
+  String get lyricsBackground => choose('Fondo de letras', 'Lyrics background');
+  String lyricsBackgroundLabel(LyricsBackgroundStyle style) => switch (style) {
+    LyricsBackgroundStyle.blur => lyricsShareBlur,
+    LyricsBackgroundStyle.gradient => lyricsShareGradient,
+    LyricsBackgroundStyle.animatedGradient => choose('Animado', 'Animated'),
+  };
   String get lyricsShareTextColor => choose('Color del texto', 'Text color');
   String get lyricsShareTextAuto => choose('Automático', 'Automatic');
   String get lyricsShareTextLight => choose('Claro', 'Light');
@@ -825,6 +848,16 @@ class AppStrings {
       choose('Pausa la canción LIVE actual.', 'Pauses the current LIVE song.');
   String get reusedDownload => choose('Ya descargada', 'Already downloaded');
   String get playlist => choose('Playlist', 'Playlist');
+  String get playlistArtworkTitle =>
+      choose('Portada de la playlist', 'Playlist artwork');
+  String get playlistArtworkRandom => choose('Aleatorio', 'Random');
+  String get playlistArtworkCustom => choose('Personalizada', 'Custom');
+  String get playlistArtworkEdit =>
+      choose('Cambiar portada de la playlist', 'Change playlist artwork');
+  String get playlistArtworkSaveFailed => choose(
+    'No se pudo actualizar la portada de la playlist.',
+    'Could not update the playlist artwork.',
+  );
   String get newPlaylist => choose('Nueva playlist', 'New playlist');
   String get createPlaylist => choose('Crear playlist', 'Create playlist');
   String get create => choose('Crear', 'Create');
@@ -936,6 +969,21 @@ class AppStrings {
                   : '$count songs removed from playlist.'),
       );
   String get folder => choose('Carpeta', 'Folder');
+  String get refreshDownloadedMetadata =>
+      choose('Actualizar metadatos de archivos', 'Update file metadata');
+  String downloadedMetadataProgress(int processed, int total) => choose(
+    'Actualizando metadatos: $processed de $total',
+    'Updating metadata: $processed of $total',
+  );
+  String downloadedMetadataSummary(int updated, int skipped, int failed) =>
+      choose(
+        'Actualizados: $updated · Omitidos: $skipped · Fallidos: $failed',
+        'Updated: $updated · Skipped: $skipped · Failed: $failed',
+      );
+  String get downloadedMetadataFailed => choose(
+    'No se pudieron actualizar los metadatos. Inténtalo nuevamente.',
+    'Could not update file metadata. Try again.',
+  );
   String get exportBackup => choose('Exportar', 'Export');
   String get importBackup => choose('Importar', 'Import');
   String get importData => choose('Importar', 'Import');
@@ -1099,6 +1147,12 @@ class AppStrings {
   String get playerFontFredokaDescription =>
       choose('Redondeada y alegre', 'Rounded and playful');
   String get playerStyle => choose('Estilo', 'Style');
+  String get playerStyles => choose('Estilos del reproductor', 'Player styles');
+  String get playerStylePreview => choose('Vista previa', 'Preview');
+  String get playerStyleGalleryHint => choose(
+    'Elige un diseño para usarlo al instante.',
+    'Choose a design to use it immediately.',
+  );
   String get showAudioQuality =>
       choose('Mostrar códec y calidad', 'Show codec and quality');
   String get showAudioQualityDescription => choose(
@@ -1111,6 +1165,7 @@ class AppStrings {
       choose('$channels canales', '$channels channels');
   String get playerStyleBStreamMusic => 'BStream Music';
   String get playerStyleAppleMusic => 'Apple Music Style';
+  String get playerStyleSpotifyMusic => 'Spotify Style';
   String get playerStyleClassicVinyl =>
       choose('Vinilo Clásico', 'Classic Vinyl');
   String get animatedArtwork =>
@@ -1248,6 +1303,98 @@ class AppStrings {
     'Export or restore your library and settings.',
   );
   String get integrations => choose('Integraciones', 'Integrations');
+  String get audioSources => choose('Fuentes de audio', 'Audio sources');
+  String get audioSourcesSummary => choose(
+    'Elige los proveedores para reproducir y descargar.',
+    'Choose providers for playback and downloads.',
+  );
+  String get addAudioSource =>
+      choose('Agregar fuente de audio', 'Add audio source');
+  String get audioExtensionUrl =>
+      choose('Enlace de la extensión', 'Extension URL');
+  String get audioExtensionUrlHelp => choose(
+    'Pega el enlace de un complemento HTTP compatible o de su manifest.json.',
+    'Paste a compatible HTTP add-on URL or its manifest.json.',
+  );
+  String get audioExtensionInvalidUrl =>
+      choose('Escribe un enlace HTTPS válido.', 'Enter a valid HTTPS URL.');
+  String get audioExtensionUnavailable => choose(
+    'No se pudo conectar con la fuente.',
+    'Could not connect to the source.',
+  );
+  String get audioExtensionUnsupported => choose(
+    'El enlace no corresponde a un complemento de audio compatible.',
+    'This link does not point to a compatible audio add-on.',
+  );
+  String get audioExtensionRestricted => choose(
+    'Este complemento requiere acceso exclusivo o una salida de audio específica.',
+    'This add-on requires restricted access or a specific audio output.',
+  );
+  String get audioExtensionOfficialClientOnly => choose(
+    'El proveedor solo acepta la app oficial de BitChord.',
+    'This provider only accepts the official BitChord app.',
+  );
+  String get audioExtensionOutputRequired => choose(
+    'El proveedor exige comprobar una salida de audio sin pérdida.',
+    'This provider requires a verified lossless audio output.',
+  );
+  String get audioExtensionModuleIndex => choose(
+    'Este catálogo requiere módulos JavaScript. Pega el enlace HTTPS de una fuente compatible.',
+    'This catalog requires JavaScript modules. Paste the HTTPS URL of a compatible source.',
+  );
+  String get audioExtensionNoAvailableSources => choose(
+    'El catálogo no ofrece fuentes HTTP compatibles disponibles.',
+    'The catalog has no available compatible HTTP sources.',
+  );
+  String get audioExtensionStreamingOnly =>
+      choose('Solo streaming', 'Streaming only');
+  String get audioExtensionsWithFallback =>
+      choose('Extensiones + fallback YTMusic', 'Add-ons + YTMusic fallback');
+  String get removeAudioSource =>
+      choose('Quitar fuente de audio', 'Remove audio source');
+  String get youtubeMusicSourceDescription => choose(
+    'Fuente principal, siempre activa.',
+    'Primary source, always enabled.',
+  );
+  String get jioSaavnSourceDescription => choose(
+    'Mejora el audio cuando hay una versión de mayor calidad.',
+    'Improve audio when a higher quality version is available.',
+  );
+  String get audioSourceAlwaysEnabled =>
+      choose('Siempre activada', 'Always enabled');
+  String get audioSourceOtherAddons =>
+      choose('Otras extensiones', 'Other add-ons');
+  String get audioSourcePreferredAddon =>
+      choose('Extensión preferida', 'Preferred add-on');
+  String unavailableAudioSource(String name) => choose(
+    '{source} no está disponible.',
+    '{source} is unavailable.',
+  ).replaceAll('{source}', name);
+  String get dataSaving => choose('Ahorro de datos', 'Data saving');
+  String get audioQuality => choose('Calidad de audio', 'Audio quality');
+  String get streamingAudio => choose('Audio en streaming', 'Streaming audio');
+  String get downloadAudioQuality =>
+      choose('Calidad de descarga', 'Download quality');
+  String get downloadHighQualitySource =>
+      choose('JioSaavn + fallback YTMusic', 'JioSaavn + YTMusic fallback');
+  String get dataSavingSummary => choose(
+    'Ajusta por separado la calidad de streaming y de descarga.',
+    'Set streaming and download quality separately.',
+  );
+  String get wifiNetwork => choose('Wi-Fi', 'Wi-Fi');
+  String get mobileNetwork => choose('Datos móviles', 'Mobile data');
+  String get highAudioQuality => choose('Alta calidad', 'High quality');
+  String get losslessAudioQuality =>
+      choose('Alta calidad - Lossless', 'High quality - Lossless');
+  String get hiResAudioQuality =>
+      choose('Alta calidad - Hi-Res', 'High quality - Hi-Res');
+  String audioQualityBits(int bits) =>
+      choose('{bits} bits', '{bits}-bit').replaceAll('{bits}', '$bits');
+  String get standardAudioQuality =>
+      choose('Calidad estándar', 'Standard quality');
+  String get lowAudioQuality => choose('Baja calidad', 'Low quality');
+  String get improvingAudioQuality =>
+      choose('Mejorando calidad…', 'Improving quality…');
   String get supportedLinks =>
       choose('Abrir enlaces compatibles', 'Open supported links');
   String get supportedLinksSummary => choose(
@@ -1262,6 +1409,68 @@ class AppStrings {
       choose('Apagado automático', 'Automatic shutdown');
   String get sleepTimerOff => choose('Desactivado', 'Off');
   String get crossfade => 'Crossfade';
+  String get equalizer => choose('Ecualizador', 'Equalizer');
+  String get skipSilenceUnavailableForAudio =>
+      choose('No disponible para este audio.', 'Unavailable for this audio.');
+  String get equalizerCurve =>
+      choose('Curva de ecualización', 'Equalizer curve');
+  String get equalizerSummary => choose(
+    'Ajusta el sonido con presets o diez bandas.',
+    'Adjust the sound with presets or ten bands.',
+  );
+  String get equalizerEnabled =>
+      choose('Activar ecualizador', 'Enable equalizer');
+  String get equalizerActive => choose('Activado', 'Enabled');
+  String get equalizerInactive => choose('Desactivado', 'Disabled');
+  String get equalizerPresets => choose('Presets', 'Presets');
+  String get equalizerReset =>
+      choose('Restablecer ecualizador', 'Reset equalizer');
+  String get equalizerUnavailable => choose(
+    'El ecualizador no está disponible en este dispositivo.',
+    'The equalizer is unavailable on this device.',
+  );
+  String get equalizerCastUnavailable => choose(
+    'El ecualizador solo se aplica al audio de este dispositivo, no al transmitir.',
+    'The equalizer only affects audio on this device, not cast playback.',
+  );
+  String get equalizerError => choose(
+    'No se pudo aplicar el ecualizador. Prueba otro ajuste.',
+    'Could not apply the equalizer. Try another setting.',
+  );
+  String equalizerPresetName(EqualizerPreset preset) => switch (preset) {
+    EqualizerPreset.flat => choose('Plano', 'Flat'),
+    EqualizerPreset.acoustic => choose('Acústico', 'Acoustic'),
+    EqualizerPreset.bassBoost => choose('Refuerzo de graves', 'Bass boost'),
+    EqualizerPreset.bassCut => choose('Reducción de graves', 'Bass cut'),
+    EqualizerPreset.vocal => choose('Voz', 'Vocal'),
+    EqualizerPreset.trebleBoost => choose('Refuerzo de agudos', 'Treble boost'),
+    EqualizerPreset.trebleCut => choose('Reducción de agudos', 'Treble cut'),
+    EqualizerPreset.loudness => choose('Sonoridad', 'Loudness'),
+    EqualizerPreset.spokenWord => choose('Palabra hablada', 'Spoken word'),
+    EqualizerPreset.electronic => choose('Electrónica', 'Electronic'),
+    EqualizerPreset.rock => choose('Rock', 'Rock'),
+    EqualizerPreset.hipHop => choose('Hip-hop', 'Hip-hop'),
+    EqualizerPreset.jazz => choose('Jazz', 'Jazz'),
+    EqualizerPreset.classical => choose('Clásica', 'Classical'),
+    EqualizerPreset.smallSpeakers => choose(
+      'Altavoces pequeños',
+      'Small speakers',
+    ),
+    EqualizerPreset.lateNight => choose('Noche', 'Late night'),
+    EqualizerPreset.custom => choose('Personalizado', 'Custom'),
+  };
+  String equalizerBandName(int index) => const [
+    '31 Hz',
+    '62 Hz',
+    '125 Hz',
+    '250 Hz',
+    '500 Hz',
+    '1 kHz',
+    '2 kHz',
+    '4 kHz',
+    '8 kHz',
+    '16 kHz',
+  ][index];
   String get crossfadeSummary => choose(
     'Superpone suavemente el final de una canción con el inicio de la siguiente.',
     'Smoothly overlaps the end of one song with the start of the next.',
@@ -1462,6 +1671,7 @@ class AppStrings {
     PlayerStyle.bstreamMusic => playerStyleBStreamMusic,
     PlayerStyle.appleMusic => playerStyleAppleMusic,
     PlayerStyle.classicVinyl => playerStyleClassicVinyl,
+    PlayerStyle.spotifyMusic => playerStyleSpotifyMusic,
   };
   String playerFontLabel(PlayerFont font) => switch (font) {
     PlayerFont.current => playerFontCurrent,
@@ -1534,6 +1744,50 @@ class AppStrings {
     'Version, support, and repository',
   );
   String get versionLabel => choose('Versión', 'Version');
+  String whatsNewTitle(String version) =>
+      choose('Novedades de $version', 'What’s new in $version');
+  String get whatsNewSummary => choose(
+    'Estilos del reproductor, filtros de música local, letras y ajustes',
+    'Player styles, local music filters, lyrics, and settings',
+  );
+  List<String> get whatsNewHighlights => [
+    choose(
+      'Se agregó compatibilidad con complementos de fuentes de audio externas.',
+      'Added support for external audio source add-ons.',
+    ),
+    choose(
+      'Ahora está disponible un ecualizador de 10 bandas.',
+      'A 10-band equalizer is now available.',
+    ),
+    choose(
+      'Compatibilidad con audio de mayor calidad, siempre que esté disponible.',
+      'Support for higher quality audio whenever available.',
+    ),
+    choose(
+      'Se mejoraron y optimizaron los diseños de los estilos del reproductor.',
+      'Improved and optimized player style layouts.',
+    ),
+    choose(
+      'Se añadió el nuevo reproductor Spotify Style.',
+      'Added the new Spotify Style player.',
+    ),
+    choose(
+      'Se añadieron opciones de filtrado en la pestaña de música local.',
+      'Added filtering options to the Local music tab.',
+    ),
+    choose(
+      'Se añadió compatibilidad con letras sincronizadas palabra por palabra cuando están disponibles los tiempos de sincronización.',
+      'Added word-by-word synchronized lyrics when timing is available.',
+    ),
+    choose(
+      'Se mejoró el diseño de la pestaña de ajustes.',
+      'Improved the Settings tab layout.',
+    ),
+    choose(
+      'Personaliza la portada de tus playlists con una imagen de tu galería.',
+      'Customize playlist artwork with an image from your gallery.',
+    ),
+  ];
   String get updateAvailableTitle =>
       choose('Nueva versión disponible', 'New version available');
   String updateAvailableMessage({

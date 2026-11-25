@@ -2,8 +2,53 @@
 
 ## Unreleased
 
+### Added
+
+- Added support for external audio source add-ons.
+- Audio Sources in Integrations, with mandatory YouTube Music and optional
+  JioSaavn enabled by default. Data saving offers separate streaming and download
+  quality choices, with Wi-Fi and cellular streaming profiles on mobile.
+- Background same-recording JioSaavn quality upgrades that reuse the existing
+  standby playback deck, retain queue/position/catalog metadata and fall back
+  to YouTube when no verified higher-quality recording is available.
+- Actual Low/Standard/High audio quality and current-track upgrade status in a
+  headphones capsule beside the playback times in all player styles, localized
+  in all seven languages.
+- Read JioSaavn's actual codec, declared bitrate, sample rate and channels with
+  the shared local MP4/AAC parser and a bounded, cached header lookup.
+- Embed title, artist, album and cached artwork in compatible M4A/audio MP4
+  (AAC/ALAC), MP3, FLAC, Ogg Opus/Vorbis, WAV and APE files, plus text tags in
+  audio-only WebM/Matroska Opus/Vorbis downloads. WebM artwork remains cached
+  separately, preserving its container and filename.
+- Detect metadata containers from file contents and share format-specific
+  comment/picture handling, bounded copying and validated atomic publication,
+  without transcoding the audio. Metadata is written in a bounded background
+  task before library publication, with atomic replacement and the original
+  file retained when tagging fails or a container layout is unsupported.
+- Update existing downloaded files from their saved library metadata through
+  the downloaded-songs menu, without new network requests.
+
+## 1.3.1+131 — 2026-11-12
+
+### Added
+
+- A 5-band equalizer is now available.
+- Support for higher quality audio whenever available.
+- Added the new Spotify Style player.
+- Added filtering options in the Local music tab.
+- Added support for word-synchronized lyrics when word timing is available,
+  with line-by-line synchronization retained as the fallback.
+- Custom artwork for saved playlists, including Favorites. Tapping the cover
+  offers Random or Custom, with gallery selection and the shared square crop
+  editor. Saved covers are reused by library rows, playlist headers, backgrounds
+  and playlist pickers, and remain available after media moves or ZIP restores.
+
 ### Changed
 
+- Improved and optimized the layouts of the player styles.
+- Improved the design of the Settings tab.
+- Playback waves now share the artwork color extraction and cache used by
+  playback menus, retaining the app accent when artwork is unavailable.
 - Updated the minimum Flutter version and CI builds to stable 3.47.9.
 - Retained Liquid Glass filters and painted optics during navigation, with
   full droplet growth and refraction reserved for dragging.
@@ -17,6 +62,10 @@
 
 ### Fixed
 
+- Prevented interrupted remote loads from restarting the newly selected song
+  after rapid skips.
+- Removed lower-edge seams from expanded animated artwork and Spotify Canvas
+  without adding video decoders or blur passes.
 - Preserved full-player artwork through its exit transition.
 
 ## 1.2.9+129 — 2026-10-12

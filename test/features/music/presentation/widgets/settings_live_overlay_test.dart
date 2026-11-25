@@ -180,6 +180,8 @@ void main() {
       240,
       scrollable: find.byType(Scrollable).first,
     );
+    await Scrollable.ensureVisible(tester.element(liveCard), alignment: 0.5);
+    await tester.pumpAndSettle();
     await tester.tap(liveCard);
     await tester.pumpAndSettle();
 
@@ -280,6 +282,8 @@ void main() {
       240,
       scrollable: find.byType(Scrollable).first,
     );
+    await Scrollable.ensureVisible(tester.element(liveCard), alignment: 0.5);
+    await tester.pumpAndSettle();
     await tester.tap(liveCard);
     await tester.pumpAndSettle();
 
@@ -352,6 +356,8 @@ void main() {
       240,
       scrollable: find.byType(Scrollable).first,
     );
+    await Scrollable.ensureVisible(tester.element(liveCard), alignment: 0.5);
+    await tester.pumpAndSettle();
     await tester.tap(liveCard);
     await tester.pumpAndSettle();
     await tester.tap(find.byKey(const ValueKey('tiktok-live-overlay-switch')));

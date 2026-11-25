@@ -595,6 +595,109 @@ void main() {
     });
 
     test(
+      'a complete 325-song read repairs a previously truncated 100-song base',
+      () async {
+        final truncated = _snapshot('Road', [
+          for (var index = 0; index < 100; index++)
+            _item(
+              's${index.toString().padLeft(3, '0')}',
+              localId: 'local-$index',
+              setId: 'set-$index',
+            ),
+        ]);
+        final complete = _snapshot('Road', [
+          for (var index = 0; index < 325; index++)
+            _item(
+              index == 150 ? 's005' : 's${index.toString().padLeft(3, '0')}',
+              setId: 'set-$index',
+            ),
+        ]);
+        final store = _MemoryStore(_work(base: truncated, local: truncated));
+        final gateway = _FakeGateway()..fetches.addAll([complete, complete]);
+        final engine = _engine(store, gateway, now);
+
+        final repaired = await engine.sync(store.work.binding.key);
+
+        expect(repaired.disposition, PlaylistSyncDisposition.synchronized);
+        expect(gateway.mutationCount, 0);
+        expect(gateway.createCount, 0);
+        expect(store.work.local.items, hasLength(325));
+        expect(store.work.base!.items, hasLength(325));
+        expect(
+          store.work.local.items.map((item) => item.setVideoId),
+          complete.items.map((item) => item.setVideoId),
+        );
+        expect(
+          store.work.local.items.take(100).map((item) => item.localItemId),
+          truncated.items.map((item) => item.localItemId),
+        );
+        final repeatedVideo = store.work.local.items
+            .where((item) => item.videoId == _video('s005'))
+            .toList(growable: false);
+        expect(repeatedVideo, hasLength(2));
+        expect(repeatedVideo.map((item) => item.setVideoId), [
+          'set-5',
+          'set-150',
+        ]);
+        final repairedIds = store.work.local.items
+            .map((item) => item.localItemId)
+            .toList(growable: false);
+        expect(repairedIds.toSet(), hasLength(325));
+
+        final repeated = await engine.sync(store.work.binding.key);
+
+        expect(repeated.disposition, PlaylistSyncDisposition.noChanges);
+        expect(gateway.mutationCount, 0);
+        expect(store.work.local.items, hasLength(325));
+        expect(
+          store.work.local.items.map((item) => item.localItemId),
+          repairedIds,
+        );
+      },
+    );
+
+    test(
+      'an incomplete playlist read preserves all 325 songs until retry',
+      () async {
+        final local = _snapshot('Road', [
+          for (var index = 0; index < 325; index++)
+            _item(
+              's${index.toString().padLeft(3, '0')}',
+              localId: 'local-$index',
+              setId: 'set-$index',
+            ),
+        ]);
+        final store = _MemoryStore(_work(base: local, local: local));
+        final gateway = _FakeGateway()
+          ..fetchError = const PlaylistGatewayUnavailableException(
+            'YouTube Music returned an incomplete playlist.',
+          );
+        final engine = _engine(store, gateway, now);
+
+        final deferred = await engine.sync(store.work.binding.key);
+
+        expect(deferred.disposition, PlaylistSyncDisposition.deferred);
+        expect(gateway.mutationCount, 0);
+        expect(store.commits, 0);
+        expect(store.work.local, same(local));
+        expect(store.work.base, same(local));
+        expect(store.work.intent?.status, PlaylistSyncIntentStatus.pending);
+        expect(store.work.intent?.mutationToken, isNull);
+
+        gateway
+          ..fetchError = null
+          ..fetches.add(local);
+        final retried = await engine.sync(store.work.binding.key);
+
+        expect(retried.disposition, PlaylistSyncDisposition.synchronized);
+        expect(gateway.mutationCount, 0);
+        expect(store.work.local.items, hasLength(325));
+        expect(store.work.local.semanticallyEquals(local), isTrue);
+        expect(store.work.intent, isNull);
+      },
+    );
+
+    test(
       'a stale create ACK keeps its remote ID and freezes the write',
       () async {
         final initial = _work();

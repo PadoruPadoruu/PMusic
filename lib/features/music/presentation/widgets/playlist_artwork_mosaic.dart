@@ -1,7 +1,25 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../domain/entities/playlist.dart';
+import '../providers/playlist_artwork_providers.dart';
 import 'playlist_artwork.dart';
 import 'source_image.dart';
+
+/// The same saved cover is used in the library, header, backdrop and picker.
+/// Missing files fall back to the existing rotation without extra image loads.
+List<PlaylistArtworkSource> playlistArtworkSourcesFor(
+  WidgetRef ref,
+  Playlist playlist,
+  List<PlaylistArtworkSource> Function() automaticSources,
+) {
+  final fileName = playlist.customArtworkFileName;
+  if (fileName == null) return automaticSources();
+  final path = ref.watch(playlistArtworkPathProvider(fileName)).asData?.value;
+  return path == null
+      ? automaticSources()
+      : [PlaylistArtworkSource(source: path)];
+}
 
 /// A bounded, shared cover for library rows, the picker and playlist headers.
 ///

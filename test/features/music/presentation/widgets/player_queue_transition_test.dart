@@ -5,7 +5,116 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+final _testFavoriteIdsProvider =
+    NotifierProvider<_TestFavoriteIdsNotifier, Set<String>>(
+      _TestFavoriteIdsNotifier.new,
+    );
+
 void main() {
+  testWidgets(
+    'queue changes update its rail without rebuilding the player surface',
+    (tester) async {
+      _configureView(tester);
+      await tester.pumpWidget(_playerHarness());
+      await tester.pump(const Duration(milliseconds: 500));
+      await tester.pump();
+      final container = ProviderScope.containerOf(
+        tester.element(find.byType(PlayerPanel)),
+      );
+      final queue = container.read(playbackQueueProvider.notifier);
+      final surface = find.byKey(const ValueKey('desktop-player-surface'));
+      final rail = find.byKey(const ValueKey('desktop-playback-queue-rail'));
+
+      await tester.tap(find.byKey(const ValueKey('queue-close')));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 350));
+      await tester.pump();
+      expect(rail, findsNothing);
+      final closedSurface = tester.widget(surface);
+      queue.replace(const [
+        PlaybackQueueEntry(
+          id: 'updated-queue-track',
+          title: 'Cola actualizada',
+          artist: 'BStream Music',
+          isRemote: false,
+        ),
+      ], 0);
+      await tester.pump();
+      expect(tester.widget(surface), same(closedSurface));
+      expect(rail, findsNothing);
+
+      await tester.tap(find.byKey(const ValueKey('player-queue-toggle')));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 350));
+      await tester.pump();
+      expect(rail, findsOneWidget);
+      expect(find.text('Cola actualizada'), findsWidgets);
+
+      final openSurface = tester.widget(surface);
+      queue.replace(const [
+        PlaybackQueueEntry(
+          id: 'visible-queue-track',
+          title: 'Cola visible actualizada',
+          artist: 'BStream Music',
+          isRemote: false,
+        ),
+      ], 0);
+      await tester.pump();
+      expect(tester.widget(surface), same(openSurface));
+      expect(find.text('Cola visible actualizada'), findsWidgets);
+      expect(find.text('Cola actualizada'), findsNothing);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
+    'unrelated favorites retain player and queue while current hearts update',
+    (tester) async {
+      _configureView(tester);
+      await tester.pumpWidget(_playerHarness());
+      await tester.pump(const Duration(milliseconds: 500));
+      await tester.pump();
+      final container = ProviderScope.containerOf(
+        tester.element(find.byType(PlayerPanel)),
+      );
+      final favorites = container.read(_testFavoriteIdsProvider.notifier);
+      final surface = find.byKey(const ValueKey('desktop-player-surface'));
+      final queueTitle = find.byKey(const ValueKey('queue-current-title'));
+      final originalSurface = tester.widget(surface);
+      final originalQueueTitle = tester.widget(queueTitle);
+
+      favorites.replace({'another-track'});
+      await tester.pump();
+      expect(tester.widget(surface), same(originalSurface));
+      expect(tester.widget(queueTitle), same(originalQueueTitle));
+
+      favorites.replace({'another-track', 'queue-transition-track'});
+      await tester.pump();
+      for (final key in ['player-favorite-control', 'queue-favorite-toggle']) {
+        expect(
+          find.descendant(
+            of: find.byKey(ValueKey(key)),
+            matching: find.byIcon(Icons.favorite_rounded),
+          ),
+          findsOneWidget,
+        );
+      }
+
+      favorites.replace({'another-track'});
+      await tester.pump();
+      for (final key in ['player-favorite-control', 'queue-favorite-toggle']) {
+        expect(
+          find.descendant(
+            of: find.byKey(ValueKey(key)),
+            matching: find.byIcon(Icons.favorite_border_rounded),
+          ),
+          findsOneWidget,
+        );
+      }
+      expect(tester.takeException(), isNull);
+    },
+  );
+
   testWidgets(
     'desktop queue animates width and opacity while retaining its outgoing rail',
     (tester) async {
@@ -202,7 +311,7 @@ void main() {
     },
   );
 
-  testWidgets('narrow desktop opens its queue without overflowing', (
+  testWidgets('narrow desktop opens the queue page without overflowing', (
     tester,
   ) async {
     _configureView(tester);
@@ -213,10 +322,22 @@ void main() {
 
     final rail = find.byKey(const ValueKey('desktop-playback-queue-rail'));
     final surface = find.byKey(const ValueKey('desktop-player-surface'));
-    expect(rail, findsOneWidget);
-    expect(tester.getRect(rail).right, closeTo(720, 0.1));
-    expect(tester.getRect(rail).left, tester.getRect(surface).right);
-    expect(tester.getSize(surface).width, greaterThan(0));
+    expect(rail, findsNothing);
+    expect(tester.getSize(surface).width, closeTo(720, 0.1));
+
+    await tester.tap(find.byKey(const ValueKey('player-queue-toggle')));
+    await tester.pumpAndSettle();
+
+    expect(rail, findsNothing);
+    expect(find.byKey(const ValueKey('queue-current-title')), findsOneWidget);
+    expect(find.text('Siguiente cancion'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+
+    await tester.tap(find.byKey(const ValueKey('queue-close')));
+    await tester.pumpAndSettle();
+
+    expect(surface, findsOneWidget);
+    expect(rail, findsNothing);
     expect(tester.takeException(), isNull);
   });
 
@@ -272,7 +393,9 @@ Widget _playerHarness({
       playerControllerProvider.overrideWith(_TestPlayerController.new),
       playbackQueueProvider.overrideWith(_TestQueueNotifier.new),
       libraryTracksProvider.overrideWith((ref) async => const []),
-      favoriteTrackIdsProvider.overrideWithValue(const <String>{}),
+      favoriteTrackIdsProvider.overrideWith(
+        (ref) => ref.watch(_testFavoriteIdsProvider),
+      ),
       appStringsProvider.overrideWithValue(
         const AppStrings(AppLanguage.spanish),
       ),
@@ -343,4 +466,11 @@ class _TestQueueNotifier extends PlaybackQueueNotifier {
     ],
     currentIndex: 0,
   );
+}
+
+class _TestFavoriteIdsNotifier extends Notifier<Set<String>> {
+  @override
+  Set<String> build() => const {};
+
+  void replace(Set<String> ids) => state = Set.unmodifiable(ids);
 }

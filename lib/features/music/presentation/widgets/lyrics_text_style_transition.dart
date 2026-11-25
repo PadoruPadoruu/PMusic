@@ -1,9 +1,12 @@
 import 'dart:math' as math;
 
+import 'package:flutter/foundation.dart' show ValueListenable;
 import 'package:flutter/material.dart';
 
+import '../../domain/entities/lyric_word.dart';
 import 'lyrics_glyph_snapshot.dart';
 import 'lyrics_line_layout.dart';
+import 'lyrics_word_timing_text.dart';
 
 /// Crossfades the two final lyric appearances without interpolating paragraph
 /// metrics, glyph colors, or Gaussian text shadows on every display frame.
@@ -23,6 +26,9 @@ class LyricsTextStyleTransition extends StatefulWidget {
     required this.secondaryFontSize,
     required this.textAlign,
     required this.contentKey,
+    this.words = const [],
+    this.wordPlayback,
+    this.monotonicClock,
     super.key,
   });
 
@@ -35,6 +41,9 @@ class LyricsTextStyleTransition extends StatefulWidget {
   final double secondaryFontSize;
   final TextAlign textAlign;
   final Key contentKey;
+  final List<LyricWord> words;
+  final ValueListenable<LyricsWordPlaybackSample>? wordPlayback;
+  final Duration Function()? monotonicClock;
 
   TextStyle get targetStyle => active ? activeStyle : inactiveStyle;
 
@@ -106,12 +115,33 @@ class _LyricsTextStyleTransitionState extends State<LyricsTextStyleTransition>
     lyricsTextAccessibilityOverridesOf(context),
   ).copyWith(inherit: false);
 
-  Widget _paragraph(String text, TextStyle style, {required bool primary}) {
+  bool get _usesWordTiming =>
+      widget.words.isNotEmpty &&
+      widget.wordPlayback != null &&
+      widget.monotonicClock != null;
+
+  Widget _paragraph(
+    String text,
+    TextStyle style, {
+    required bool primary,
+    bool wordTiming = false,
+  }) {
     final resolvedStyle = _resolvedStyle(style);
     final defaults = DefaultTextStyle.of(context);
     final heightBehavior =
         defaults.textHeightBehavior ??
         DefaultTextHeightBehavior.maybeOf(context);
+    if (wordTiming && _usesWordTiming && widget.active) {
+      return LyricsWordTimingText(
+        text: text,
+        words: widget.words,
+        style: resolvedStyle,
+        textAlign: widget.textAlign,
+        active: widget.active,
+        playback: widget.wordPlayback!,
+        monotonicClock: widget.monotonicClock!,
+      );
+    }
     return primary
         ? Text(
             text,
@@ -144,7 +174,12 @@ class _LyricsTextStyleTransitionState extends State<LyricsTextStyleTransition>
     children: [
       primary && !_disableAnimations
           ? _cachedActiveOriginal(style)
-          : _paragraph(widget.originalText, style, primary: primary),
+          : _paragraph(
+              widget.originalText,
+              style,
+              primary: primary,
+              wordTiming: primary,
+            ),
       if (widget.secondaryText case final secondary?) ...[
         const SizedBox(height: lyricsSecondaryLineGap),
         KeyedSubtree(
@@ -211,9 +246,14 @@ class _LyricsTextStyleTransitionState extends State<LyricsTextStyleTransition>
   Widget _cachedActiveOriginal(TextStyle style) => LayoutBuilder(
     builder: (context, constraints) {
       final paragraph = RepaintBoundary(
-        child: _paragraph(widget.originalText, style, primary: true),
+        child: _paragraph(
+          widget.originalText,
+          style,
+          primary: true,
+          wordTiming: true,
+        ),
       );
-      if (!constraints.hasBoundedWidth) {
+      if (_usesWordTiming || !constraints.hasBoundedWidth) {
         return FadeTransition(opacity: _activeOpacity, child: paragraph);
       }
       final metrics = _metricsFor(constraints.maxWidth);

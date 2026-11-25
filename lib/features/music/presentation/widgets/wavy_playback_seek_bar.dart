@@ -8,6 +8,20 @@ import '../../../../core/theme/app_colors.dart';
 
 const _wavyPlaybackTrackInset = 3.0;
 
+/// Keep the cover's hue and saturation, including neutral artwork, while
+/// giving the foreground wave enough contrast on its actual player surface.
+Color playbackWaveColorFor(
+  BuildContext context,
+  Color? artworkColor, {
+  Brightness? surfaceBrightness,
+}) {
+  if (artworkColor == null) return AppColors.downloadAccentFor(context);
+  final brightness = surfaceBrightness ?? Theme.of(context).brightness;
+  return HSLColor.fromColor(
+    artworkColor,
+  ).withLightness(brightness == Brightness.dark ? 0.66 : 0.40).toColor();
+}
+
 /// Interactive playback seek bar with the animated wave used by the player.
 class WavyPlaybackSeekBar extends StatefulWidget {
   const WavyPlaybackSeekBar({

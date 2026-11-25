@@ -18,6 +18,7 @@ class TrackInfo {
     this.streamBitrate,
     this.streamSampleRate,
     this.streamChannels,
+    this.streamBitDepth,
     this.streamClientProfileKey,
     this.extractor,
     this.album,
@@ -55,6 +56,9 @@ class TrackInfo {
   /// Number of channels reported for the selected audio stream.
   final int? streamChannels;
 
+  /// Bit depth of the selected audio when known.
+  final int? streamBitDepth;
+
   /// Exact InnerTube client profile that produced [streamUrl].
   final String? streamClientProfileKey;
   final String? extractor;
@@ -71,6 +75,25 @@ class TrackInfo {
   /// artist pages without guessing from display text.
   final List<String?> artistBrowseIds;
   final TrackMetadataSource metadataSource;
+
+  /// Retains catalog identity while discarding a previously selected transport.
+  /// Optional providers must be reconsidered under the current network policy.
+  TrackInfo withoutAudioTransport() => TrackInfo(
+    id: id,
+    title: title,
+    artist: artist,
+    url: url,
+    thumbnailUrl: thumbnailUrl,
+    catalogThumbnailUrl: catalogThumbnailUrl,
+    duration: duration,
+    extractor: extractor,
+    album: album,
+    albumBrowseId: albumBrowseId,
+    viewCount: viewCount,
+    artists: artists,
+    artistBrowseIds: artistBrowseIds,
+    metadataSource: metadataSource,
+  );
 
   TrackInfo copyWith({
     String? id,
@@ -89,6 +112,7 @@ class TrackInfo {
     int? streamBitrate,
     int? streamSampleRate,
     int? streamChannels,
+    int? streamBitDepth,
     String? streamClientProfileKey,
     String? extractor,
     String? album,
@@ -116,6 +140,7 @@ class TrackInfo {
       streamBitrate: streamBitrate ?? this.streamBitrate,
       streamSampleRate: streamSampleRate ?? this.streamSampleRate,
       streamChannels: streamChannels ?? this.streamChannels,
+      streamBitDepth: streamBitDepth ?? this.streamBitDepth,
       streamClientProfileKey:
           streamClientProfileKey ?? this.streamClientProfileKey,
       extractor: extractor ?? this.extractor,

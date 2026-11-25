@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_dialog.dart';
@@ -155,7 +156,7 @@ class PlaylistPickerDialog extends StatelessWidget {
                       ),
                       child: _PlaylistOption(
                         playlist: playlist,
-                        thumbnailSources: _playlistThumbnailSources(
+                        thumbnailSources: () => _playlistThumbnailSources(
                           playlist,
                           tracksById,
                           catalog: catalogsById[playlist.id],
@@ -171,20 +172,23 @@ class PlaylistPickerDialog extends StatelessWidget {
   }
 }
 
-class _PlaylistOption extends StatelessWidget {
+class _PlaylistOption extends ConsumerWidget {
   const _PlaylistOption({
     required this.playlist,
     required this.thumbnailSources,
   });
 
   final Playlist playlist;
-  final List<PlaylistArtworkSource> thumbnailSources;
+  final List<PlaylistArtworkSource> Function() thumbnailSources;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return Row(
       children: [
-        PlaylistArtworkMosaic(sources: thumbnailSources, size: 44),
+        PlaylistArtworkMosaic(
+          sources: playlistArtworkSourcesFor(ref, playlist, thumbnailSources),
+          size: 44,
+        ),
         const SizedBox(width: 12),
         Expanded(
           child: MarqueeText(

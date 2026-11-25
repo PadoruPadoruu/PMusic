@@ -21,7 +21,7 @@ final youtubeMusicPlaylistSyncRetryBackoffProvider = Provider<List<Duration>>((
 
 final youtubeMusicPlaylistSyncRuntimeProvider =
     Provider<YouTubeMusicPlaylistSyncRuntime?>((ref) {
-      final authState = ref.watch(youtubeMusicAuthControllerProvider);
+      final authState = ref.watch(youtubeMusicAuthSessionIdentityProvider);
       if (!authState.isAuthenticated) {
         return null;
       }
@@ -49,8 +49,9 @@ final youtubeMusicPlaylistSyncRuntimeProvider =
         transport: ref.watch(youtubeMusicAccountTransportProvider),
         sessionHeaders:
             ytm_account.CredentialYouTubeMusicSessionHeadersProvider(
-              readCredential: () async =>
-                  sessionIsCurrent() ? credential : null,
+              readCredential: () async => sessionIsCurrent()
+                  ? authController.credentialForAuthenticatedRequests
+                  : null,
             ),
         clientContext: ytm_account
             .buildYouTubeMusicAccountClientContextFromCredential(credential),
@@ -189,39 +190,36 @@ class YouTubeMusicPlaylistSyncController
 
   @override
   YouTubeMusicPlaylistSyncState build() {
-    ref.listen<YouTubeMusicAuthState>(youtubeMusicAuthControllerProvider, (
-      previous,
-      next,
-    ) {
-      _sessionEpoch++;
-      _cancelTimers(resetRetryBudget: true);
-      if (!next.isAuthenticated) {
+    ref.listen<YouTubeMusicAuthSessionIdentity>(
+      youtubeMusicAuthControllerProvider.select((auth) => auth.sessionIdentity),
+      (previous, next) {
+        _sessionEpoch++;
+        _cancelTimers(resetRetryBudget: true);
+        if (!next.isAuthenticated) {
+          _consentedAccountKey = null;
+          _initialSync = null;
+          _initialSyncAccountKey = null;
+          _sessionInitialization = null;
+          _sessionInitializationAccountKey = null;
+          _consentAcceptance = null;
+          _consentAcceptanceAccountKey = null;
+          if (previous != null) {
+            state = const YouTubeMusicPlaylistSyncState();
+          }
+          return;
+        }
         _consentedAccountKey = null;
         _initialSync = null;
         _initialSyncAccountKey = null;
-        _sessionInitialization = null;
-        _sessionInitializationAccountKey = null;
-        _consentAcceptance = null;
-        _consentAcceptanceAccountKey = null;
-        if (previous != null) {
-          state = const YouTubeMusicPlaylistSyncState();
-        }
-        return;
-      }
-      if (previous?.generation == next.generation &&
-          previous?.isAuthenticated == true) {
-        return;
-      }
-      _consentedAccountKey = null;
-      _initialSync = null;
-      _initialSyncAccountKey = null;
-      final epoch = _sessionEpoch;
-      unawaited(
-        Future<void>.microtask(() async {
-          await _initializeSessionConsent(epoch);
-        }),
-      );
-    }, fireImmediately: true);
+        final epoch = _sessionEpoch;
+        unawaited(
+          Future<void>.microtask(() async {
+            await _initializeSessionConsent(epoch);
+          }),
+        );
+      },
+      fireImmediately: true,
+    );
     _lifecycleListener = AppLifecycleListener(onResume: _handleAppResume);
     ref.onDispose(() {
       _disposed = true;
@@ -976,11 +974,11 @@ final youtubeMusicShareablePlaylistBindingDetailsProvider =
     FutureProvider<Map<String, YouTubeMusicShareablePlaylistBinding>>((
       ref,
     ) async {
-      final auth = ref.watch(youtubeMusicAuthControllerProvider);
+      final auth = ref.watch(youtubeMusicAuthSessionIdentityProvider);
       // A sync state change can create, replace, or retire remote bindings.
       ref.watch(youtubeMusicPlaylistSyncControllerProvider);
 
-      final accountKey = auth.profile?.accountKey.trim();
+      final accountKey = auth.accountKey?.trim();
       if (!auth.isAuthenticated || accountKey == null || accountKey.isEmpty) {
         return const <String, YouTubeMusicShareablePlaylistBinding>{};
       }

@@ -19,6 +19,97 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
+  testWidgets('profile refresh preserves the real playlist sync runtime', (
+    tester,
+  ) async {
+    var now = DateTime.utc(2026, 8, 22);
+    final container = ProviderContainer(
+      overrides: [
+        youtubeMusicSessionStoreProvider.overrideWithValue(
+          _MemorySessionStore(value: _credential()),
+        ),
+        youtubeMusicAuthClockProvider.overrideWithValue(() => now),
+        youtubeMusicAccountClientProvider.overrideWithValue(
+          _SuccessfulAccountClient(
+            profile: YouTubeMusicAccountProfile(
+              channelId: 'test-channel',
+              displayName: 'Changed name',
+              avatarUrl: Uri.parse('https://img.test/changed.jpg'),
+            ),
+          ),
+        ),
+      ],
+    );
+    addTearDown(container.dispose);
+    container.read(youtubeMusicAuthControllerProvider);
+    await _pumpUntil(
+      tester,
+      () => container.read(youtubeMusicAuthControllerProvider).isAuthenticated,
+    );
+    final original = container.read(youtubeMusicPlaylistSyncRuntimeProvider);
+    expect(original, isNotNull);
+
+    now = now.add(const Duration(minutes: 2));
+    await container
+        .read(youtubeMusicAuthControllerProvider.notifier)
+        .refreshProfile(force: true);
+    await tester.pump();
+
+    expect(
+      container.read(youtubeMusicAuthControllerProvider).profile?.displayName,
+      'Changed name',
+    );
+    expect(
+      container.read(youtubeMusicPlaylistSyncRuntimeProvider),
+      same(original),
+      reason:
+          'Cosmetic updates must not cancel or replace a live sync runtime.',
+    );
+  });
+
+  testWidgets('profile metadata refresh does not interrupt an active sync', (
+    tester,
+  ) async {
+    var now = DateTime.utc(2026, 8, 22);
+    final completion = Completer<PlaylistAccountSyncResult>();
+    final coordinator = _RecordingSyncCoordinator((_, _) => completion.future);
+    final container = _container(
+      store: _MemorySessionStore(value: _credential()),
+      coordinator: coordinator,
+      clock: () => now,
+      accountClient: _SuccessfulAccountClient(
+        profile: const YouTubeMusicAccountProfile(
+          channelId: 'test-channel',
+          displayName: 'Updated profile name',
+        ),
+      ),
+    );
+    addTearDown(container.dispose);
+    await tester.pumpWidget(_accountButtonHost(container));
+    await _pumpUntil(tester, () => coordinator.triggers.isNotEmpty);
+
+    now = now.add(const Duration(minutes: 2));
+    await container
+        .read(youtubeMusicAuthControllerProvider.notifier)
+        .refreshProfile(force: true);
+    await tester.pump();
+    expect(
+      container.read(youtubeMusicAuthControllerProvider).profile?.displayName,
+      'Updated profile name',
+    );
+
+    completion.complete(_successfulResult());
+    await _pumpUntil(
+      tester,
+      () =>
+          container.read(youtubeMusicPlaylistSyncControllerProvider).phase ==
+          YouTubeMusicPlaylistSyncPhase.synchronized,
+    );
+    expect(coordinator.triggers, <PlaylistSyncTrigger>[
+      PlaylistSyncTrigger.appStart,
+    ]);
+  });
+
   testWidgets(
     'AccountButton starts exactly one app-start sync after session restore',
     (tester) async {
@@ -1136,6 +1227,7 @@ ProviderContainer _container({
   LibraryOperationCoordinator? maintenanceCoordinator,
   ytm_account.YouTubeMusicPlaylistVisibilityAccount? playlistVisibilityAccount,
   List<Duration> retryBackoff = const <Duration>[Duration(seconds: 1)],
+  DateTime Function()? clock,
 }) {
   final playlists = _RecordingPlaylistsController();
   return ProviderContainer(
@@ -1145,6 +1237,7 @@ ProviderContainer _container({
           maintenanceCoordinator,
         ),
       youtubeMusicSessionStoreProvider.overrideWithValue(store),
+      if (clock != null) youtubeMusicAuthClockProvider.overrideWithValue(clock),
       youtubeMusicPlaylistSyncConsentStoreProvider.overrideWithValue(
         consentStore ?? _MemoryConsentStore(grantedAccounts: {'test-channel'}),
       ),
@@ -1440,6 +1533,10 @@ class _MemorySessionStore implements YouTubeMusicSessionStore {
 }
 
 class _SuccessfulAccountClient implements YouTubeMusicAccountClient {
+  _SuccessfulAccountClient({this.profile});
+
+  final YouTubeMusicAccountProfile? profile;
+
   @override
   Future<List<YouTubeMusicAccountChannel>> listChannels(
     YouTubeMusicWebAuthData authData,
@@ -1448,7 +1545,7 @@ class _SuccessfulAccountClient implements YouTubeMusicAccountClient {
   @override
   Future<YouTubeMusicAccountProfile> validateAccount(
     YouTubeMusicWebAuthData authData,
-  ) async => _profile();
+  ) async => profile ?? _profile();
 }
 
 PlaylistAccountSyncResult _successfulResult({int importedRemoteCount = 0}) =>

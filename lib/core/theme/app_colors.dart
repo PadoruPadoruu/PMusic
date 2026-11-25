@@ -344,6 +344,20 @@ abstract final class AppColors {
     return baseSurface.withValues(alpha: cardSurfaceOpacityFor(context));
   }
 
+  /// Shared selection fill for search categories and horizontal preset cards.
+  static LinearGradient selectedCardGradientFor(BuildContext context) {
+    final surface = cardSurfaceFor(context);
+    final selected = Theme.of(context).colorScheme.primaryContainer;
+    return LinearGradient(
+      begin: Alignment.topLeft,
+      end: Alignment.bottomRight,
+      colors: [
+        Color.lerp(surface, selected, 0.40)!,
+        Color.lerp(surface, selected, 0.58)!,
+      ],
+    );
+  }
+
   static Color cardBorderFor(
     BuildContext context, {
     bool solidInLiquidGlass = false,
@@ -562,6 +576,14 @@ abstract final class AppColors {
     }
     final accent = theme.extension<AppAccentTheme>()?.seed ?? colors.primary;
     return accent.withValues(alpha: 0.025);
+  }
+
+  /// Opaque gradient painted behind the browsing tabs before the tab wash.
+  static ({Color top, Color bottom}) tabBackgroundGradientFor(
+    BuildContext context,
+  ) {
+    final colors = Theme.of(context).colorScheme;
+    return (top: colors.surface, bottom: colors.surfaceContainerLowest);
   }
 
   /// Distinct surface for fixed tab headers. It is slightly more accent-aware

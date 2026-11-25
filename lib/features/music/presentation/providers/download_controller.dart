@@ -5,6 +5,67 @@ final downloadControllerProvider =
       DownloadController.new,
     );
 
+/// Only the task URL and cancellable state affect playlist menu actions.
+/// Percentages change frequently; keep them out of the shared identity set.
+final cancellableDownloadVideoIdsProvider = Provider<Set<String>>((ref) {
+  final cancellable = ref.watch(
+    downloadControllerProvider.select(
+      (tasks) => _CancellableDownloadUrls({
+        for (final task in tasks.values)
+          if (task.isCancellable) task.url,
+      }),
+    ),
+  );
+  const codec = BStreamTrackLinkCodec();
+  return Set<String>.unmodifiable({
+    for (final url in cancellable.urls)
+      ?codec
+          .tryFromTrack(TrackInfo(id: '', title: '', artist: '', url: url))
+          ?.videoId,
+  });
+});
+
+final playlistDownloadVideoIdsProvider = Provider.autoDispose
+    .family<Set<String>, String>((ref, playlistId) {
+      final playlist = ref.watch(
+        playlistsControllerProvider.select(
+          (playlists) => playlists.value
+              ?.where((playlist) => playlist.id == playlistId)
+              .firstOrNull,
+        ),
+      );
+      if (playlist == null) return const {};
+      final catalog = ref.watch(
+        catalogPlaylistProvider(playlistId).select((catalog) => catalog.value),
+      );
+      final library = ref.watch(
+        libraryTracksProvider.select((library) => library.value),
+      );
+      return Set<String>.unmodifiable(
+        playlistDownloadVideoIds(playlist, catalog, library ?? const []),
+      );
+    });
+
+final playlistHasPendingDownloadsProvider = Provider.autoDispose
+    .family<bool, String>((ref, playlistId) {
+      final ids = ref.watch(playlistDownloadVideoIdsProvider(playlistId));
+      final pending = ref.watch(cancellableDownloadVideoIdsProvider);
+      return ids.any(pending.contains);
+    });
+
+class _CancellableDownloadUrls {
+  const _CancellableDownloadUrls(this.urls);
+
+  final Set<String> urls;
+
+  @override
+  bool operator ==(Object other) =>
+      other is _CancellableDownloadUrls && setEquals(urls, other.urls);
+
+  @override
+  int get hashCode => Object.hashAllUnordered(urls);
+}
+
 const _unsetDownloadTaskValue = Object();
 
 final playlistDownloadPreparationsProvider =

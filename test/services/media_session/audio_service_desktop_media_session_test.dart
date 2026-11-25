@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:audio_service/audio_service.dart';
 import 'package:bstream_music/services/media_session/audio_service_desktop_media_session.dart';
 import 'package:bstream_music/services/media_session/desktop_media_session.dart';
@@ -26,11 +28,18 @@ void main() {
       );
 
       expect(state.controls.map((control) => control.action), const [
+        MediaAction.custom,
         MediaAction.skipToPrevious,
         MediaAction.pause,
         MediaAction.skipToNext,
+        MediaAction.custom,
       ]);
-      expect(state.androidCompactActionIndices, const [0, 1, 2]);
+      expect(state.controls.first.customAction?.name, notificationRepeatAction);
+      expect(
+        state.controls.last.customAction?.name,
+        notificationFavoriteAction,
+      );
+      expect(state.androidCompactActionIndices, const [1, 2, 3]);
       expect(
         state.controls.map((control) => control.action),
         isNot(contains(MediaAction.stop)),
@@ -41,9 +50,85 @@ void main() {
       final state = buildAudioServicePlaybackState(_state(PlayerStatus.paused));
 
       expect(state.controls.map((control) => control.action), const [
+        MediaAction.custom,
         MediaAction.play,
+        MediaAction.custom,
       ]);
-      expect(state.androidCompactActionIndices, const [0]);
+      expect(state.androidCompactActionIndices, const [1]);
+    });
+
+    test(
+      'repeat controls reflect all three modes and translated next action',
+      () {
+        const labels = DesktopMediaControlLabels(
+          repeatQueue: 'Repetir cola',
+          repeatOne: 'Repetir una',
+          disableRepeat: 'Desactivar repetir',
+        );
+        for (final entry in [
+          (PlaybackRepeatMode.off, 'bstream_widget_repeat', labels.repeatQueue),
+          (
+            PlaybackRepeatMode.all,
+            'bstream_notification_repeat_all',
+            labels.repeatOne,
+          ),
+          (
+            PlaybackRepeatMode.one,
+            'bstream_notification_repeat_one',
+            labels.disableRepeat,
+          ),
+        ]) {
+          final state = buildAudioServicePlaybackState(
+            _state(
+              PlayerStatus.playing,
+              repeatMode: entry.$1,
+              controlLabels: labels,
+            ),
+          );
+          final repeat = state.controls.first;
+          expect(repeat.customAction?.name, notificationRepeatAction);
+          expect(repeat.androidIcon, 'drawable/${entry.$2}');
+          expect(repeat.label, entry.$3);
+        }
+      },
+    );
+
+    test('favorite control switches its heart and translated action', () {
+      const labels = DesktopMediaControlLabels(
+        addToFavorites: 'Añadir a favoritos',
+        removeFromFavorites: 'Quitar de favoritos',
+      );
+      final add = buildAudioServicePlaybackState(
+        _state(PlayerStatus.paused, controlLabels: labels),
+      ).controls.last;
+      final remove = buildAudioServicePlaybackState(
+        _state(PlayerStatus.paused, isFavorite: true, controlLabels: labels),
+      ).controls.last;
+      expect(add.customAction?.name, notificationFavoriteAction);
+      expect(remove.customAction?.name, notificationFavoriteAction);
+      expect(add.androidIcon, 'drawable/bstream_widget_heart_outline');
+      expect(remove.androidIcon, 'drawable/bstream_widget_heart_filled');
+      expect(add.label, labels.addToFavorites);
+      expect(remove.label, labels.removeFromFavorites);
+    });
+
+    test('does not advertise favorites for external audio', () {
+      final state = buildAudioServicePlaybackState(
+        _state(PlayerStatus.paused, isExternal: true),
+      );
+      expect(
+        state.controls.map((control) => control.customAction?.name),
+        isNot(contains(notificationFavoriteAction)),
+      );
+      expect(state.androidCompactActionIndices, [1]);
+    });
+
+    test('recreated translated labels compare by their values', () {
+      const first = DesktopMediaControlLabels(repeatQueue: 'Repetir cola');
+      final second = DesktopMediaControlLabels(repeatQueue: 'Repetir cola');
+      expect(first, second);
+      expect(first.hashCode, second.hashCode);
+      expect(first, isNot(const DesktopMediaControlLabels()));
     });
 
     test('retains playback intent while the next stream is loading', () {
@@ -53,7 +138,7 @@ void main() {
 
       expect(state.processingState, AudioProcessingState.loading);
       expect(state.playing, isTrue);
-      expect(state.controls.first.action, MediaAction.pause);
+      expect(_primaryTransport(state).action, MediaAction.pause);
       expect(state.errorCode, isNull);
       expect(state.errorMessage, isNull);
     });
@@ -65,7 +150,7 @@ void main() {
 
       expect(state.processingState, AudioProcessingState.loading);
       expect(state.playing, isFalse);
-      expect(state.controls.first.action, MediaAction.play);
+      expect(_primaryTransport(state).action, MediaAction.play);
     });
 
     test('reports a recoverable stream error as active loading', () {
@@ -79,7 +164,7 @@ void main() {
 
       expect(state.processingState, AudioProcessingState.loading);
       expect(state.playing, isTrue);
-      expect(state.controls.first.action, MediaAction.pause);
+      expect(_primaryTransport(state).action, MediaAction.pause);
       expect(state.errorCode, isNull);
       expect(state.errorMessage, isNull);
     });
@@ -95,7 +180,7 @@ void main() {
 
       expect(state.processingState, AudioProcessingState.error);
       expect(state.playing, isFalse);
-      expect(state.controls.first.action, MediaAction.play);
+      expect(_primaryTransport(state).action, MediaAction.play);
       expect(state.errorCode, 1);
       expect(state.errorMessage, 'Recovery exhausted');
     });
@@ -109,7 +194,7 @@ void main() {
 
         expect(state.processingState, AudioProcessingState.loading);
         expect(state.playing, isTrue);
-        expect(state.controls[1].action, MediaAction.pause);
+        expect(_primaryTransport(state).action, MediaAction.pause);
       },
     );
 
@@ -120,7 +205,7 @@ void main() {
 
       expect(state.processingState, AudioProcessingState.completed);
       expect(state.playing, isFalse);
-      expect(state.controls.first.action, MediaAction.play);
+      expect(_primaryTransport(state).action, MediaAction.play);
     });
 
     test('honors pause intent even before the player status settles', () {
@@ -130,7 +215,7 @@ void main() {
 
       expect(state.processingState, AudioProcessingState.ready);
       expect(state.playing, isFalse);
-      expect(state.controls.first.action, MediaAction.play);
+      expect(_primaryTransport(state).action, MediaAction.play);
     });
 
     test('keeps automatic gaps active until a deliberate pause or stop', () {
@@ -156,12 +241,110 @@ void main() {
           _state(status, playWhenReady: false),
         );
         expect(state.playing, isFalse);
-        expect(state.controls.first.action, MediaAction.play);
+        expect(_primaryTransport(state).action, MediaAction.play);
       }
     });
   });
 
   group('AudioServiceMediaSessionCallbackBridge', () {
+    test(
+      'routes repeated repeat/favorite commands without dropping presses',
+      () async {
+        final calls = <String>[];
+        final bridge = AudioServiceMediaSessionCallbackBridge();
+        bridge.attach(_callbacks('active', calls));
+        await bridge.customAction(notificationRepeatAction);
+        await bridge.customAction(notificationRepeatAction);
+        await bridge.customAction(notificationFavoriteAction);
+        await bridge.customAction('unknown');
+        expect(calls, [
+          'active:cycleRepeat',
+          'active:cycleRepeat',
+          'active:favorite',
+        ]);
+      },
+    );
+
+    test(
+      'restores custom actions through the existing cold-start backlog',
+      () async {
+        final calls = <String>[];
+        final bridge = AudioServiceMediaSessionCallbackBridge();
+        final repeat = bridge.customAction(notificationRepeatAction);
+        final favorite = bridge.customAction(notificationFavoriteAction);
+        bridge.attach(_callbacks('restored', calls));
+        await Future.wait([repeat, favorite]);
+        expect(calls, ['restored:cycleRepeat', 'restored:favorite']);
+      },
+    );
+    test('attaching a restored session does not start playback', () {
+      final calls = <String>[];
+      final bridge = AudioServiceMediaSessionCallbackBridge();
+
+      bridge.attach(_callbacks('restored', calls));
+
+      expect(calls, isEmpty);
+    });
+
+    test('retains the first cold-start play until callbacks attach', () async {
+      final calls = <String>[];
+      final bridge = AudioServiceMediaSessionCallbackBridge();
+      var completed = false;
+      final play = bridge.play().then((_) => completed = true);
+      await Future<void>.delayed(Duration.zero);
+      expect(completed, isFalse);
+      expect(calls, isEmpty);
+
+      bridge.attach(_callbacks('restored', calls));
+      await play;
+      bridge.attach(_callbacks('replacement', calls));
+
+      expect(calls, ['restored:play']);
+    });
+
+    test('cold-start pause is not blocked by a pending play', () async {
+      final calls = <String>[];
+      final bridge = AudioServiceMediaSessionCallbackBridge();
+      final releasePlay = Completer<void>();
+      final play = bridge.play();
+      final pause = bridge.pause();
+
+      bridge.attach(
+        _callbacks('restored', calls, playBarrier: releasePlay.future),
+      );
+      await pause;
+      expect(calls, ['restored:play', 'restored:pause']);
+      releasePlay.complete();
+      await play;
+    });
+
+    test('bounds the cold-start command backlog', () async {
+      final calls = <String>[];
+      final bridge = AudioServiceMediaSessionCallbackBridge();
+      final commands = List.generate(9, (_) => bridge.next());
+      // The oldest excess command is retired even if startup never finishes.
+      await commands.first;
+
+      bridge.attach(_callbacks('restored', calls));
+      await Future.wait(commands);
+
+      expect(calls, List.filled(8, 'restored:next'));
+    });
+
+    test('expires a cold-start intent instead of playing it later', () async {
+      final calls = <String>[];
+      final bridge = AudioServiceMediaSessionCallbackBridge(
+        startupCommandTimeout: Duration.zero,
+      );
+
+      await bridge.play();
+      bridge.attach(_callbacks('restored', calls));
+      expect(calls, isEmpty);
+      await bridge.play();
+
+      expect(calls, ['restored:play']);
+    });
+
     test('replaces callbacks and ignores a stale detach', () async {
       final calls = <String>[];
       final bridge = AudioServiceMediaSessionCallbackBridge();
@@ -191,6 +374,8 @@ void main() {
       await bridge.stop();
       await bridge.setShuffleEnabled(true);
       await bridge.setRepeatMode(PlaybackRepeatMode.one);
+      await bridge.customAction(notificationRepeatAction);
+      await bridge.customAction(notificationFavoriteAction);
 
       expect(calls, ['active:next']);
     });
@@ -202,12 +387,18 @@ DesktopMediaSessionState _state(
   int queueLength = 1,
   bool? playWhenReady,
   String? errorMessage,
+  PlaybackRepeatMode repeatMode = PlaybackRepeatMode.off,
+  bool isFavorite = false,
+  bool isExternal = false,
+  DesktopMediaControlLabels controlLabels = const DesktopMediaControlLabels(),
 }) {
   return DesktopMediaSessionState(
     snapshot: PlayerSnapshot(
       status: status,
       playWhenReady: playWhenReady,
       errorMessage: errorMessage,
+      repeatMode: repeatMode,
+      isExternal: isExternal,
       trackId: 'track-1',
       title: 'Track 1',
       artist: 'Artist',
@@ -223,12 +414,21 @@ DesktopMediaSessionState _state(
         ),
     ],
     currentIndex: 0,
+    isFavorite: isFavorite,
+    controlLabels: controlLabels,
   );
 }
 
-DesktopMediaSessionCallbacks _callbacks(String name, List<String> calls) {
+DesktopMediaSessionCallbacks _callbacks(
+  String name,
+  List<String> calls, {
+  Future<void>? playBarrier,
+}) {
   return DesktopMediaSessionCallbacks(
-    play: () async => calls.add('$name:play'),
+    play: () async {
+      calls.add('$name:play');
+      await playBarrier;
+    },
     pause: () async => calls.add('$name:pause'),
     togglePlayPause: () async => calls.add('$name:toggle'),
     next: () async => calls.add('$name:next'),
@@ -241,5 +441,14 @@ DesktopMediaSessionCallbacks _callbacks(String name, List<String> calls) {
     setShuffleEnabled: (enabled) async => calls.add('$name:shuffle:$enabled'),
     setRepeatMode: (mode) async => calls.add('$name:repeat:${mode.name}'),
     playQueueIndex: (index) async => calls.add('$name:index:$index'),
+    cycleRepeatMode: () async => calls.add('$name:cycleRepeat'),
+    toggleFavorite: () async => calls.add('$name:favorite'),
   );
 }
+
+MediaControl _primaryTransport(PlaybackState state) =>
+    state.controls.firstWhere(
+      (control) =>
+          control.action == MediaAction.play ||
+          control.action == MediaAction.pause,
+    );

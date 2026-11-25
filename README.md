@@ -2,13 +2,13 @@
 
 ![Flutter 3.47.9](https://img.shields.io/badge/Flutter-3.47.9-02569B?logo=flutter&logoColor=white)
 ![Platform](https://img.shields.io/badge/platform-Android%20%7C%20iOS%20%7C%20Windows%20%7C%20Linux%20%7C%20macOS-blue)
-![Version](https://img.shields.io/badge/version-1.2.9%2B129-brightgreen)
+![Version](https://img.shields.io/badge/version-1.3.1%2B131-brightgreen)
 ![Build](https://github.com/BryamContreras/BStream-Music/actions/workflows/desktop-builds.yml/badge.svg?branch=main)
 ![License](https://img.shields.io/badge/license-BSD--2--Clause-green)
 
 BStream Music is a cross-platform music player and library manager built with Flutter. It lets you search for music, play and download tracks, organize a local library, and manage playlists on Android, iOS, Windows, Linux, and macOS.
 
-Current version: **1.2.9+129**.
+Current version: **1.3.1+131**.
 
 > The repository does not store media content. YouTube search, playback, and
 > downloads use BStream's self-contained Dart InnerTube pipeline. Supported
@@ -17,16 +17,17 @@ Current version: **1.2.9+129**.
 
 <img width="1221" height="840" alt="{3AC80665-A6EC-436D-9C87-A1413432F0E3}" src="https://github.com/user-attachments/assets/8c918bae-6f84-46fa-8923-24ea68b6f8a4" />
 
-## What's new in 1.2.9
+## What's new in 1.3.1
 
-- Added a home-screen player widget.
-- Personalize the app background with an image from your gallery.
-- Change the font throughout the app.
-- Optimized animated artwork performance.
-- Select multiple songs in albums, mixes, and search results to add them to a
-  playlist or download them.
-- Share up to five song lyric lines as an image with artwork, blur, gradient,
-  or a photo from your gallery.
+- Added support for external audio source add-ons.
+- A 10-band equalizer is now available.
+- Support for higher quality audio whenever available.
+- Improved and optimized the layouts of the player styles.
+- Added the new Spotify Style player.
+- Added filtering options in the Local music tab.
+- Added support for word-synchronized lyrics when word timing is available.
+- Improved the design of the Settings tab.
+- Customize playlist artwork with an image from your gallery.
 
 ## Main features
 
@@ -61,18 +62,39 @@ Current version: **1.2.9+129**.
   advance immediately to tokenless clients. If an active stream loses
   connectivity, BStream
   retries the resolver chain with bounded backoff; navigation cancels obsolete
-  attempts. Every selected candidate is deep-probed at or beyond 3 MiB before
+  attempts. YouTube candidates are deep-probed at or beyond 3 MiB before
   publication, and downloads resume through validated range requests and safe
   `.part` files. Native M4A/AAC, WebM/Opus, and other available audio
   containers remain unconverted; when YouTube exposes only a direct muxed
   fallback, it is preserved as `.mp4` instead of being mislabeled or
   transcoded.
+- Optional HTTP audio add-ons and JioSaavn upgrades follow the selected
+  streaming profile. Downloads have a separate quality choice.
+  YouTube Music remains enabled and starts playback first. A bounded lookup
+  checks the recording's title, version, artists and duration before preparing
+  a verified higher-bitrate rendition on the existing muted standby deck.
+  Promotion retains catalog metadata, queue and position, with a short linear
+  transition; missing matches or failed preparation leave YouTube playing.
+  Open Settings > Integrations > Audio sources to add an HTTPS service or its
+  manifest URL. Data saving opens dedicated pages for each quality choice.
+  Desktop has one streaming profile. On mobile, Wi-Fi defaults to High and
+  cellular to Standard. Each profile can choose YTMusic, an add-on, or
+  JioSaavn. With a chosen add-on, BStream looks for CD
+  FLAC there first, then tries the other enabled add-ons in order and finally
+  JioSaavn if enabled. With JioSaavn selected, it is the only upgrade source.
+  Downloads consider only sources that permit saving tracks. The quality
+  capsule reflects the active source.
 - High-quality artwork uses one proportional crop policy from search through
   playback and downloaded-library storage.
 - SQLite-backed local library.
 - Reuse of downloaded tracks to avoid duplicate downloads.
 - Filtering, renaming, and deletion of saved tracks.
+- The Local music header's More menu provides the same filtering options as
+  the library, and local song cards include a dedicated Play/Pause control.
 - Playlist creation, renaming, and deletion.
+- Tap a saved playlist's cover to keep its random song-artwork mosaic or choose
+  a custom image. Gallery photos use the same crop editor as lyric sharing,
+  fixed to a square; custom covers follow media-folder moves and ZIP backups.
 - Playlist and downloaded-song headers show both song count and total duration.
 - Dedicated **Favorites** playlist with accent-colored hearts on favorited
   tracks.
@@ -87,10 +109,11 @@ Current version: **1.2.9+129**.
 ### Player
 
 - Play, pause, previous, next, repeat, and shuffle controls.
-- Mobile Lyrics and Volume controls use labeled buttons beneath Shuffle and
-  Repeat, while an accent-colored heart beside the title toggles Favorites on
-  every platform.
-- The Share button beside Favorites sends one canonical HTTPS URL that chat
+- Shared Lyrics, Queue, Audio output, and Volume icons keep controls consistent
+  across the app. Full-player utility rows adapt their spacing to each style.
+  A heart beside the track metadata toggles Favorites, with More options
+  beside it.
+- Share in the player's More menu sends one canonical HTTPS URL that chat
   applications can recognize: YouTube Music when the track came from the
   InnerTube catalog, otherwise the regular YouTube watch URL. Local-only files
   without a YouTube identity are intentionally not shared.
@@ -101,18 +124,20 @@ Current version: **1.2.9+129**.
 - Lyrics offer three persistent animation styles (Smooth by default),
   Normal/Centered alignment, optional per-script romanization, and a live
   preview in Appearance settings.
-- Appearance offers BStream Music, Apple Music Style, and Classic Vinyl full
-  players. Their controls and artwork adapt to portrait, compact landscape,
-  large phones, and desktop windows.
+- Appearance opens a dedicated gallery with responsive previews of BStream
+  Music, Apple Music Style, Classic Vinyl, and Spotify Style. Selecting a style
+  applies it immediately. Their controls and artwork adapt to portrait,
+  compact landscape, large phones, and desktop windows.
 - Crossfade uses coordinated playback decks and supports every whole-second
   duration from 1 through 15 seconds on Android and desktop.
-- Android can conservatively shorten confirmed prolonged silence in streaming
+- Android and iOS can conservatively shorten confirmed prolonged silence in streaming
   or downloaded songs without disabling crossfade or treating quiet music as
   empty audio.
 - Playback queue synchronized with playlists and the library.
 - On mobile, swipe the mini player left for Next or right for Previous; short
   drags return to place without changing the song.
-- Queue side panel on Windows and a dedicated queue view on Android.
+- The desktop mini player opens the queue from any tab. Mobile provides a
+  dedicated queue view.
 - Change tracks directly from the queue and reorder them with a long press.
 - Android keeps a rolling native queue for remote playback, with up to three
   upcoming tracks prepared sequentially so locked-screen transitions do not
@@ -128,14 +153,23 @@ Current version: **1.2.9+129**.
   player running, while closing the application exits playback.
 - The active track is highlighted with a segmented 13-bar equalizer.
 - Theme-aware dynamic background derived from the track artwork.
-- Animated progress bar with waves and the selected accent color.
-- Direct volume control beside the repeat button.
+- Animated progress waves use the current artwork's color, with a smooth color
+  transition and an accent-color fallback when artwork is unavailable.
+- Volume is available directly in the player controls.
+- On Windows, Linux, and macOS, choose BStream's audio output device from the
+  player's More menu, with independent player volume and crossfade support.
+- A native ten-band equalizer is available on Android, iOS, Windows, Linux, and
+  macOS from Settings > Playback and the player's More menu. Presets and custom
+  curves apply live to both playback decks, with headroom compensation and
+  bypass when disabled or flat. Android and iOS use BStream's own PCM DSP without
+  depending on vendor audio effects. See [equalizer architecture and tests](docs/equalizer.md).
 - On desktop, Space toggles Play/Pause from the mini or full player unless an
   editable text field such as Search currently has focus.
-- Synchronized lyrics powered by LRCLIB, with plain-lyrics fallback, automatic
-  scrolling, tap-to-seek, and a manual timing offset from `-10` to `+10` seconds
-  in `0.50`-second steps. Timed instrumental passages use a filling wave line
-  before the next lyric.
+- Synchronized lyrics from Better Lyrics, LyricsPlus, and LRCLIB, with automatic
+  word/syllable highlighting when valid timing is supplied and line-by-line or
+  plain-lyrics fallback. Supports automatic scrolling, tap-to-seek, and a manual
+  timing offset from `-10` to `+10` seconds in `0.50`-second steps. Timed
+  instrumental passages respect sustained words before showing a filling wave.
 - Sleep timer with quick durations and a custom duration.
 - Native system media integration: Android media notifications, iOS and macOS
   Now Playing, Windows SMTC, and Linux MPRIS.
@@ -150,9 +184,10 @@ Current version: **1.2.9+129**.
 
 - Responsive mobile and desktop layouts with bounded artwork decoding,
   lazy library lists, 48 dp touch targets, and large-text adaptation.
-- System, Light, and Dark themes with eighteen persistent accent palettes. The
-  full player and Lyrics use a consistent dark playback surface while browsing,
-  queues, menus, and settings retain the selected application theme.
+- System, Light, and Dark themes with eighteen persistent accent palettes.
+  Lyrics and the mobile full player use a consistent dark playback surface;
+  the desktop full player, browsing, queues, menus, and settings follow the
+  selected application theme.
 - Navigation remembers only the two most recent views.
 - Returning from the player restores the previously opened playlist or section.
 - Home displays up to 10 recently played items and 10 playlists. Recent items
@@ -167,7 +202,8 @@ Current version: **1.2.9+129**.
   cleared from Privacy settings without removing downloads, favorites, or
   playlists.
 - Subtle gradients, translucent cards, and shared visual controls.
-- Spanish and English selectable from Settings.
+- Spanish, English, Portuguese, French, Korean, Simplified Chinese, and Japanese
+  selectable from Settings, including localized release highlights.
 - An Application information section in Settings opens an organized About the
   app detail with the current version, optional Ko-fi development support, and
   the official GitHub repository; BStream Music remains free.
@@ -300,21 +336,97 @@ actually delivers to the WebSocket client.
 | Linux | `media_kit` | Dart InnerTube | Three tokenless/JS-less InnerTube identities (`visionOS`, `androidSdkless`, `visionOS01`); MPRIS controls; TikTok LIVE; Ubuntu 22.04-based x64 installers; requires GTK 3, libmpv, SQLite, and libsecret |
 | macOS | `media_kit` | Dart InnerTube | Optional headless WebView for EJS and Web BotGuard PO tokens; Now Playing controls, TikTok LIVE, separate PKG installers for Apple Silicon and Intel; minimum window `960 × 600` |
 
-Downloads and remote playback use the same native-audio selection policy on
-every platform: prefer the best available M4A/AAC stream, otherwise use the
-best original audio stream. BStream preserves the source container and does
-not extract, remux, transcode, or embed tags/artwork. Library metadata is kept
-in SQLite and artwork is saved as a separate thumbnail file.
+YouTube playback and downloads prefer the best available native M4A/AAC stream,
+otherwise the best original compatible audio stream. When the current network
+profile requests High, the optional resolver verifies a matching recording
+and the available higher-quality rendition. Playback starts
+YouTube immediately and looks for the improvement in the background; downloads
+select the verified rendition before transferring the file and fall back to
+YouTube if the optional CDN fails. Search results and all library metadata keep
+their YouTube Music identity. Renditions and partial downloads from different
+providers have separate cache/file identities. Desktop uses its single saved
+quality without querying the connection type. On mobile, unknown connectivity
+uses Standard and Ethernet uses the Wi-Fi profile. Connection checks are shared
+and event-driven, without internet polling.
+
+Audio add-ons use the [BitChord HTTP contract](https://bitchord.kushagrasingh.in/docs)
+with HTTPS manifest, search, and stream endpoints. BStream checks the FLAC
+header and duration before accepting stereo 16-bit / 44.1 kHz audio. The
+upgrade accepts a runtime difference of up to three seconds during recording
+matching and decoded playback. HTTP add-ons with missing catalog durations
+can supply a measurable FLAC stream. BStream also accepts the
+`/stream?id=…` route used by older bridges.
+The manifest can restrict the source to streaming. BStream can import compatible
+HTTP sources from the [WioLand catalog](https://github.com/Wiojelt/WioLand/tree/main/bitchord)
+using its published source descriptors. Monochrome can use its direct audio
+API or a [compatible HTTP bridge](https://github.com/acedreamer/bitchord-monochrome-addon#-api-specification).
+[Mornye bundles](https://mornye.com/docs) use a separate JavaScript runtime
+and require an HTTP bridge to be used as BStream sources.
+
+The JioSaavn adapter uses bounded public API requests and URL decoding in Dart,
+requires the catalog's actual 320 kbps flag and a small playable-CDN range probe,
+and uses the reference client's catalog compatibility headers only on JioSaavn
+API requests. These headers are not forwarded to audio CDNs, YouTube or player
+requests. Technical labels reuse the local MP4/AAC header parser to obtain the
+selected stream's declared bitrate, sample rate and channels. The optional
+header lookup reuses the verification prefix, skips audio payloads and has
+bounded bytes, requests and elapsed time; unavailable details remain unknown
+without preventing a verified source upgrade. Catalog availability depends on the track
+and region; an unavailable recording remains on YouTube. Its source-upgrade
+behavior was researched against [BitChord](https://github.com/kushagrasinghx/BitChord)
+and implemented independently for BStream's existing playback infrastructure.
+
+BStream preserves the original audio samples and does not extract, remux, or
+transcode them. Compatible downloaded files receive
+embedded title, artist and album before entering the library, reusing the
+resolved catalog data. Container detection uses the file contents, with these
+tagging capabilities:
+
+| Audio container | Embedded artwork | Tag format |
+| --- | --- | --- |
+| M4A / audio-only MP4 (AAC or ALAC) | Yes | iTunes `ilst` |
+| MP3 | Yes | ID3v2.3 / ID3v2.4 |
+| FLAC | Yes | Vorbis comments and PICTURE |
+| Ogg Opus / Ogg Vorbis | Yes | Comments and METADATA_BLOCK_PICTURE |
+| WAV (RIFF PCM/float) | Yes | ID3 chunk |
+| APE (Monkey's Audio) | Yes | APEv2 |
+| Audio-only WebM / Matroska (Opus/Vorbis) | External cached image | Text Tags |
+
+Embedded covers reuse the saved JPEG/PNG thumbnail. WebM's supported subset
+does not include cover attachments, so its image remains in the existing cache;
+tagging never changes the container or renames the file. Tagging runs outside
+the UI thread, copies media in bounded blocks and validates a temporary file
+before replacing the original. The format writers share atomic publication and
+copying, while FLAC and Ogg share comment/picture handling. Existing unrelated
+tags are preserved; repeating the same update skips rewriting the audio. Unsafe,
+malformed or unsupported layouts retain the original download, including
+encrypted streams, multiplexed/chained Ogg, RF64 and unsupported legacy ID3 flags.
+Library metadata remains in SQLite and artwork is also kept as a separate
+thumbnail for fast browsing. The downloaded-songs menu can update existing
+owned downloads from their saved metadata without downloading them again;
+files currently open in the player are skipped.
+
+Playback of the app-owned library uses its SQLite-backed track records and
+shared in-memory state for titles, artists, albums and cached artwork. Embedded
+tags are kept for portability; the player does not reread them to rebuild that
+information when a song starts. The Local tab has a separate device catalog:
+desktop scans read text tags in a background isolate, while Android and iOS
+reuse their native media indexes. Filtering, revisiting the tab and playback
+reuse each catalog's session snapshot; refreshing updates the device catalog.
+Mobile device artwork is requested separately on demand rather than extracted
+for every song during a library scan. Desktop text scans skip embedded images.
 
 BStream does not invoke or bundle standalone `ffmpeg` or `ffprobe`
 executables. Desktop playback still relies on the codec libraries included by
 `media_kit`/libmpv; those libraries decode M4A, Opus, and other formats during
 playback, but they are not a transcoding or download post-processing step.
 
-Lyrics are requested from [LRCLIB](https://lrclib.net) only when the lyrics
-view is opened. BStream sends the current title, artist, duration, and album
-when available, identifies itself with the required client header, and keeps a
-15-minute in-memory cache of at most 24 songs to avoid duplicate requests.
+Lyrics are requested from the selected Better Lyrics, LyricsPlus, and
+[LRCLIB](https://lrclib.net) providers when the lyrics view is opened. BStream
+sends the current title, artist, duration, and album when available, identifies
+itself with the required client header, and keeps bounded 15-minute in-memory
+caches of at most 24 songs per provider to avoid duplicate requests. Word timing
+from TTML, LyricsPlus words/syllables, and Enhanced LRC is retained in that cache.
 Lyrics are not embedded in downloaded audio files, and this cache disappears
 when the app process closes.
 
@@ -445,6 +557,14 @@ audio background mode for lock-screen and Now Playing controls. Remote search,
 playback, downloads, embedded YouTube Music account login, TikTok LIVE, backup
 export, and CSV export are adapted to iOS. The system document picker handles
 exports outside BStream's sandbox.
+
+The ten-band equalizer uses an in-place native PCM tap and shares presets and
+settings with the other players. Optional silence skipping uses conservative
+native analysis, bounded to 12 seconds ahead, followed by exact source-clock
+seeks. It does not send PCM to Dart or change the user's volume. Protected,
+live/HLS, and unreadable sources report unavailable processing and retain
+ordinary playback. See [iOS audio processing](docs/ios_audio_processing.md) for
+the buffering, caching, compatibility limits, and Apple-host test commands.
 
 The Now Playing home-screen widget is available on iOS 14 or newer (small and
 medium sizes). Its artwork and metadata are copied into the shared App Group
@@ -580,7 +700,7 @@ BSTREAM_ANDROID_KEY_ALIAS
 BSTREAM_ANDROID_KEY_PASSWORD
 ```
 
-The workflow verifies all three APK signatures before uploading the artifacts.
+The workflow verifies the signature and architectures of each APK before uploading it.
 
 ## Database, favorites, and backups
 
@@ -593,6 +713,12 @@ The workflow verifies all three APK signatures before uploading the artifacts.
   unlikes use the same conservative playlist sync engine, without importing a
   duplicate playlist. “Episodes for later” is ignored during account bootstrap.
 - ZIP backups contain the database, `audio/`, `thumbnails/`, and a manifest.
+  Downloaded tracks are grouped into playlist folders; unassigned tracks get
+  a Downloaded songs folder when playlists are present. Each audio file is
+  included once, with portable M3U8 lists referencing shared songs from their
+  first playlist. Without playlists, audio stays in one folder. Restoring keeps
+  every playlist membership and its order, and older backups remain supported.
+  See [ZIP backup format](docs/backup_format.md).
 - The Storage page separates local ZIP backup transfer from portable CSV
   transfer. BStream CSV preserves playlist membership and order; importing can
   resolve up to three missing tracks concurrently, and BStream Music,
@@ -665,6 +791,7 @@ application and needs no additional runtime. Artifacts are retained for 30
 days:
 
 ```text
+BStream-Music-<version>-Android-Universal-ARM.apk
 BStream-Music-<version>-Android-armeabi-v7a.apk
 BStream-Music-<version>-Android-arm64-v8a.apk
 BStream-Music-<version>-Android-x86_64.apk
@@ -678,7 +805,9 @@ BStream-Music-<version>-iOS-unsigned.ipa
 
 ### Which file should I install?
 
-- **Most Android phones and tablets:** install `BStream-Music-<version>-Android-arm64-v8a.apk`.
+- **Android phones and tablets when unsure:** install `BStream-Music-<version>-Android-Universal-ARM.apk`.
+  It supports both 32-bit and 64-bit ARM. Use an architecture-specific APK for a smaller download.
+- **64-bit ARM Android devices:** install `BStream-Music-<version>-Android-arm64-v8a.apk`.
 - **Older 32-bit ARM Android devices:** install `BStream-Music-<version>-Android-armeabi-v7a.apk`.
 - **Android x86_64 devices and emulators:** install `BStream-Music-<version>-Android-x86_64.apk`.
 - **iPhone and iPad:** download

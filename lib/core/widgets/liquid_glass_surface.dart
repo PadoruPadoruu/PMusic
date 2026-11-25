@@ -2,7 +2,8 @@ import 'dart:math' as math;
 import 'dart:ui' as ui;
 
 import 'package:flutter/gestures.dart';
-import 'package:flutter/foundation.dart' show ValueListenable;
+import 'package:flutter/foundation.dart'
+    show ValueListenable, defaultTargetPlatform;
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 
@@ -83,7 +84,9 @@ class LiquidGlassSurface extends StatelessWidget {
     this.materialOpacity = 1,
     this.clipBehavior = Clip.antiAlias,
     this.allowContentOverflow = false,
+    this.isolateForeground = false,
     this.backdropGroupKey,
+    this.backdropGradient,
     this.backdropEnvelope,
     this.shadowClipInsets,
     this.adaptiveEdgeEnabled = true,
@@ -97,6 +100,26 @@ class LiquidGlassSurface extends StatelessWidget {
   /// Shared optical density for the floating navigation and mini player.
   static const chromeIntensity = 1.16;
   static const chromeOpacity = 0.68;
+
+  /// Neutral material shared by live glass and inexpensive painted controls.
+  /// This calculation does not load a shader or sample the backdrop.
+  static Color materialTintFor(
+    BuildContext context, {
+    double intensity = 1,
+    double materialOpacity = 1,
+  }) {
+    assert(intensity >= 0 && intensity <= 2);
+    assert(materialOpacity >= 0 && materialOpacity <= 1);
+    final dark = Theme.brightnessOf(context) == Brightness.dark;
+    final highContrast = MediaQuery.maybeHighContrastOf(context) ?? false;
+    final tint = dark ? const Color(0xFF101010) : const Color(0xFFFAFAFA);
+    final opacity = dark ? 0.43 : 0.4;
+    // A neutral veil preserves the backdrop hue while giving controls contrast.
+    final alpha =
+        (opacity * intensity * materialOpacity * (highContrast ? 1.16 : 1.0))
+            .clamp(0.0, 0.52);
+    return tint.withValues(alpha: alpha);
+  }
 
   /// Stable key for the bounded [BackdropFilter].
   static const backdropKey = ValueKey<String>('liquid-glass-backdrop');
@@ -120,7 +143,12 @@ class LiquidGlassSurface extends StatelessWidget {
   /// first Liquid Glass frame. Unsupported renderers fall back to the same
   /// continuous neutral blur without changing the surface geometry.
   static Future<void> warmUp() async {
-    await _LiquidGlassShaderProgram.ensureLoaded();
+    await Future.wait([
+      _LiquidGlassShaderProgram.ensureLoaded(),
+      if (defaultTargetPlatform == TargetPlatform.android &&
+          _LiquidGlassShaderProgram.isSupported)
+        _GradientGlassSurfaceState.loadProgram(),
+    ]);
   }
 
   /// Exercises the native backdrop-layer topology without requiring a runtime
@@ -169,6 +197,10 @@ class LiquidGlassSurface extends StatelessWidget {
 
   final Clip clipBehavior;
 
+  /// Composites frequently changing controls over the retained material.
+  /// Use only for foregrounds whose paint does not need the blur target.
+  final bool isolateForeground;
+
   /// Optional shared input for the full-surface blur.
   ///
   /// Non-overlapping sibling sheets may reuse one [BackdropKey] so the engine
@@ -176,6 +208,10 @@ class LiquidGlassSurface extends StatelessWidget {
   /// its own lens: the engine shares filtered output only for equal filters,
   /// including their shader uniforms. Never group overlapping sheets.
   final BackdropKey? backdropGroupKey;
+
+  /// Opaque viewport gradient behind a surface with no other content between
+  /// it and the backdrop. The caller owns this paint-order guarantee.
+  final ({Color top, Color bottom})? backdropGradient;
 
   /// Optional fixed backdrop extent, relative to the real lens bounds.
   ///
@@ -222,6 +258,16 @@ class LiquidGlassSurface extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (backdropGradient != null &&
+        backdropEnvelope == null &&
+        blurSigma > 0 &&
+        adaptiveEdgeEnabled &&
+        perimeterOpticsEnabled &&
+        edgeTreatment == LiquidGlassEdgeTreatment.perimeter &&
+        Theme.of(context).platform == TargetPlatform.android &&
+        _LiquidGlassShaderProgram.isSupported) {
+      return _GradientGlassSurface(surface: this);
+    }
     if (backdropEnvelope != null &&
         !_usesBoundedBackdropHost(context) &&
         _LiquidGlassShaderProgram.isSupported &&
@@ -244,6 +290,8 @@ class LiquidGlassSurface extends StatelessWidget {
     Rect? envelope,
     Size? lensSize,
     ui.FragmentShader? preparedShader,
+    bool gradientSurface = false,
+    ui.FragmentShader? gradientShader,
     VoidCallback? onEnvelopeFailure,
   }) {
     final brightness = Theme.brightnessOf(context);
@@ -261,18 +309,11 @@ class LiquidGlassSurface extends StatelessWidget {
     final isFloatingSheet =
         resolvedEdgeTreatment == LiquidGlassEdgeTreatment.perimeter;
     final resolvedBorderRadius = borderRadius.resolve(textDirection);
-    final surfaceTint = brightness == Brightness.dark
-        ? const Color(0xFF121212)
-        : const Color(0xFFFAFAFA);
-    // Echo's default surface opacity is 40%. A dark neutral veil gives the
-    // controls contrast without bleaching the refracted backdrop color.
-    const baseTintAlpha = 0.4;
-    final surfaceTintAlpha =
-        (baseTintAlpha *
-                intensity *
-                materialOpacity *
-                (highContrast ? 1.16 : 1.0))
-            .clamp(0.0, 0.52);
+    final surfaceTint = materialTintFor(
+      context,
+      intensity: intensity,
+      materialOpacity: materialOpacity,
+    );
     final disableAnimations =
         MediaQuery.maybeDisableAnimationsOf(context) ?? false;
     final opticalMotionDuration = disableAnimations
@@ -289,9 +330,7 @@ class LiquidGlassSurface extends StatelessWidget {
       Positioned.fill(
         child: DecoratedBox(
           key: surfaceTintKey,
-          decoration: BoxDecoration(
-            color: surfaceTint.withValues(alpha: surfaceTintAlpha),
-          ),
+          decoration: BoxDecoration(color: surfaceTint),
         ),
       ),
       if (!allowContentOverflow) RepaintBoundary(child: child),
@@ -328,8 +367,14 @@ class LiquidGlassSurface extends StatelessWidget {
           ),
         ),
     ];
+    final paintGradient = gradientShader != null && effectsEnabled;
+    // Keep the input mounted while the program loads and the keyboard
+    // temporarily suspends backdrop effects.
     final boundForeground =
-        envelope == null && _usesBoundedBackdropHost(context);
+        !gradientSurface &&
+        !isolateForeground &&
+        envelope == null &&
+        _usesBoundedBackdropHost(context);
     final backdrop = _LiquidGlassBackdrop(
       blurSigma: blurSigma,
       backdropGroupKey: backdropGroupKey,
@@ -359,7 +404,18 @@ class LiquidGlassSurface extends StatelessWidget {
           : Stack(
               fit: StackFit.passthrough,
               children: [
-                if (envelope == null) Positioned.fill(child: backdrop),
+                if (envelope == null)
+                  Positioned.fill(
+                    child: paintGradient
+                        ? _GradientGlassBackdrop(
+                            shader: gradientShader,
+                            gradient: backdropGradient!,
+                            borderRadius: resolvedBorderRadius,
+                            intensity: intensity,
+                            highContrast: highContrast,
+                          )
+                        : backdrop,
+                  ),
                 ...foreground,
               ],
             ),
@@ -445,6 +501,156 @@ class _LiquidGlassShadowClipper extends CustomClipper<Rect> {
   @override
   bool shouldReclip(_LiquidGlassShadowClipper oldClipper) =>
       insets != oldClipper.insets;
+}
+
+class _GradientGlassSurface extends StatefulWidget {
+  const _GradientGlassSurface({required this.surface});
+
+  final LiquidGlassSurface surface;
+
+  @override
+  State<_GradientGlassSurface> createState() => _GradientGlassSurfaceState();
+}
+
+class _GradientGlassSurfaceState extends State<_GradientGlassSurface> {
+  static Future<ui.FragmentProgram?>? _loading;
+  static ui.FragmentProgram? _program;
+  ui.FragmentShader? _shader;
+
+  static Future<ui.FragmentProgram?> loadProgram() =>
+      _loading ??= _loadProgram();
+
+  static Future<ui.FragmentProgram?> _loadProgram() async {
+    try {
+      return _program = await ui.FragmentProgram.fromAsset(
+        'shaders/liquid_glass_gradient.frag',
+      );
+    } on Object {
+      return null;
+    }
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    final program = _program;
+    if (program != null) {
+      _shader = program.fragmentShader();
+    } else {
+      loadProgram().then((program) {
+        if (!mounted || program == null) return;
+        setState(() => _shader = program.fragmentShader());
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) => widget.surface._buildSheet(
+    context,
+    effectsEnabled: LiquidGlassEffectsScope.isEnabled(context),
+    gradientSurface: true,
+    gradientShader: _shader,
+  );
+
+  @override
+  void dispose() {
+    _shader?.dispose();
+    super.dispose();
+  }
+}
+
+class _GradientGlassBackdrop extends StatelessWidget {
+  const _GradientGlassBackdrop({
+    required this.shader,
+    required this.gradient,
+    required this.borderRadius,
+    required this.intensity,
+    required this.highContrast,
+  });
+
+  final ui.FragmentShader shader;
+  final ({Color top, Color bottom}) gradient;
+  final BorderRadius borderRadius;
+  final double intensity;
+  final bool highContrast;
+
+  @override
+  Widget build(BuildContext context) {
+    return CustomPaint(
+      key: LiquidGlassSurface.backdropKey,
+      painter: _GradientGlassPainter(
+        shader: shader,
+        gradient: gradient,
+        borderRadius: borderRadius,
+        intensity: intensity,
+        highContrast: highContrast,
+        viewportHeight: MediaQuery.sizeOf(context).height,
+        localTop: () {
+          final box = context.findRenderObject() as RenderBox?;
+          return box?.localToGlobal(Offset.zero).dy ?? 0;
+        },
+        scrollPosition: Scrollable.maybeOf(context)?.position,
+      ),
+    );
+  }
+}
+
+class _GradientGlassPainter extends CustomPainter {
+  _GradientGlassPainter({
+    required this.shader,
+    required this.gradient,
+    required this.borderRadius,
+    required this.intensity,
+    required this.highContrast,
+    required this.viewportHeight,
+    required this.localTop,
+    required ScrollPosition? scrollPosition,
+  }) : super(repaint: scrollPosition);
+
+  final ui.FragmentShader shader;
+  final ({Color top, Color bottom}) gradient;
+  final BorderRadius borderRadius;
+  final double intensity;
+  final bool highContrast;
+  final double viewportHeight;
+  final double Function() localTop;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final top = localTop();
+    if (size.isEmpty || viewportHeight <= 0 || !top.isFinite) return;
+    final rect = Offset.zero & size;
+    // For a Canvas shader FlutterFragCoord is local logical coordinates.
+    _configureGlassMaterial(
+      shader,
+      surfaceBoundsPx: rect,
+      devicePixelRatio: 1,
+      borderRadius: borderRadius,
+      intensity: intensity,
+      treatment: LiquidGlassEdgeTreatment.perimeter,
+      highContrast: highContrast,
+      useShapeMask: false,
+    );
+    shader
+      ..setFloat(0, top)
+      ..setFloat(1, 1 / viewportHeight)
+      ..setFloat(19, gradient.top.r)
+      ..setFloat(20, gradient.top.g)
+      ..setFloat(21, gradient.top.b)
+      ..setFloat(22, gradient.bottom.r)
+      ..setFloat(23, gradient.bottom.g)
+      ..setFloat(24, gradient.bottom.b);
+    canvas.drawRect(rect, Paint()..shader = shader);
+  }
+
+  @override
+  bool shouldRepaint(_GradientGlassPainter oldDelegate) =>
+      shader != oldDelegate.shader ||
+      gradient != oldDelegate.gradient ||
+      borderRadius != oldDelegate.borderRadius ||
+      intensity != oldDelegate.intensity ||
+      highContrast != oldDelegate.highContrast ||
+      viewportHeight != oldDelegate.viewportHeight;
 }
 
 /// Owns a preflighted shader before relaxing the native lens clip. Failure
@@ -1032,15 +1238,15 @@ class _LiquidGlassBackdrop extends StatefulWidget {
 }
 
 class _LiquidGlassBackdropState extends State<_LiquidGlassBackdrop> {
-  static final Expando<Map<double, ui.ImageFilter>> _groupedBlurFilters =
-      Expando<Map<double, ui.ImageFilter>>('liquid-glass-grouped-blurs');
-  static const _maximumGroupedSigmaEntries = 8;
+  // Sharing the filter does not group captures. BackdropKey still determines
+  // which surfaces can sample the same backdrop in the engine.
+  static final _blurFilters = <double, ui.ImageFilter>{};
+  static const _maximumBlurEntries = 8;
 
   double? _cachedBlurSigma;
   Offset? _cachedSurfaceOriginPx;
   Size? _cachedSurfaceSizePx;
   double? _cachedIntensity;
-  BackdropKey? _cachedBackdropGroupKey;
   BorderRadius? _cachedBorderRadius;
   LiquidGlassEdgeTreatment? _cachedTreatment;
   bool? _cachedHighContrast;
@@ -1119,18 +1325,26 @@ class _LiquidGlassBackdropState extends State<_LiquidGlassBackdrop> {
     super.dispose();
   }
 
-  ui.ImageFilter _blurFilterForGroup(BackdropKey? groupKey) {
-    if (_cachedBlurFilter == null ||
-        _cachedBlurSigma != widget.blurSigma ||
-        _cachedBackdropGroupKey != groupKey) {
-      _cachedBlurSigma = widget.blurSigma;
-      _cachedBackdropGroupKey = groupKey;
-      _cachedBlurFilter = _sharedBlurFilterFor(
-        sigma: widget.blurSigma,
-        groupKey: groupKey,
+  ui.ImageFilter _blurFilter() {
+    final sigma = widget.blurSigma;
+    if (_cachedBlurSigma == sigma) return _cachedBlurFilter!;
+    final cached = _blurFilters[sigma];
+    final ui.ImageFilter filter;
+    if (cached != null) {
+      filter = cached;
+    } else {
+      filter = ui.ImageFilter.blur(
+        sigmaX: sigma,
+        sigmaY: sigma,
+        tileMode: TileMode.clamp,
       );
+      if (_blurFilters.length >= _maximumBlurEntries) {
+        _blurFilters.remove(_blurFilters.keys.first);
+      }
+      _blurFilters[sigma] = filter;
     }
-    return _cachedBlurFilter!;
+    _cachedBlurSigma = sigma;
+    return _cachedBlurFilter = filter;
   }
 
   bool get _usesRefraction =>
@@ -1144,10 +1358,9 @@ class _LiquidGlassBackdropState extends State<_LiquidGlassBackdrop> {
     required Rect surfaceBoundsPx,
     required double devicePixelRatio,
     required BorderRadius borderRadius,
-    required BackdropKey? groupKey,
     bool boundedBackdrop = false,
   }) {
-    final blur = _blurFilterForGroup(groupKey);
+    final blur = _blurFilter();
     if (!_usesRefraction) {
       return widget.lensBounds == null ? blur : _envelopeFailureFilter();
     }
@@ -1157,7 +1370,6 @@ class _LiquidGlassBackdropState extends State<_LiquidGlassBackdrop> {
     // the physical origin and size so the shader can build its SDF locally.
     final surfaceOriginPx = surfaceBoundsPx.topLeft;
     final surfaceSizePx = surfaceBoundsPx.size;
-    final opticalDimension = surfaceSizePx.shortestSide / devicePixelRatio;
     if (_cachedRefractionFilter == null ||
         _cachedComposedBlurFilter != blur ||
         _cachedSurfaceOriginPx != surfaceOriginPx ||
@@ -1183,51 +1395,16 @@ class _LiquidGlassBackdropState extends State<_LiquidGlassBackdrop> {
         final shader =
             widget.preparedShader ??
             (_fragmentShader ??= _fragmentProgram!.fragmentShader());
-        final minimumDimension = math.max(1.0, opticalDimension);
-        final opticalStrength = widget.intensity.clamp(0.72, 1.28);
-        final embedded = widget.treatment == LiquidGlassEdgeTreatment.bottom;
-        // A shallow 8dp band only reads as a blurred outline on a 56-72dp
-        // capsule. Keep a visibly convex shoulder while reserving a broad,
-        // calm centre so bright cover art cannot turn the whole sheet milky.
-        final refractionHeight = embedded
-            ? 8.0 * opticalStrength
-            : (opticalDimension * (widget.highContrast ? 0.28 : 0.25)).clamp(
-                    12.0,
-                    18.0,
-                  ) *
-                  opticalStrength;
-        final refractionAmount = embedded
-            ? 6.0 * opticalStrength
-            : (opticalDimension * 0.34).clamp(16.0, 24.0) * opticalStrength;
-        double radiusRatio(Radius radius) =>
-            (math.min(radius.x, radius.y) / minimumDimension).clamp(0.0, 0.5);
-
-        // Slots 0-1 are populated by ImageFilter.shader with the backing
-        // texture size. The following slots preserve this widget's physical
-        // dimensions and its origin inside that backing texture.
-        shader
-          ..setFloat(2, surfaceSizePx.width)
-          ..setFloat(3, surfaceSizePx.height)
-          ..setFloat(4, surfaceOriginPx.dx)
-          ..setFloat(5, surfaceOriginPx.dy)
-          ..setFloat(6, (refractionHeight / minimumDimension).clamp(0.0, 0.5))
-          ..setFloat(7, (refractionAmount / minimumDimension).clamp(0.0, 0.5))
-          // The reference shader treats depth as a real on/off term (1.0).
-          // Keep it slightly below that maximum so stretched Flutter pills
-          // bulge without pulling their end caps into a fisheye.
-          ..setFloat(8, embedded ? 0 : (widget.highContrast ? 0.92 : 0.82))
-          // Dispersion stays deliberately restrained: the edge should inherit
-          // the artwork hue, not turn into a detached rainbow fringe.
-          ..setFloat(9, embedded ? 0 : 0.055)
-          ..setFloat(10, radiusRatio(borderRadius.topLeft))
-          ..setFloat(11, radiusRatio(borderRadius.topRight))
-          ..setFloat(12, radiusRatio(borderRadius.bottomRight))
-          ..setFloat(13, radiusRatio(borderRadius.bottomLeft))
-          ..setFloat(14, (1 + 0.3 * widget.intensity).clamp(1.0, 1.44))
-          ..setFloat(15, (1 + 0.42 * widget.intensity).clamp(1.0, 1.5))
-          ..setFloat(16, embedded ? 1 : 0)
-          ..setFloat(17, widget.lensBounds == null ? 0 : 1)
-          ..setFloat(18, 0);
+        _configureGlassMaterial(
+          shader,
+          surfaceBoundsPx: surfaceBoundsPx,
+          devicePixelRatio: devicePixelRatio,
+          borderRadius: borderRadius,
+          intensity: widget.intensity,
+          treatment: widget.treatment,
+          highContrast: widget.highContrast,
+          useShapeMask: widget.lensBounds != null,
+        );
         final lens = ui.ImageFilter.shader(shader);
         _cachedRefractionFilter = boundedBackdrop
             ? lens
@@ -1280,31 +1457,6 @@ class _LiquidGlassBackdropState extends State<_LiquidGlassBackdrop> {
     );
   }
 
-  static ui.ImageFilter _sharedBlurFilterFor({
-    required double sigma,
-    required BackdropKey? groupKey,
-  }) {
-    ui.ImageFilter create() => ui.ImageFilter.blur(
-      sigmaX: sigma,
-      sigmaY: sigma,
-      tileMode: TileMode.clamp,
-    );
-    if (groupKey == null) {
-      return create();
-    }
-
-    final filters = _groupedBlurFilters[groupKey] ??=
-        <double, ui.ImageFilter>{};
-    final existing = filters[sigma];
-    if (existing != null) {
-      return existing;
-    }
-    if (filters.length >= _maximumGroupedSigmaEntries) {
-      filters.remove(filters.keys.first);
-    }
-    return filters[sigma] = create();
-  }
-
   bool _materialIsRefractive() => _usesRefraction;
 
   Widget _buildBoundedForeground(BuildContext context) {
@@ -1327,7 +1479,6 @@ class _LiquidGlassBackdropState extends State<_LiquidGlassBackdrop> {
         surfaceBoundsPx: bounds,
         devicePixelRatio: devicePixelRatio,
         borderRadius: radius,
-        groupKey: bounded ? null : widget.backdropGroupKey,
         boundedBackdrop: bounded,
       );
     }
@@ -1342,7 +1493,7 @@ class _LiquidGlassBackdropState extends State<_LiquidGlassBackdrop> {
             Theme.of(context).platform == TargetPlatform.android,
         devicePixelRatio: devicePixelRatio,
         viewportSize: MediaQuery.sizeOf(context),
-        blurFilter: _blurFilterForGroup(null),
+        blurFilter: _blurFilter(),
         backdropGroupKey: widget.backdropGroupKey,
         resolveMaterial: _boundedMaterialResolver!,
         materialIsRefractive: _materialIsRefractive,
@@ -1413,14 +1564,12 @@ class _LiquidGlassBackdropState extends State<_LiquidGlassBackdrop> {
               ),
               devicePixelRatio: devicePixelRatio,
               borderRadius: borderRadius,
-              groupKey: effectiveBackdropGroupKey,
             ),
           );
           _boundedMaterialResolver = (bounds, bounded) => _materialFilter(
             surfaceBoundsPx: bounds,
             devicePixelRatio: devicePixelRatio,
             borderRadius: borderRadius,
-            groupKey: bounded ? null : effectiveBackdropGroupKey,
             boundedBackdrop: bounded,
           );
         }
@@ -1433,7 +1582,7 @@ class _LiquidGlassBackdropState extends State<_LiquidGlassBackdrop> {
                   Theme.of(context).platform == TargetPlatform.android,
               devicePixelRatio: devicePixelRatio,
               viewportSize: MediaQuery.sizeOf(context),
-              blurFilter: _blurFilterForGroup(null),
+              blurFilter: _blurFilter(),
               backdropGroupKey: effectiveBackdropGroupKey,
               resolveMaterial: _boundedMaterialResolver!,
               materialIsRefractive: _materialIsRefractive,
@@ -1450,7 +1599,7 @@ class _LiquidGlassBackdropState extends State<_LiquidGlassBackdrop> {
           filter: widget.lensBounds != null && !_usesRefraction
               ? _envelopeFailureFilter()
               : positionAwareFilter == null
-              ? _blurFilterForGroup(effectiveBackdropGroupKey)
+              ? _blurFilter()
               : null,
           filterConfig: positionAwareFilter,
           backdropGroupKey: effectiveBackdropGroupKey,
@@ -1547,6 +1696,8 @@ class _RenderLiquidGlassBackdrop extends RenderProxyBox {
   final _composition = LayerHandle<_LiquidGlassCompositionLayer>();
   final _outer = LayerHandle<_LiquidGlassOuterBackdropLayer>();
   final _inner = LayerHandle<_ConditionalLiquidGlassLensLayer>();
+  final _scenePath = <RenderObject>[];
+  final _sceneTransform = Matrix4.identity();
 
   void updateConfiguration({
     required double devicePixelRatio,
@@ -1586,29 +1737,59 @@ class _RenderLiquidGlassBackdrop extends RenderProxyBox {
     logical.bottom * _devicePixelRatio,
   );
 
-  Rect? _boundedLensBounds(Rect surface, Matrix4 transform) {
-    if (MatrixUtils.getAsTranslation(transform) == null) return null;
-    var capture = surface.intersect(
-      Offset.zero & (_viewportSize * _devicePixelRatio),
-    );
-    RenderObject descendant = this;
-    while (descendant.parent != null) {
-      final ancestor = descendant.parent!;
-      final clip = ancestor.describeApproximatePaintClip(descendant);
-      if (clip != null) {
-        final clipTransform = ancestor.getTransformTo(null);
-        if (MatrixUtils.getAsTranslation(clipTransform) == null) return null;
-        capture = capture.intersect(
-          _physicalRect(MatrixUtils.transformRect(clipTransform, clip)),
-        );
-      }
-      descendant = ancestor;
+  ({Rect surface, Rect? bounded}) _lensGeometry({required bool useBounded}) {
+    final root = owner!.rootNode!;
+    RenderObject ancestor = this;
+    while (!identical(ancestor, root)) {
+      _scenePath.add(ancestor);
+      ancestor = ancestor.parent!;
     }
-    if (!capture.isFinite || capture.isEmpty) return null;
+    _scenePath.add(root);
+    final transform = _sceneTransform..setIdentity();
+    var capture = Offset.zero & (_viewportSize * _devicePixelRatio);
+    try {
+      // Each ancestor's transform is a prefix of the lens transform. Walk it
+      // once so clip bounds and the lens use the same live paint transforms.
+      for (var index = _scenePath.length - 1; index > 0; index--) {
+        final parent = _scenePath[index];
+        final child = _scenePath[index - 1];
+        final clip = useBounded
+            ? parent.describeApproximatePaintClip(child)
+            : null;
+        if (clip != null) {
+          if (MatrixUtils.getAsTranslation(transform) == null) {
+            useBounded = false;
+          } else {
+            capture = capture.intersect(
+              _physicalRect(MatrixUtils.transformRect(transform, clip)),
+            );
+          }
+        }
+        // Like getTransformTo(null), stop in the root's logical coordinates.
+        if (!identical(parent, root)) {
+          parent.applyPaintTransform(child, transform);
+        }
+      }
+    } finally {
+      _scenePath.clear();
+    }
+    final surface = _physicalRect(
+      MatrixUtils.transformRect(transform, Offset.zero & size),
+    );
+    capture = capture.intersect(surface);
+    if (!useBounded ||
+        MatrixUtils.getAsTranslation(transform) == null ||
+        !capture.isFinite ||
+        capture.isEmpty) {
+      return (surface: surface, bounded: null);
+    }
     // Impeller rounds the native blur target out to whole physical pixels.
     // Preserve the full logical lens size, even if the target clips one side.
-    return surface.shift(
-      -Offset(capture.left.floorToDouble(), capture.top.floorToDouble()),
+    return (
+      surface: surface,
+      bounded: surface.shift(
+        -Offset(capture.left.floorToDouble(), capture.top.floorToDouble()),
+      ),
     );
   }
 
@@ -1660,13 +1841,7 @@ class _RenderLiquidGlassBackdrop extends RenderProxyBox {
     } else {
       // Paused fade frames only paint their retained foreground. Resolve the
       // transforms and clipping chain when the live material is needed again.
-      final transform = getTransformTo(null);
-      final surface = _physicalRect(
-        MatrixUtils.transformRect(transform, Offset.zero & size),
-      );
-      final bounded = partialOpacity
-          ? null
-          : _boundedLensBounds(surface, transform);
+      final (:surface, :bounded) = _lensGeometry(useBounded: !partialOpacity);
       debugResolvedBounds = bounded ?? surface;
       debugUsesBoundedInput = bounded != null;
       if (bounded == null) {
@@ -1964,6 +2139,63 @@ class _LiquidGlassShadowPainter extends CustomPainter {
       oldDelegate.highContrast != highContrast;
 }
 
+void _configureGlassMaterial(
+  ui.FragmentShader shader, {
+  required Rect surfaceBoundsPx,
+  required double devicePixelRatio,
+  required BorderRadius borderRadius,
+  required double intensity,
+  required LiquidGlassEdgeTreatment treatment,
+  required bool highContrast,
+  required bool useShapeMask,
+}) {
+  final surfaceOriginPx = surfaceBoundsPx.topLeft;
+  final surfaceSizePx = surfaceBoundsPx.size;
+  final opticalDimension = surfaceSizePx.shortestSide / devicePixelRatio;
+  final minimumDimension = math.max(1.0, opticalDimension);
+  final opticalStrength = intensity.clamp(0.72, 1.28);
+  final embedded = treatment == LiquidGlassEdgeTreatment.bottom;
+  // A shallow 8dp band only reads as a blurred outline on a 56-72dp
+  // capsule. Keep a visibly convex shoulder while reserving a broad,
+  // calm centre so bright cover art cannot turn the whole sheet milky.
+  final refractionHeight = embedded
+      ? 8.0 * opticalStrength
+      : (opticalDimension * (highContrast ? 0.28 : 0.25)).clamp(12.0, 18.0) *
+            opticalStrength;
+  final refractionAmount = embedded
+      ? 6.0 * opticalStrength
+      : (opticalDimension * 0.34).clamp(16.0, 24.0) * opticalStrength;
+  double radiusRatio(Radius radius) =>
+      (math.min(radius.x, radius.y) / minimumDimension).clamp(0.0, 0.5);
+
+  // Slots 0-1 are populated by ImageFilter.shader with the backing
+  // texture size. The following slots preserve this widget's physical
+  // dimensions and its origin inside that backing texture.
+  shader
+    ..setFloat(2, surfaceSizePx.width)
+    ..setFloat(3, surfaceSizePx.height)
+    ..setFloat(4, surfaceOriginPx.dx)
+    ..setFloat(5, surfaceOriginPx.dy)
+    ..setFloat(6, (refractionHeight / minimumDimension).clamp(0.0, 0.5))
+    ..setFloat(7, (refractionAmount / minimumDimension).clamp(0.0, 0.5))
+    // The reference shader treats depth as a real on/off term (1.0).
+    // Keep it slightly below that maximum so stretched Flutter pills
+    // bulge without pulling their end caps into a fisheye.
+    ..setFloat(8, embedded ? 0 : (highContrast ? 0.92 : 0.82))
+    // Dispersion stays deliberately restrained: the edge should inherit
+    // the artwork hue, not turn into a detached rainbow fringe.
+    ..setFloat(9, embedded ? 0 : 0.055)
+    ..setFloat(10, radiusRatio(borderRadius.topLeft))
+    ..setFloat(11, radiusRatio(borderRadius.topRight))
+    ..setFloat(12, radiusRatio(borderRadius.bottomRight))
+    ..setFloat(13, radiusRatio(borderRadius.bottomLeft))
+    ..setFloat(14, (1 + 0.3 * intensity).clamp(1.0, 1.44))
+    ..setFloat(15, (1 + 0.42 * intensity).clamp(1.0, 1.5))
+    ..setFloat(16, embedded ? 1 : 0)
+    ..setFloat(17, useShapeMask ? 1 : 0)
+    ..setFloat(18, 0);
+}
+
 class _LiquidGlassOpticsPainter extends CustomPainter {
   const _LiquidGlassOpticsPainter({
     required this.borderRadius,
@@ -2170,7 +2402,7 @@ class LiquidGlassHoverPainter extends CustomPainter {
     return dark
         ? [
             Colors.white.withValues(alpha: (0.028 * strength).clamp(0.0, 0.08)),
-            Colors.transparent,
+            Colors.black.withValues(alpha: (0.03 * strength).clamp(0.0, 0.06)),
             Colors.black.withValues(alpha: (0.065 * strength).clamp(0.0, 0.14)),
           ]
         : [

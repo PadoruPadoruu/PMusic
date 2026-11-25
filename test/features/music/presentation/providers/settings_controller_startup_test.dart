@@ -5,6 +5,7 @@ import 'dart:io';
 import 'package:bstream_music/features/music/presentation/providers/music_providers.dart';
 import 'package:bstream_music/core/platform/app_platform.dart';
 import 'package:bstream_music/core/theme/app_theme.dart';
+import 'package:bstream_music/services/audio_sources/audio_source_policy.dart';
 import 'package:bstream_music/services/storage/app_background_image_service.dart';
 import 'package:bstream_music/services/storage/local_database_service.dart';
 import 'package:flutter/foundation.dart';
@@ -118,7 +119,7 @@ void main() {
   );
 
   test(
-    'audio quality visibility defaults off and preserves an explicit saved value',
+    'audio quality visibility defaults on and preserves an explicit saved value',
     () async {
       SharedPreferences.setMockInitialValues({});
       final first = ProviderContainer(
@@ -130,14 +131,14 @@ void main() {
       );
       expect(
         (await first.read(settingsControllerProvider.future)).showAudioQuality,
-        isFalse,
+        isTrue,
       );
       await first
           .read(settingsControllerProvider.notifier)
-          .setShowAudioQuality(true);
+          .setShowAudioQuality(false);
       expect(
         first.read(settingsControllerProvider).value?.showAudioQuality,
-        isTrue,
+        isFalse,
       );
       first.dispose();
 
@@ -151,8 +152,88 @@ void main() {
       addTearDown(second.dispose);
       expect(
         (await second.read(settingsControllerProvider.future)).showAudioQuality,
-        isTrue,
+        isFalse,
       );
+    },
+  );
+
+  test(
+    'audio source priorities migrate and persist independently of quality',
+    () async {
+      SharedPreferences.setMockInitialValues({
+        'settings.wifiAudioQuality': 'standard',
+        'settings.mobileAudioSourcePreference': 'invalid-priority',
+      });
+      ProviderContainer openSettings() {
+        final container = ProviderContainer(
+          overrides: [
+            settingsControllerProvider.overrideWith(
+              () => SettingsController.forPlatform(AppPlatformType.ios),
+            ),
+          ],
+        );
+        addTearDown(container.dispose);
+        return container;
+      }
+
+      final first = openSettings();
+      final initial = await first.read(settingsControllerProvider.future);
+      const automatic = AudioSourcePreference.automatic();
+      const jioSaavn = AudioSourcePreference.jioSaavn();
+      expect(initial.wifiAudioQuality, AudioQualityProfile.standard);
+      expect(initial.downloadAudioQuality, AudioQualityProfile.standard);
+      expect(initial.wifiAudioSourcePreference, automatic);
+      expect(initial.mobileAudioSourcePreference, automatic);
+      expect(initial.downloadAudioSourcePreference, automatic);
+
+      final extensionA = AudioSourcePreference.audioExtension(
+        Uri.https('one.example', '/manifest.json'),
+      );
+      final extensionB = AudioSourcePreference.audioExtension(
+        Uri.https('two.example', '/manifest.json'),
+      );
+      final controller = first.read(settingsControllerProvider.notifier);
+      await Future.wait([
+        controller.setWifiAudioQuality(
+          AudioQualityProfile.high,
+          sourcePreference: extensionA,
+        ),
+        controller.setMobileAudioQuality(
+          AudioQualityProfile.high,
+          sourcePreference: jioSaavn,
+        ),
+        controller.setDownloadAudioQuality(
+          AudioQualityProfile.high,
+          sourcePreference: extensionA,
+        ),
+        controller.setMobileAudioQuality(AudioQualityProfile.standard),
+        controller.setWifiAudioQuality(
+          AudioQualityProfile.high,
+          sourcePreference: extensionB,
+        ),
+      ]);
+
+      final second = openSettings();
+      final restored = await second.read(settingsControllerProvider.future);
+      expect(restored.wifiAudioQuality, AudioQualityProfile.high);
+      expect(restored.wifiAudioSourcePreference, extensionB);
+      expect(restored.mobileAudioQuality, AudioQualityProfile.standard);
+      expect(restored.mobileAudioSourcePreference, jioSaavn);
+      expect(restored.downloadAudioQuality, AudioQualityProfile.high);
+      expect(restored.downloadAudioSourcePreference, extensionA);
+
+      await second
+          .read(settingsControllerProvider.notifier)
+          .setWifiAudioQuality(
+            AudioQualityProfile.high,
+            sourcePreference: automatic,
+          );
+      final reset = await openSettings().read(
+        settingsControllerProvider.future,
+      );
+      expect(reset.wifiAudioSourcePreference, automatic);
+      expect(reset.mobileAudioSourcePreference, jioSaavn);
+      expect(reset.downloadAudioSourcePreference, extensionA);
     },
   );
 

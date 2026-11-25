@@ -2,12 +2,24 @@
 
 En el menú de los tres puntos del reproductor:
 
-- **Salida de audio** muestra las salidas multimedia que expone el sistema y
-  controla su volumen, no el volumen independiente del reproductor.
+- En Android/iOS, **Salida Multimedia** abre el selector nativo de salidas
+  multimedia del sistema.
+- En Windows, Linux y macOS, **Salida de audio** permite elegir el dispositivo
+  para el reproductor de BStream y ajustar su volumen independiente.
 - **Transmitir a** busca receptores solo mientras está abierto. No busca equipos
   periódicamente en Inicio ni descarga la canción completa para transmitirla.
 
 ## Plataformas
+
+En escritorio se enumeran los dispositivos disponibles mediante media_kit.
+**Predeterminada del sistema** sigue la salida predeterminada del equipo;
+elegir otro dispositivo cambia la preferencia de las instancias del reproductor
+de BStream, sin modificar la salida ni el volumen global del sistema.
+La preferencia se mantiene durante la sesión, incluidos los cambios de canción,
+los fundidos entre canciones y la recuperación del motor de reproducción.
+Al reiniciar la app se vuelve al dispositivo predeterminado del sistema.
+El nombre seleccionado representa la preferencia configurada en el motor;
+la disponibilidad y la salida física final dependen del sistema y del dispositivo.
 
 Android 7+ admite selección preferente mediante el AudioTrack de Media3,
 audífonos/cable/USB/Bluetooth según el hardware y el selector del sistema cuando
@@ -53,11 +65,25 @@ El código de esta integración es original. No se incorporó su reproductor ni 
 cambió la versión Media3 fijada por BStream.
 
 Documentación primaria:
+[media_kit, selección de dispositivo](https://pub.dev/documentation/media_kit/latest/media_kit/Player/setAudioDevice.html),
 [Google Cast, formatos](https://developers.google.com/cast/docs/media),
 [salidas Android](https://developers.google.com/cast/docs/android_sender/output_switcher),
 [privacidad de red Apple](https://developer.apple.com/documentation/technotes/tn3179-understanding-local-network-privacy).
 
 ## Verificación
+
+Las pruebas del selector de escritorio cubren cambios de dispositivo, volumen
+propio, listas dinámicas, errores, fundidos y solicitudes bloqueadas. La prueba
+nativa usa WAV silencioso para comprobar enumeración en reposo, selección y
+reproducción con fundidos:
+
+```powershell
+flutter test integration_test/desktop_audio_output_native_test.dart -d windows
+```
+
+En CI sin dispositivo de audio se puede añadir
+`--dart-define=BSTREAM_HEADLESS_AUDIO=true`. La audibilidad y la recuperación tras
+desconectar físicamente un dispositivo requieren una comprobación con hardware.
 
 Pruebas automatizadas de transporte, rangos/cancelación HTTP, SOAP DLNA,
 concurrencia, cambios de canción, fallback local, volumen y tamaños de menú.

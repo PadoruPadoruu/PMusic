@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'player_lyrics_icon.dart';
 import 'dart:io';
 
 import 'package:file_picker/file_picker.dart';
@@ -20,19 +21,30 @@ import '../../../../platform_channels/android_file_export_channel.dart';
 import '../../../../platform_channels/android_supported_links_settings_channel.dart';
 import '../../../../platform_channels/ios_file_export_channel.dart';
 import '../../../../services/app_update/github_release_checker.dart';
+import '../../../../services/audio_sources/audio_extension.dart';
+import '../../../../services/audio_sources/audio_extension_resolver.dart';
+import '../../../../services/audio_sources/audio_source_policy.dart';
 import '../../../../services/live/tiktok_live_command_service.dart';
 import '../../../../services/storage/library_csv_service.dart';
+import '../providers/audio_source_providers.dart';
 import '../providers/live_overlay_controller.dart';
 import '../providers/music_providers.dart';
 import 'app_update_dialog.dart';
+import 'equalizer_settings_page.dart';
 import 'library_csv_import_dialog.dart';
 import 'lyrics_animation_transition.dart';
+import 'lyrics_background_selector.dart';
 import 'live_widget_style_settings.dart';
 import 'scrolled_under_tab_frame.dart';
+import 'player_style_gallery.dart';
 import 'youtube_music_settings_account_card.dart';
 
 typedef DownloadDirectoryPicker =
     Future<String?> Function({String? dialogTitle, String? initialDirectory});
+
+bool _usesSingleAudioQuality(BuildContext context) =>
+    AppPlatform.isDesktop &&
+    !AppPlatform.isMobileTargetPlatform(Theme.of(context).platform);
 
 double _settingsContentMaxWidth(BuildContext context, double compactWidth) {
   final desktopLayout =
@@ -136,11 +148,19 @@ final settingsSupportedLinksLauncherProvider =
 
 enum _SettingsRoute {
   root,
+  language,
   appearance,
+  playerFont,
+  playerStyles,
   liveWidget,
   lyrics,
   lyricsProviders,
   storage,
+  audioSources,
+  dataSaving,
+  wifiQuality,
+  mobileQuality,
+  downloadQuality,
   live,
   about,
 }
@@ -262,6 +282,7 @@ class _SettingsPanelState extends ConsumerState<SettingsPanel> {
         : const Duration(milliseconds: 220);
 
     Widget routeFrame(Widget body, {List<Widget>? rootSlivers}) {
+      if (_route == _SettingsRoute.playerStyles) return body;
       final header = _SettingsHeader(
         route: _route,
         title: _routeTitle(_route, strings),
@@ -394,8 +415,13 @@ class _SettingsPanelState extends ConsumerState<SettingsPanel> {
     }
     setState(() {
       _route = switch (_route) {
-        _SettingsRoute.liveWidget => _SettingsRoute.appearance,
+        _SettingsRoute.liveWidget ||
+        _SettingsRoute.playerFont ||
+        _SettingsRoute.playerStyles => _SettingsRoute.appearance,
         _SettingsRoute.lyricsProviders => _SettingsRoute.lyrics,
+        _SettingsRoute.wifiQuality ||
+        _SettingsRoute.mobileQuality ||
+        _SettingsRoute.downloadQuality => _SettingsRoute.dataSaving,
         _ => _SettingsRoute.root,
       };
     });
@@ -405,11 +431,22 @@ class _SettingsPanelState extends ConsumerState<SettingsPanel> {
   String _routeTitle(_SettingsRoute route, AppStrings strings) {
     return switch (route) {
       _SettingsRoute.root => strings.settings,
+      _SettingsRoute.language => strings.language,
       _SettingsRoute.appearance => strings.appearance,
+      _SettingsRoute.playerFont => strings.playerFont,
+      _SettingsRoute.playerStyles => strings.playerStyles,
       _SettingsRoute.liveWidget => strings.liveWidget,
       _SettingsRoute.lyrics => strings.lyricsAppearance,
       _SettingsRoute.lyricsProviders => strings.lyricsProviders,
       _SettingsRoute.storage => strings.storage,
+      _SettingsRoute.audioSources => strings.audioSources,
+      _SettingsRoute.dataSaving => strings.dataSaving,
+      _SettingsRoute.wifiQuality =>
+        _usesSingleAudioQuality(context)
+            ? strings.audioQuality
+            : strings.wifiNetwork,
+      _SettingsRoute.mobileQuality => strings.mobileNetwork,
+      _SettingsRoute.downloadQuality => strings.downloadAudioQuality,
       _SettingsRoute.live => strings.liveConnection,
       _SettingsRoute.about => strings.aboutApplication,
     };
@@ -422,6 +459,25 @@ class _SettingsPanelState extends ConsumerState<SettingsPanel> {
     required AppStrings strings,
   }) {
     final content = switch (_route) {
+      _SettingsRoute.language => Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        spacing: appCardGap,
+        children: [
+          for (final language in AppLanguage.values)
+            _SettingsChoiceOption(
+              key: ValueKey('settings-language-option-${language.name}'),
+              selected: state.language == language,
+              icon: Icons.language_rounded,
+              label: language.label,
+              onTap: () {
+                if (state.language == language) return;
+                ref
+                    .read(settingsControllerProvider.notifier)
+                    .setLanguage(language);
+              },
+            ),
+        ],
+      ),
       _SettingsRoute.appearance => _AppearanceSettings(
         themeMode: state.themeMode,
         accent: state.accent,
@@ -457,10 +513,8 @@ class _SettingsPanelState extends ConsumerState<SettingsPanel> {
         onAppBackgroundCleared: () => ref
             .read(settingsControllerProvider.notifier)
             .clearAppBackgroundPhoto(),
-        onPlayerFontChanged: (font) =>
-            ref.read(settingsControllerProvider.notifier).setPlayerFont(font),
-        onPlayerStyleChanged: (style) =>
-            ref.read(settingsControllerProvider.notifier).setPlayerStyle(style),
+        onOpenPlayerFont: () => _openRoute(_SettingsRoute.playerFont),
+        onOpenPlayerStyles: () => _openRoute(_SettingsRoute.playerStyles),
         onShowAudioQualityChanged: (enabled) => ref
             .read(settingsControllerProvider.notifier)
             .setShowAudioQuality(enabled),
@@ -483,6 +537,40 @@ class _SettingsPanelState extends ConsumerState<SettingsPanel> {
             .read(settingsControllerProvider.notifier)
             .setMiniPlayerBackgroundMode(mode),
       ),
+      _SettingsRoute.playerFont => Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        spacing: appCardGap,
+        children: [
+          for (final font in PlayerFont.values)
+            _SettingsChoiceOption(
+              key: ValueKey('settings-player-font-option-${font.code}'),
+              selected: state.playerFont == font,
+              icon: Icons.text_fields_rounded,
+              label: strings.playerFontLabel(font),
+              subtitle: strings.playerFontDescription(font),
+              fontFamily: font.fontFamily,
+              onTap: () => ref
+                  .read(settingsControllerProvider.notifier)
+                  .setPlayerFont(font),
+            ),
+        ],
+      ),
+      _SettingsRoute.playerStyles => PlayerStyleGalleryPage(
+        style: state.playerStyle,
+        strings: strings,
+        header: _SettingsHeader(
+          route: _SettingsRoute.playerStyles,
+          title: strings.playerStyles,
+          strings: strings,
+          onBack: _goBack,
+        ),
+        bottomContentPadding: widget.bottomContentPadding,
+        onChanged: (style) async {
+          await ref
+              .read(settingsControllerProvider.notifier)
+              .setPlayerStyle(style);
+        },
+      ),
       _SettingsRoute.liveWidget => LiveWidgetStyleSettings(
         style: state.liveWidgetStyle,
         accent: state.accent,
@@ -495,6 +583,7 @@ class _SettingsPanelState extends ConsumerState<SettingsPanel> {
         enabledProviders: state.enabledLyricsProviders,
         onOpenProviders: () => _openRoute(_SettingsRoute.lyricsProviders),
         animationStyle: state.lyricsAnimationStyle,
+        backgroundStyle: state.lyricsBackgroundStyle,
         alignment: state.lyricsTextAlignment,
         romanizationEnabled: state.lyricsRomanizationEnabled,
         romanizationLanguages: state.lyricsRomanizationLanguages,
@@ -502,6 +591,9 @@ class _SettingsPanelState extends ConsumerState<SettingsPanel> {
         onAnimationChanged: (style) => ref
             .read(settingsControllerProvider.notifier)
             .setLyricsAnimationStyle(style),
+        onBackgroundChanged: (style) => ref
+            .read(settingsControllerProvider.notifier)
+            .setLyricsBackgroundStyle(style),
         onAlignmentChanged: (alignment) => ref
             .read(settingsControllerProvider.notifier)
             .setLyricsTextAlignment(alignment),
@@ -518,6 +610,33 @@ class _SettingsPanelState extends ConsumerState<SettingsPanel> {
         onChanged: (provider, enabled) => ref
             .read(settingsControllerProvider.notifier)
             .toggleLyricsProvider(provider, enabled),
+      ),
+      _SettingsRoute.audioSources => _AudioSourcesSettings(
+        jioSaavnEnabled: state.jioSaavnEnabled,
+        extensions: state.audioExtensions,
+        strings: strings,
+        onAdd: () => _showAddAudioSourceDialog(strings),
+        onJioSaavnChanged: (enabled) => ref
+            .read(settingsControllerProvider.notifier)
+            .setJioSaavnEnabled(enabled),
+        onExtensionChanged: (extension, enabled) => ref
+            .read(settingsControllerProvider.notifier)
+            .setAudioExtensionEnabled(extension.manifestUri, enabled),
+        onRemove: (extension) => ref
+            .read(settingsControllerProvider.notifier)
+            .removeAudioExtension(extension.manifestUri),
+      ),
+      _SettingsRoute.dataSaving => _DataSavingSettings(
+        state: state,
+        strings: strings,
+        singleProfile: _usesSingleAudioQuality(context),
+        onQualityTap: _openRoute,
+      ),
+      _SettingsRoute.wifiQuality ||
+      _SettingsRoute.mobileQuality ||
+      _SettingsRoute.downloadQuality => _buildAudioQualityOptions(
+        state,
+        strings,
       ),
       _SettingsRoute.storage => _StorageSettings(
         strings: strings,
@@ -590,7 +709,10 @@ class _SettingsPanelState extends ConsumerState<SettingsPanel> {
           children: [
             Padding(
               padding: const EdgeInsets.only(bottom: appSectionGap),
-              child: YouTubeMusicSettingsAccountCard(strings: strings),
+              child: YouTubeMusicSettingsAccountCard(
+                strings: strings,
+                active: widget.active,
+              ),
             ),
             _SettingsGroup(
               titleKey: const ValueKey('settings-first-section-title'),
@@ -601,10 +723,7 @@ class _SettingsPanelState extends ConsumerState<SettingsPanel> {
                   icon: Icons.language_rounded,
                   title: strings.language,
                   subtitle: state.language.label,
-                  onTap: () => _chooseLanguage(
-                    currentLanguage: state.language,
-                    strings: strings,
-                  ),
+                  onTap: () => _openRoute(_SettingsRoute.language),
                 ),
               ],
             ),
@@ -624,7 +743,7 @@ class _SettingsPanelState extends ConsumerState<SettingsPanel> {
                 const SizedBox(height: appCardGap),
                 _SettingsEntryCard(
                   key: const ValueKey('settings-card-lyrics-appearance'),
-                  icon: Icons.lyrics_rounded,
+                  leading: const PlayerLyricsIcon(),
                   title: strings.lyrics,
                   subtitle:
                       '${strings.lyricsAnimationLabel(state.lyricsAnimationStyle)}'
@@ -637,6 +756,16 @@ class _SettingsPanelState extends ConsumerState<SettingsPanel> {
             _SettingsGroup(
               title: strings.playback,
               children: [
+                if (supportsEqualizerSettings(context)) ...[
+                  _SettingsEntryCard(
+                    key: const ValueKey('settings-card-equalizer'),
+                    icon: Icons.equalizer_rounded,
+                    title: strings.equalizer,
+                    subtitle: strings.equalizerSummary,
+                    onTap: () => unawaited(showEqualizerSettings(context)),
+                  ),
+                  const SizedBox(height: appCardGap),
+                ],
                 KeyedSubtree(
                   key: const ValueKey('settings-inline-timer'),
                   child: _SleepTimerSettingsScope(
@@ -662,6 +791,7 @@ class _SettingsPanelState extends ConsumerState<SettingsPanel> {
                   _SkipSilenceSettings(
                     key: const ValueKey('settings-inline-skip-silence'),
                     enabled: state.skipSilenceEnabled,
+                    available: ref.watch(skipSilenceAvailableProvider),
                     strings: strings,
                     onEnabledChanged: ref
                         .read(settingsControllerProvider.notifier)
@@ -720,6 +850,14 @@ class _SettingsPanelState extends ConsumerState<SettingsPanel> {
               title: strings.storage,
               children: [
                 _SettingsEntryCard(
+                  key: const ValueKey('storage-data-saving'),
+                  icon: Icons.data_saver_on_rounded,
+                  title: strings.dataSaving,
+                  subtitle: strings.dataSavingSummary,
+                  onTap: () => _openRoute(_SettingsRoute.dataSaving),
+                ),
+                const SizedBox(height: appCardGap),
+                _SettingsEntryCard(
                   key: const ValueKey('settings-card-storage'),
                   icon: Icons.storage_rounded,
                   title: strings.backupAndRestore,
@@ -741,55 +879,62 @@ class _SettingsPanelState extends ConsumerState<SettingsPanel> {
                 ),
               ],
             ),
-            if (showSupportedLinks || supportsTikTokLive)
-              Consumer(
-                builder: (context, scopedRef, _) {
-                  final tiktokLive = supportsTikTokLive
-                      ? scopedRef.watch(tiktokLiveControllerProvider)
-                      : null;
-                  final liveState = tiktokLive?.value;
-                  return _SettingsGroup(
-                    title: strings.integrations,
-                    children: [
-                      if (showSupportedLinks)
-                        _SettingsEntryCard(
-                          key: const ValueKey('settings-card-supported-links'),
-                          icon: Icons.link_rounded,
-                          title: strings.supportedLinks,
-                          subtitle: strings.supportedLinksSummary,
-                          onTap: _openSupportedLinksSettings,
-                        ),
-                      if (showSupportedLinks && tiktokLive != null)
-                        const SizedBox(height: appCardGap),
-                      if (tiktokLive != null) ...[
-                        _SettingsEntryCard(
-                          key: const ValueKey('settings-card-live'),
-                          icon: Icons.live_tv_rounded,
-                          title: strings.liveConnection,
-                          subtitle:
-                              liveState?.message ??
-                              strings.liveConnectionSummary,
-                          status: switch (liveState?.status) {
-                            TikTokLiveStatus.connected => true,
-                            TikTokLiveStatus.error ||
-                            TikTokLiveStatus.liveEnded => false,
-                            _ => null,
-                          },
-                          onTap: () => _openRoute(_SettingsRoute.live),
-                        ),
-                        const SizedBox(height: appCardGap),
-                        _LiveRequestStorageCard(
-                          state: liveState,
-                          strings: strings,
-                          onChanged: (value) => scopedRef
-                              .read(tiktokLiveControllerProvider.notifier)
-                              .setSaveRequestsToLibrary(value),
-                        ),
-                      ],
+            Consumer(
+              builder: (context, scopedRef, _) {
+                final tiktokLive = supportsTikTokLive
+                    ? scopedRef.watch(tiktokLiveControllerProvider)
+                    : null;
+                final liveState = tiktokLive?.value;
+                return _SettingsGroup(
+                  title: strings.integrations,
+                  children: [
+                    _SettingsEntryCard(
+                      key: const ValueKey('settings-card-audio-sources'),
+                      icon: Icons.library_music_rounded,
+                      title: strings.audioSources,
+                      subtitle: strings.audioSourcesSummary,
+                      onTap: () => _openRoute(_SettingsRoute.audioSources),
+                    ),
+                    if (showSupportedLinks || tiktokLive != null)
+                      const SizedBox(height: appCardGap),
+                    if (showSupportedLinks)
+                      _SettingsEntryCard(
+                        key: const ValueKey('settings-card-supported-links'),
+                        icon: Icons.link_rounded,
+                        title: strings.supportedLinks,
+                        subtitle: strings.supportedLinksSummary,
+                        onTap: _openSupportedLinksSettings,
+                      ),
+                    if (showSupportedLinks && tiktokLive != null)
+                      const SizedBox(height: appCardGap),
+                    if (tiktokLive != null) ...[
+                      _SettingsEntryCard(
+                        key: const ValueKey('settings-card-live'),
+                        icon: Icons.live_tv_rounded,
+                        title: strings.liveConnection,
+                        subtitle:
+                            liveState?.message ?? strings.liveConnectionSummary,
+                        status: switch (liveState?.status) {
+                          TikTokLiveStatus.connected => true,
+                          TikTokLiveStatus.error ||
+                          TikTokLiveStatus.liveEnded => false,
+                          _ => null,
+                        },
+                        onTap: () => _openRoute(_SettingsRoute.live),
+                      ),
+                      const SizedBox(height: appCardGap),
+                      _LiveRequestStorageCard(
+                        state: liveState,
+                        strings: strings,
+                        onChanged: (value) => scopedRef
+                            .read(tiktokLiveControllerProvider.notifier)
+                            .setSaveRequestsToLibrary(value),
+                      ),
                     ],
-                  );
-                },
-              ),
+                  ],
+                );
+              },
+            ),
             _SettingsGroup(
               title: strings.applicationInformation,
               children: [
@@ -858,19 +1003,69 @@ class _SettingsPanelState extends ConsumerState<SettingsPanel> {
     }
   }
 
-  Future<void> _chooseLanguage({
-    required AppLanguage currentLanguage,
-    required AppStrings strings,
-  }) async {
-    final selected = await showAppDialog<AppLanguage>(
+  Widget _buildAudioQualityOptions(SettingsState state, AppStrings strings) {
+    final route = _route;
+    final downloads = route == _SettingsRoute.downloadQuality;
+    final controller = ref.read(settingsControllerProvider.notifier);
+    final (saved, preference, apply) = switch (route) {
+      _SettingsRoute.wifiQuality => (
+        state.wifiAudioQuality,
+        state.wifiAudioSourcePreference,
+        controller.setWifiAudioQuality,
+      ),
+      _SettingsRoute.mobileQuality => (
+        state.mobileAudioQuality,
+        state.mobileAudioSourcePreference,
+        controller.setMobileAudioQuality,
+      ),
+      _SettingsRoute.downloadQuality => (
+        state.downloadAudioQuality,
+        state.downloadAudioSourcePreference,
+        controller.setDownloadAudioQuality,
+      ),
+      _ => throw StateError('Expected an audio quality route'),
+    };
+    return _AudioQualityProfileSettings(
+      choices: _AudioQualityChoices(
+        state,
+        profile: saved,
+        preference: preference,
+        downloads: downloads,
+      ),
+      strings: strings,
+      onChanged: (profile, sourcePreference) async {
+        if (route != _route) return;
+        final current = ref.read(settingsControllerProvider).value;
+        if (current == null ||
+            (sourcePreference != null &&
+                !_AudioQualityChoices(
+                  current,
+                  profile: profile,
+                  preference: sourcePreference,
+                  downloads: downloads,
+                ).preferredAvailable)) {
+          return;
+        }
+        await apply(profile, sourcePreference: sourcePreference);
+      },
+    );
+  }
+
+  Future<void> _showAddAudioSourceDialog(AppStrings strings) async {
+    final resolver = ref.read(audioExtensionResolverProvider);
+    final extensions = await showAppDialog<List<AudioExtension>>(
       context: context,
       builder: (_) =>
-          _LanguageSelectorDialog(language: currentLanguage, strings: strings),
+          _AddAudioSourceDialog(strings: strings, onLoad: resolver.loadSources),
     );
-    if (!mounted || selected == null || selected == currentLanguage) {
-      return;
+    if (!mounted || extensions == null) return;
+    try {
+      await ref
+          .read(settingsControllerProvider.notifier)
+          .addAudioExtensions(extensions);
+    } catch (_) {
+      if (mounted) _showSnackBar(strings.audioExtensionUnavailable);
     }
-    await ref.read(settingsControllerProvider.notifier).setLanguage(selected);
   }
 
   Future<void> _chooseLocalMusicFilters({
@@ -1433,6 +1628,33 @@ class _SettingsHeader extends StatelessWidget {
   }
 }
 
+class _SettingsLeadingIcon extends StatelessWidget {
+  const _SettingsLeadingIcon({this.icon, this.child, this.color})
+    : assert(icon != null || child != null);
+
+  final IconData? icon;
+  final Widget? child;
+  final Color? color;
+
+  @override
+  Widget build(BuildContext context) {
+    final highlight = color ?? Theme.of(context).colorScheme.primary;
+    return Container(
+      width: 46,
+      height: 46,
+      decoration: BoxDecoration(
+        color: highlight.withValues(alpha: 0.14),
+        borderRadius: BorderRadius.circular(appListCardIconRadius),
+        border: Border.all(color: highlight.withValues(alpha: 0.24)),
+      ),
+      child: IconTheme.merge(
+        data: IconThemeData(color: highlight, size: 24),
+        child: Center(child: child ?? Icon(icon)),
+      ),
+    );
+  }
+}
+
 class _SettingsEntryCard extends StatelessWidget {
   const _SettingsEntryCard({
     this.icon,
@@ -1462,15 +1684,7 @@ class _SettingsEntryCard extends StatelessWidget {
     final desktopLayout =
         AppPlatform.isDesktop && theme.platform != TargetPlatform.android;
     final highlight = accent ?? colors.primary;
-    final card = Material(
-      color: AppColors.cardSurfaceFor(context),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(appCardRadius),
-        side: BorderSide(
-          color: AppColors.cardBorderFor(context, solidInLiquidGlass: true),
-        ),
-      ),
-      clipBehavior: Clip.antiAlias,
+    final card = _SettingsItemSurface(
       child: InkWell(
         onTap: onTap,
         child: ConstrainedBox(
@@ -1479,22 +1693,10 @@ class _SettingsEntryCard extends StatelessWidget {
             padding: const EdgeInsets.fromLTRB(16, 12, 12, 12),
             child: Row(
               children: [
-                Container(
-                  width: 46,
-                  height: 46,
-                  decoration: BoxDecoration(
-                    color: highlight.withValues(alpha: 0.14),
-                    borderRadius: BorderRadius.circular(appListCardIconRadius),
-                    border: Border.all(
-                      color: highlight.withValues(alpha: 0.24),
-                    ),
-                  ),
-                  child: IconTheme.merge(
-                    data: IconThemeData(color: highlight, size: 24),
-                    child: Center(
-                      child: leading ?? Icon(icon, color: highlight, size: 24),
-                    ),
-                  ),
+                _SettingsLeadingIcon(
+                  icon: icon,
+                  color: highlight,
+                  child: leading,
                 ),
                 const SizedBox(width: 14),
                 Expanded(
@@ -1548,7 +1750,7 @@ class _SettingsEntryCard extends StatelessWidget {
       constraints: BoxConstraints(
         maxWidth: desktopLayout ? double.infinity : 760,
       ),
-      child: AppCardGradientBorder(solidInLiquidGlass: true, child: card),
+      child: card,
     );
   }
 }
@@ -1570,8 +1772,7 @@ class _AboutApplicationSettings extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+    return _SettingsSectionPanel(
       children: [
         _SettingsEntryCard(
           key: const ValueKey('settings-about-version'),
@@ -1591,14 +1792,8 @@ class _AboutApplicationSettings extends StatelessWidget {
         _SettingsEntryCard(
           key: const ValueKey('settings-about-whats-new'),
           icon: Icons.auto_awesome_rounded,
-          title: strings.choose(
-            'Novedades de ${AppConstants.appVersion}',
-            "What's new in ${AppConstants.appVersion}",
-          ),
-          subtitle: strings.choose(
-            'Widget, personalización, rendimiento, idiomas y más',
-            'Widget, customization, performance, languages, and more',
-          ),
+          title: strings.whatsNewTitle(AppConstants.appVersion),
+          subtitle: strings.whatsNewSummary,
           onTap: () => _showWhatsNew(context),
         ),
         const SizedBox(height: appCardGap),
@@ -1622,55 +1817,12 @@ class _AboutApplicationSettings extends StatelessWidget {
   }
 
   Future<void> _showWhatsNew(BuildContext context) async {
-    final legacyHighlights = strings.isEnglish
-        ? const <String>[
-            'The player widget is now available for your home screen.',
-            'Personalize the app background with an image from your gallery.',
-            'You can now change the font throughout the app.',
-            'Animated artwork performance has been optimized.',
-            'Select multiple songs in albums, mixes, and search results to add them to a playlist or download them.',
-            'Interface performance and smoothness have been improved.',
-            'Album, mix, and artist pages now inherit colors from their cover art.',
-            'Portuguese, French, Korean, Chinese, and Japanese are now supported.',
-            'Share up to five song lyric lines as an image with artwork, blur, gradient, or a photo from your gallery.',
-          ]
-        : const <String>[
-            'Ya está disponible el widget del reproductor para la pantalla de inicio.',
-            'Personaliza el fondo de la aplicación con una imagen de tu galería.',
-            'Ahora puedes cambiar la fuente de toda la aplicación.',
-            'Se optimizó el rendimiento de los artworks animados.',
-            'Selecciona varias canciones en álbumes, mixes y resultados de búsqueda para añadirlas a una playlist o descargarlas.',
-            'Se hicieron mejoras en la interfaz para ofrecer más rendimiento y fluidez.',
-            'Los fondos de álbumes, mixes y artistas ahora heredan los tonos de sus portadas.',
-            'La aplicación ahora es compatible con portugués, francés, coreano, chino y japonés.',
-            'Comparte hasta cinco líneas de una canción como imagen con portada, desenfoque, gradiente o una foto de tu galería.',
-          ];
-    const englishHighlights = <String>[
-      'The player widget is now available for your home screen.',
-      'Personalize the app background with an image from your gallery.',
-      'You can now change the font throughout the app.',
-      'Animated artwork performance has been optimized.',
-      'Select multiple songs in albums, mixes, and search results to add them to a playlist or download them.',
-      'Interface performance and smoothness have been improved.',
-      'Album, mix, and artist pages now inherit colors from their cover art.',
-      'Portuguese, French, Korean, Chinese, and Japanese are now supported.',
-      'Share up to five song lyric lines as an image with artwork, blur, gradient, or a photo from your gallery.',
-    ];
-    final highlights = List<String>.generate(
-      englishHighlights.length,
-      (index) =>
-          strings.choose(legacyHighlights[index], englishHighlights[index]),
-    );
+    final highlights = strings.whatsNewHighlights;
     await showAppDialog<void>(
       context: context,
       builder: (dialogContext) => AppAlertDialog(
         key: const ValueKey('settings-about-whats-new-dialog'),
-        title: Text(
-          strings.choose(
-            'Novedades de ${AppConstants.appVersion}',
-            "What's new in ${AppConstants.appVersion}",
-          ),
-        ),
+        title: Text(strings.whatsNewTitle(AppConstants.appVersion)),
         content: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 480),
           child: SingleChildScrollView(
@@ -1714,60 +1866,14 @@ class _AboutApplicationSettings extends StatelessWidget {
   }
 }
 
-class _LanguageSelectorDialog extends StatelessWidget {
-  const _LanguageSelectorDialog({
-    required this.language,
-    required this.strings,
-  });
-
-  final AppLanguage language;
-  final AppStrings strings;
-
-  @override
-  Widget build(BuildContext context) {
-    return AppAlertDialog(
-      key: const ValueKey('settings-language-dialog'),
-      scrollable: true,
-      insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
-      title: Text(strings.language),
-      content: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 420),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            for (var index = 0; index < AppLanguage.values.length; index++) ...[
-              if (index > 0) const SizedBox(height: 8),
-              _SettingsDialogOption(
-                key: ValueKey(
-                  'settings-language-option-${AppLanguage.values[index].name}',
-                ),
-                selected: language == AppLanguage.values[index],
-                icon: Icons.language_rounded,
-                label: AppLanguage.values[index].label,
-                onTap: () =>
-                    Navigator.of(context).pop(AppLanguage.values[index]),
-              ),
-            ],
-          ],
-        ),
-      ),
-      actions: [
-        TextButton(
-          key: const ValueKey('settings-language-cancel'),
-          onPressed: () => Navigator.of(context).pop(),
-          child: Text(strings.cancel),
-        ),
-      ],
-    );
-  }
-}
-
-class _SettingsDialogOption extends StatelessWidget {
-  const _SettingsDialogOption({
+class _SettingsChoiceOption extends StatelessWidget {
+  const _SettingsChoiceOption({
     required this.selected,
     this.icon,
     this.leading,
     required this.label,
+    this.subtitle,
+    this.fontFamily,
     required this.onTap,
     super.key,
   }) : assert(icon != null || leading != null);
@@ -1776,15 +1882,20 @@ class _SettingsDialogOption extends StatelessWidget {
   final IconData? icon;
   final Widget? leading;
   final String label;
+  final String? subtitle;
+  final String? fontFamily;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
     return Semantics(
       button: true,
       selected: selected,
       label: label,
+      hint: subtitle,
+      onTap: onTap,
       excludeSemantics: true,
       child: Material(
         color: selected
@@ -1825,12 +1936,30 @@ class _SettingsDialogOption extends StatelessWidget {
                   ),
                   const SizedBox(width: 12),
                   Expanded(
-                    child: Text(
-                      label,
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        color: selected ? colors.onPrimaryContainer : null,
-                        fontWeight: FontWeight.w700,
-                      ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          label,
+                          style: textTheme.titleMedium?.copyWith(
+                            fontFamily: fontFamily,
+                            color: selected ? colors.onPrimaryContainer : null,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        if (subtitle != null)
+                          Text(
+                            subtitle!,
+                            style: textTheme.bodySmall?.copyWith(
+                              color: selected
+                                  ? colors.onPrimaryContainer.withValues(
+                                      alpha: 0.8,
+                                    )
+                                  : colors.onSurfaceVariant,
+                            ),
+                          ),
+                      ],
                     ),
                   ),
                   const SizedBox(width: 8),
@@ -1846,212 +1975,6 @@ class _SettingsDialogOption extends StatelessWidget {
           ),
         ),
       ),
-    );
-  }
-}
-
-class _PlayerFontSelectorDialog extends StatefulWidget {
-  const _PlayerFontSelectorDialog({required this.font, required this.strings});
-
-  final PlayerFont font;
-  final AppStrings strings;
-
-  @override
-  State<_PlayerFontSelectorDialog> createState() =>
-      _PlayerFontSelectorDialogState();
-}
-
-class _PlayerFontSelectorDialogState extends State<_PlayerFontSelectorDialog> {
-  late PlayerFont selected = widget.font;
-
-  @override
-  Widget build(BuildContext context) {
-    return AppAlertDialog(
-      key: const ValueKey('settings-player-font-dialog'),
-      scrollable: true,
-      insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
-      title: Text(widget.strings.playerFont),
-      content: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 420),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            for (final font in PlayerFont.values) ...[
-              if (font != PlayerFont.current) const SizedBox(height: 8),
-              _PlayerFontOption(
-                key: ValueKey('settings-player-font-option-${font.code}'),
-                font: font,
-                selected: selected == font,
-                strings: widget.strings,
-                onTap: () => setState(() => selected = font),
-              ),
-            ],
-          ],
-        ),
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.of(context).pop(),
-          child: Text(widget.strings.cancel),
-        ),
-        FilledButton(
-          key: const ValueKey('settings-player-font-apply'),
-          onPressed: () => Navigator.of(context).pop(selected),
-          child: Text(widget.strings.apply),
-        ),
-      ],
-    );
-  }
-}
-
-class _PlayerFontOption extends StatelessWidget {
-  const _PlayerFontOption({
-    required this.font,
-    required this.selected,
-    required this.strings,
-    required this.onTap,
-    super.key,
-  });
-
-  final PlayerFont font;
-  final bool selected;
-  final AppStrings strings;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = Theme.of(context).colorScheme;
-    return Semantics(
-      button: true,
-      selected: selected,
-      label: strings.playerFontLabel(font),
-      excludeSemantics: true,
-      child: Material(
-        color: selected
-            ? colors.primaryContainer.withValues(
-                alpha: AppColors.cardSurfaceOpacityFor(context),
-              )
-            : AppColors.cardSurfaceFor(context),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(appListCardIconRadius),
-          side: BorderSide(
-            color: selected ? colors.primary : colors.outlineVariant,
-          ),
-        ),
-        clipBehavior: Clip.antiAlias,
-        child: InkWell(
-          onTap: onTap,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-            child: Row(
-              children: [
-                Icon(
-                  Icons.text_fields_rounded,
-                  color: selected ? colors.primary : colors.onSurfaceVariant,
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        strings.playerFontLabel(font),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          fontFamily: font.fontFamily,
-                          fontSize: 16,
-                          fontWeight: FontWeight.w700,
-                          color: selected
-                              ? colors.onPrimaryContainer
-                              : colors.onSurface,
-                        ),
-                      ),
-                      Text(
-                        strings.playerFontDescription(font),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: selected
-                              ? colors.onPrimaryContainer.withValues(alpha: 0.8)
-                              : colors.onSurfaceVariant,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Icon(
-                  selected
-                      ? Icons.check_circle_rounded
-                      : Icons.radio_button_unchecked_rounded,
-                  color: selected ? colors.primary : colors.onSurfaceVariant,
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _PlayerStyleSelectorDialog extends StatelessWidget {
-  const _PlayerStyleSelectorDialog({
-    required this.style,
-    required this.strings,
-  });
-
-  final PlayerStyle style;
-  final AppStrings strings;
-
-  @override
-  Widget build(BuildContext context) {
-    return AppAlertDialog(
-      key: const ValueKey('settings-player-style-dialog'),
-      scrollable: true,
-      insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
-      title: Text(strings.player),
-      content: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 420),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            _SettingsDialogOption(
-              key: const ValueKey('settings-player-style-option-bstream-music'),
-              selected: style == PlayerStyle.bstreamMusic,
-              icon: Icons.graphic_eq_rounded,
-              label: strings.playerStyleBStreamMusic,
-              onTap: () => Navigator.of(context).pop(PlayerStyle.bstreamMusic),
-            ),
-            const SizedBox(height: 8),
-            _SettingsDialogOption(
-              key: const ValueKey('settings-player-style-option-apple-music'),
-              selected: style == PlayerStyle.appleMusic,
-              icon: Icons.music_note_rounded,
-              label: strings.playerStyleAppleMusic,
-              onTap: () => Navigator.of(context).pop(PlayerStyle.appleMusic),
-            ),
-            const SizedBox(height: 8),
-            _SettingsDialogOption(
-              key: const ValueKey('settings-player-style-option-classic-vinyl'),
-              selected: style == PlayerStyle.classicVinyl,
-              icon: Icons.album_rounded,
-              label: strings.playerStyleClassicVinyl,
-              onTap: () => Navigator.of(context).pop(PlayerStyle.classicVinyl),
-            ),
-          ],
-        ),
-      ),
-      actions: [
-        TextButton(
-          key: const ValueKey('settings-player-style-cancel'),
-          onPressed: () => Navigator.of(context).pop(),
-          child: Text(strings.cancel),
-        ),
-      ],
     );
   }
 }
@@ -2077,7 +2000,7 @@ class _PlayerArtworkStyleSelectorDialog extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            _SettingsDialogOption(
+            _SettingsChoiceOption(
               key: const ValueKey(
                 'settings-player-artwork-style-option-classic',
               ),
@@ -2088,7 +2011,7 @@ class _PlayerArtworkStyleSelectorDialog extends StatelessWidget {
                   Navigator.of(context).pop(PlayerArtworkStyle.classic),
             ),
             const SizedBox(height: 8),
-            _SettingsDialogOption(
+            _SettingsChoiceOption(
               key: const ValueKey(
                 'settings-player-artwork-style-option-expanded',
               ),
@@ -2133,7 +2056,7 @@ class _MiniPlayerModeSelectorDialog extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            _SettingsDialogOption(
+            _SettingsChoiceOption(
               key: const ValueKey('settings-mini-player-option-default'),
               selected: mode == MiniPlayerMode.standard,
               leading: const _MiniPlayerStyleIcon(
@@ -2144,7 +2067,7 @@ class _MiniPlayerModeSelectorDialog extends StatelessWidget {
               onTap: () => Navigator.of(context).pop(MiniPlayerMode.standard),
             ),
             const SizedBox(height: 8),
-            _SettingsDialogOption(
+            _SettingsChoiceOption(
               key: const ValueKey('settings-mini-player-option-capsule'),
               selected: mode == MiniPlayerMode.capsule,
               leading: const _MiniPlayerStyleIcon(
@@ -2189,7 +2112,7 @@ class _SurfaceBackgroundSelectorDialog extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            _SettingsDialogOption(
+            _SettingsChoiceOption(
               key: const ValueKey('settings-surface-background-option-accent'),
               selected: mode == SurfaceBackgroundMode.accent,
               icon: Icons.format_color_fill_rounded,
@@ -2198,7 +2121,7 @@ class _SurfaceBackgroundSelectorDialog extends StatelessWidget {
                   Navigator.of(context).pop(SurfaceBackgroundMode.accent),
             ),
             const SizedBox(height: 8),
-            _SettingsDialogOption(
+            _SettingsChoiceOption(
               key: const ValueKey(
                 'settings-surface-background-option-transparent',
               ),
@@ -2209,7 +2132,7 @@ class _SurfaceBackgroundSelectorDialog extends StatelessWidget {
                   Navigator.of(context).pop(SurfaceBackgroundMode.transparent),
             ),
             const SizedBox(height: 8),
-            _SettingsDialogOption(
+            _SettingsChoiceOption(
               key: const ValueKey(
                 'settings-surface-background-option-liquid-glass',
               ),
@@ -2256,7 +2179,7 @@ class _AppBackgroundSelectorDialog extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            _SettingsDialogOption(
+            _SettingsChoiceOption(
               key: const ValueKey('settings-app-background-option-none'),
               selected: !customSelected,
               icon: Icons.hide_image_rounded,
@@ -2264,7 +2187,7 @@ class _AppBackgroundSelectorDialog extends StatelessWidget {
               onTap: () => Navigator.of(context).pop(_AppBackgroundChoice.none),
             ),
             const SizedBox(height: 8),
-            _SettingsDialogOption(
+            _SettingsChoiceOption(
               key: const ValueKey('settings-app-background-option-custom'),
               selected: customSelected,
               icon: Icons.add_photo_alternate_rounded,
@@ -2307,7 +2230,7 @@ class _MiniPlayerBackgroundSelectorDialog extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            _SettingsDialogOption(
+            _SettingsChoiceOption(
               key: const ValueKey(
                 'settings-mini-player-background-option-accent',
               ),
@@ -2318,7 +2241,7 @@ class _MiniPlayerBackgroundSelectorDialog extends StatelessWidget {
                   Navigator.of(context).pop(MiniPlayerBackgroundMode.accent),
             ),
             const SizedBox(height: 8),
-            _SettingsDialogOption(
+            _SettingsChoiceOption(
               key: const ValueKey(
                 'settings-mini-player-background-option-artwork',
               ),
@@ -2329,7 +2252,7 @@ class _MiniPlayerBackgroundSelectorDialog extends StatelessWidget {
                   Navigator.of(context).pop(MiniPlayerBackgroundMode.artwork),
             ),
             const SizedBox(height: 8),
-            _SettingsDialogOption(
+            _SettingsChoiceOption(
               key: const ValueKey(
                 'settings-mini-player-background-option-transparent',
               ),
@@ -2341,7 +2264,7 @@ class _MiniPlayerBackgroundSelectorDialog extends StatelessWidget {
               ).pop(MiniPlayerBackgroundMode.transparent),
             ),
             const SizedBox(height: 8),
-            _SettingsDialogOption(
+            _SettingsChoiceOption(
               key: const ValueKey(
                 'settings-mini-player-background-option-liquid-glass',
               ),
@@ -2390,8 +2313,8 @@ class _AppearanceSettings extends StatelessWidget {
     required this.onPickAppBackgroundPhoto,
     required this.onAppBackgroundPhotoSelected,
     required this.onAppBackgroundCleared,
-    required this.onPlayerFontChanged,
-    required this.onPlayerStyleChanged,
+    required this.onOpenPlayerFont,
+    required this.onOpenPlayerStyles,
     required this.onShowAudioQualityChanged,
     required this.onAnimatedArtworkEnabledChanged,
     required this.onPlayerArtworkStyleChanged,
@@ -2424,8 +2347,8 @@ class _AppearanceSettings extends StatelessWidget {
   final AppBackgroundPhotoPicker onPickAppBackgroundPhoto;
   final Future<void> Function(File) onAppBackgroundPhotoSelected;
   final Future<void> Function() onAppBackgroundCleared;
-  final Future<void> Function(PlayerFont) onPlayerFontChanged;
-  final Future<void> Function(PlayerStyle) onPlayerStyleChanged;
+  final VoidCallback onOpenPlayerFont;
+  final VoidCallback onOpenPlayerStyles;
   final Future<void> Function(bool) onShowAudioQualityChanged;
   final Future<void> Function(bool) onAnimatedArtworkEnabledChanged;
   final Future<void> Function(PlayerArtworkStyle) onPlayerArtworkStyleChanged;
@@ -2445,28 +2368,6 @@ class _AppearanceSettings extends StatelessWidget {
       return;
     }
     await onMiniPlayerModeChanged(selected);
-  }
-
-  Future<void> _choosePlayerStyle(BuildContext context) async {
-    final selected = await showAppDialog<PlayerStyle>(
-      context: context,
-      builder: (_) =>
-          _PlayerStyleSelectorDialog(style: playerStyle, strings: strings),
-    );
-    if (!context.mounted || selected == null || selected == playerStyle) {
-      return;
-    }
-    await onPlayerStyleChanged(selected);
-  }
-
-  Future<void> _choosePlayerFont(BuildContext context) async {
-    final selected = await showAppDialog<PlayerFont>(
-      context: context,
-      builder: (_) =>
-          _PlayerFontSelectorDialog(font: playerFont, strings: strings),
-    );
-    if (!context.mounted || selected == null || selected == playerFont) return;
-    await onPlayerFontChanged(selected);
   }
 
   Future<void> _choosePlayerArtworkStyle(BuildContext context) async {
@@ -2553,268 +2454,248 @@ class _AppearanceSettings extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            strings.theme,
-            style: Theme.of(
-              context,
-            ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w800),
-          ),
-          const SizedBox(height: 10),
-          SegmentedButton<AppThemeMode>(
-            selected: {themeMode},
-            style: ButtonStyle(
-              minimumSize: WidgetStateProperty.all(const Size(0, 50)),
-              padding: WidgetStateProperty.all(
-                const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-              ),
-              textStyle: WidgetStateProperty.all(
-                Theme.of(
-                  context,
-                ).textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w800),
-              ),
-              iconSize: WidgetStateProperty.all(22),
-            ),
-            segments: [
-              ButtonSegment(
-                value: AppThemeMode.system,
-                icon: const Icon(Icons.settings_suggest_rounded),
-                label: Text(strings.themeSystem),
-              ),
-              ButtonSegment(
-                value: AppThemeMode.light,
-                icon: const Icon(Icons.light_mode_rounded),
-                label: Text(strings.themeLight),
-              ),
-              ButtonSegment(
-                value: AppThemeMode.dark,
-                icon: const Icon(Icons.dark_mode_rounded),
-                label: Text(strings.themeDark),
+          _SettingsSectionPanel(
+            title: strings.theme,
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(12, 6, 12, 12),
+                child: _ThemeModeSelector(
+                  selected: themeMode,
+                  strings: strings,
+                  onChanged: onThemeModeChanged,
+                ),
               ),
             ],
-            onSelectionChanged: (selection) =>
-                onThemeModeChanged(selection.first),
           ),
-          const SizedBox(height: 16),
-          Text(
-            strings.accentColor,
-            style: Theme.of(
-              context,
-            ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w800),
-          ),
-          const SizedBox(height: 10),
-          Align(
-            alignment: Alignment.centerLeft,
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 328),
-              child: LayoutBuilder(
-                builder: (context, constraints) {
-                  final columnCount = constraints.maxWidth < 328 ? 5 : 6;
-                  return GridView.builder(
-                    key: const ValueKey('accent-palette-grid'),
-                    shrinkWrap: true,
-                    primary: false,
-                    physics: const NeverScrollableScrollPhysics(),
-                    padding: EdgeInsets.zero,
-                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: columnCount,
-                      crossAxisSpacing: 8,
-                      mainAxisSpacing: 8,
+          const SizedBox(height: appSectionGap),
+          _SettingsSectionPanel(
+            title: strings.accentColor,
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(0, 6, 0, 12),
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 384),
+                    child: LayoutBuilder(
+                      builder: (context, constraints) {
+                        final columnCount =
+                            ((constraints.maxWidth / 48).floor().clamp(1, 8) -
+                                    1)
+                                .clamp(1, 7);
+                        return GridView.builder(
+                          key: const ValueKey('accent-palette-grid'),
+                          shrinkWrap: true,
+                          primary: false,
+                          physics: const NeverScrollableScrollPhysics(),
+                          padding: EdgeInsets.zero,
+                          gridDelegate:
+                              SliverGridDelegateWithFixedCrossAxisCount(
+                                crossAxisCount: columnCount,
+                              ),
+                          itemCount: AppAccent.values.length,
+                          itemBuilder: (context, index) {
+                            final option = AppAccent.values[index];
+                            return _AccentSwatch(
+                              accent: option,
+                              selected: option == accent,
+                              label: strings.accentLabel(option),
+                              onTap: () => onAccentChanged(option),
+                            );
+                          },
+                        );
+                      },
                     ),
-                    itemCount: AppAccent.values.length,
-                    itemBuilder: (context, index) {
-                      final option = AppAccent.values[index];
-                      return _AccentSwatch(
-                        accent: option,
-                        selected: option == accent,
-                        label: strings.accentLabel(option),
-                        onTap: () => onAccentChanged(option),
-                      );
-                    },
-                  );
-                },
-              ),
-            ),
-          ),
-          const SizedBox(height: 24),
-          Text(
-            strings.surfaceEffects,
-            style: Theme.of(
-              context,
-            ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w800),
-          ),
-          const SizedBox(height: 10),
-          _SettingsEntryCard(
-            key: const ValueKey('surface-background-selector'),
-            icon: switch (surfaceBackgroundMode) {
-              SurfaceBackgroundMode.accent => Icons.format_color_fill_rounded,
-              SurfaceBackgroundMode.transparent => Icons.blur_on_rounded,
-              SurfaceBackgroundMode.liquidGlass => Icons.water_drop_rounded,
-            },
-            title: strings.surfaceBackground,
-            subtitle: strings.surfaceBackgroundModeLabel(surfaceBackgroundMode),
-            onTap: () => _chooseSurfaceBackgroundMode(context),
-          ),
-          const SizedBox(height: appCardGap),
-          _SettingsEntryCard(
-            key: const ValueKey('app-background-selector'),
-            icon: Icons.wallpaper_rounded,
-            title: strings.appBackground,
-            subtitle: appBackgroundPath == null
-                ? strings.appBackgroundNone
-                : strings.appBackgroundCustom,
-            onTap: () => _chooseAppBackground(context),
-          ),
-          const SizedBox(height: appCardGap),
-          _SettingsEntryCard(
-            key: const ValueKey('player-font-selector'),
-            icon: Icons.text_fields_rounded,
-            title: strings.playerFont,
-            subtitle: strings.playerFontLabel(playerFont),
-            onTap: () => _choosePlayerFont(context),
-          ),
-          const SizedBox(height: 24),
-          Text(
-            strings.player,
-            style: Theme.of(
-              context,
-            ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w800),
-          ),
-          const SizedBox(height: 10),
-          _SettingsEntryCard(
-            key: const ValueKey('player-style-selector'),
-            icon: switch (playerStyle) {
-              PlayerStyle.bstreamMusic => Icons.graphic_eq_rounded,
-              PlayerStyle.appleMusic => Icons.music_note_rounded,
-              PlayerStyle.classicVinyl => Icons.album_rounded,
-            },
-            title: strings.playerStyle,
-            subtitle: strings.playerStyleLabel(playerStyle),
-            onTap: () => _choosePlayerStyle(context),
-          ),
-          const SizedBox(height: appCardGap),
-          _SettingsEntryCard(
-            key: const ValueKey('show-audio-quality-toggle'),
-            icon: Icons.high_quality_rounded,
-            title: strings.showAudioQuality,
-            subtitle: strings.showAudioQualityDescription,
-            onTap: () => onShowAudioQualityChanged(!showAudioQuality),
-            trailing: Switch.adaptive(
-              key: const ValueKey('show-audio-quality-switch'),
-              value: showAudioQuality,
-              onChanged: onShowAudioQualityChanged,
-            ),
-          ),
-          const SizedBox(height: appCardGap),
-          _SettingsEntryCard(
-            key: const ValueKey('animated-artwork-toggle'),
-            icon: Icons.motion_photos_auto_rounded,
-            title: strings.animatedArtwork,
-            subtitle: strings.animatedArtworkDescription,
-            onTap: () =>
-                onAnimatedArtworkEnabledChanged(!animatedArtworkEnabled),
-            trailing: Switch.adaptive(
-              key: const ValueKey('animated-artwork-switch'),
-              value: animatedArtworkEnabled,
-              onChanged: onAnimatedArtworkEnabledChanged,
-            ),
-          ),
-          const SizedBox(height: appCardGap),
-          _SettingsEntryCard(
-            key: const ValueKey('player-artwork-style-selector'),
-            icon: switch (playerArtworkStyle) {
-              PlayerArtworkStyle.classic => Icons.crop_square_rounded,
-              PlayerArtworkStyle.expanded => Icons.aspect_ratio_rounded,
-            },
-            title: strings.playerArtworkStyle,
-            subtitle: strings.playerArtworkStyleLabel(playerArtworkStyle),
-            onTap: () => _choosePlayerArtworkStyle(context),
-          ),
-          const SizedBox(height: appCardGap),
-          _SettingsEntryCard(
-            key: const ValueKey('apple-animated-artwork-toggle'),
-            icon: Icons.live_tv_rounded,
-            title: strings.appleAnimatedArtwork,
-            subtitle: AppPlatform.current == AppPlatformType.linux
-                ? strings.spotifyCanvasUnavailable
-                : strings.appleAnimatedArtworkDescription,
-            onTap: AppPlatform.current == AppPlatformType.linux
-                ? null
-                : () => onAppleAnimatedArtworkEnabledChanged(
-                    !appleAnimatedArtworkEnabled,
                   ),
-            trailing: Switch.adaptive(
-              key: const ValueKey('apple-animated-artwork-switch'),
-              value:
-                  AppPlatform.current != AppPlatformType.linux &&
-                  appleAnimatedArtworkEnabled,
-              onChanged: AppPlatform.current == AppPlatformType.linux
-                  ? null
-                  : onAppleAnimatedArtworkEnabledChanged,
-            ),
+                ),
+              ),
+            ],
           ),
-          const SizedBox(height: appCardGap),
-          _SettingsEntryCard(
-            key: const ValueKey('spotify-canvas-toggle'),
-            icon: Icons.movie_filter_rounded,
-            title: strings.spotifyCanvas,
-            subtitle: AppPlatform.current == AppPlatformType.linux
-                ? strings.spotifyCanvasUnavailable
-                : strings.spotifyCanvasDescription,
-            onTap: AppPlatform.current == AppPlatformType.linux
-                ? null
-                : () => onSpotifyCanvasEnabledChanged(!spotifyCanvasEnabled),
-            trailing: Switch.adaptive(
-              key: const ValueKey('spotify-canvas-switch'),
-              value:
-                  AppPlatform.current != AppPlatformType.linux &&
-                  spotifyCanvasEnabled,
-              onChanged: AppPlatform.current == AppPlatformType.linux
-                  ? null
-                  : onSpotifyCanvasEnabledChanged,
-            ),
+          const SizedBox(height: appSectionGap),
+          _SettingsSectionPanel(
+            title: strings.surfaceEffects,
+            children: [
+              _SettingsEntryCard(
+                key: const ValueKey('surface-background-selector'),
+                icon: switch (surfaceBackgroundMode) {
+                  SurfaceBackgroundMode.accent =>
+                    Icons.format_color_fill_rounded,
+                  SurfaceBackgroundMode.transparent => Icons.blur_on_rounded,
+                  SurfaceBackgroundMode.liquidGlass => Icons.water_drop_rounded,
+                },
+                title: strings.surfaceBackground,
+                subtitle: strings.surfaceBackgroundModeLabel(
+                  surfaceBackgroundMode,
+                ),
+                onTap: () => _chooseSurfaceBackgroundMode(context),
+              ),
+              const SizedBox(height: appCardGap),
+              _SettingsEntryCard(
+                key: const ValueKey('app-background-selector'),
+                icon: Icons.wallpaper_rounded,
+                title: strings.appBackground,
+                subtitle: appBackgroundPath == null
+                    ? strings.appBackgroundNone
+                    : strings.appBackgroundCustom,
+                onTap: () => _chooseAppBackground(context),
+              ),
+              const SizedBox(height: appCardGap),
+              _SettingsEntryCard(
+                key: const ValueKey('player-font-selector'),
+                icon: Icons.text_fields_rounded,
+                title: strings.playerFont,
+                subtitle: strings.playerFontLabel(playerFont),
+                onTap: onOpenPlayerFont,
+              ),
+            ],
           ),
-          const SizedBox(height: 24),
-          Text(
-            strings.miniPlayer,
-            style: Theme.of(
-              context,
-            ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w800),
+          const SizedBox(height: appSectionGap),
+          _SettingsSectionPanel(
+            title: strings.player,
+            children: [
+              _SettingsEntryCard(
+                key: const ValueKey('player-style-selector'),
+                icon: switch (playerStyle) {
+                  PlayerStyle.bstreamMusic => Icons.graphic_eq_rounded,
+                  PlayerStyle.appleMusic => Icons.music_note_rounded,
+                  PlayerStyle.classicVinyl => Icons.album_rounded,
+                  PlayerStyle.spotifyMusic => Icons.play_circle_rounded,
+                },
+                title: strings.playerStyle,
+                subtitle: strings.playerStyleLabel(playerStyle),
+                onTap: onOpenPlayerStyles,
+              ),
+              const SizedBox(height: appCardGap),
+              _SettingsEntryCard(
+                key: const ValueKey('show-audio-quality-toggle'),
+                icon: Icons.high_quality_rounded,
+                title: strings.showAudioQuality,
+                subtitle: strings.showAudioQualityDescription,
+                onTap: () => onShowAudioQualityChanged(!showAudioQuality),
+                trailing: Switch.adaptive(
+                  key: const ValueKey('show-audio-quality-switch'),
+                  value: showAudioQuality,
+                  onChanged: onShowAudioQualityChanged,
+                ),
+              ),
+              const SizedBox(height: appCardGap),
+              _SettingsEntryCard(
+                key: const ValueKey('animated-artwork-toggle'),
+                icon: Icons.motion_photos_auto_rounded,
+                title: strings.animatedArtwork,
+                subtitle: strings.animatedArtworkDescription,
+                onTap: () =>
+                    onAnimatedArtworkEnabledChanged(!animatedArtworkEnabled),
+                trailing: Switch.adaptive(
+                  key: const ValueKey('animated-artwork-switch'),
+                  value: animatedArtworkEnabled,
+                  onChanged: onAnimatedArtworkEnabledChanged,
+                ),
+              ),
+              const SizedBox(height: appCardGap),
+              _SettingsEntryCard(
+                key: const ValueKey('player-artwork-style-selector'),
+                icon: switch (playerArtworkStyle) {
+                  PlayerArtworkStyle.classic => Icons.crop_square_rounded,
+                  PlayerArtworkStyle.expanded => Icons.aspect_ratio_rounded,
+                },
+                title: strings.playerArtworkStyle,
+                subtitle: strings.playerArtworkStyleLabel(playerArtworkStyle),
+                onTap: () => _choosePlayerArtworkStyle(context),
+              ),
+              const SizedBox(height: appCardGap),
+              _SettingsEntryCard(
+                key: const ValueKey('apple-animated-artwork-toggle'),
+                icon: Icons.live_tv_rounded,
+                title: strings.appleAnimatedArtwork,
+                subtitle: AppPlatform.current == AppPlatformType.linux
+                    ? strings.spotifyCanvasUnavailable
+                    : strings.appleAnimatedArtworkDescription,
+                onTap: AppPlatform.current == AppPlatformType.linux
+                    ? null
+                    : () => onAppleAnimatedArtworkEnabledChanged(
+                        !appleAnimatedArtworkEnabled,
+                      ),
+                trailing: Switch.adaptive(
+                  key: const ValueKey('apple-animated-artwork-switch'),
+                  value:
+                      AppPlatform.current != AppPlatformType.linux &&
+                      appleAnimatedArtworkEnabled,
+                  onChanged: AppPlatform.current == AppPlatformType.linux
+                      ? null
+                      : onAppleAnimatedArtworkEnabledChanged,
+                ),
+              ),
+              const SizedBox(height: appCardGap),
+              _SettingsEntryCard(
+                key: const ValueKey('spotify-canvas-toggle'),
+                icon: Icons.movie_filter_rounded,
+                title: strings.spotifyCanvas,
+                subtitle: AppPlatform.current == AppPlatformType.linux
+                    ? strings.spotifyCanvasUnavailable
+                    : strings.spotifyCanvasDescription,
+                onTap: AppPlatform.current == AppPlatformType.linux
+                    ? null
+                    : () =>
+                          onSpotifyCanvasEnabledChanged(!spotifyCanvasEnabled),
+                trailing: Switch.adaptive(
+                  key: const ValueKey('spotify-canvas-switch'),
+                  value:
+                      AppPlatform.current != AppPlatformType.linux &&
+                      spotifyCanvasEnabled,
+                  onChanged: AppPlatform.current == AppPlatformType.linux
+                      ? null
+                      : onSpotifyCanvasEnabledChanged,
+                ),
+              ),
+            ],
           ),
-          const SizedBox(height: 10),
-          _SettingsEntryCard(
-            key: const ValueKey('mini-player-mode-selector'),
-            leading: _MiniPlayerStyleIcon(
-              key: const ValueKey('mini-player-mode-selector-icon'),
-              mode: miniPlayerMode,
-            ),
-            title: strings.miniPlayerStyle,
-            subtitle: strings.miniPlayerModeLabel(miniPlayerMode),
-            onTap: () => _chooseMiniPlayerMode(context),
+          const SizedBox(height: appSectionGap),
+          _SettingsSectionPanel(
+            title: strings.miniPlayer,
+            children: [
+              _SettingsEntryCard(
+                key: const ValueKey('mini-player-mode-selector'),
+                leading: _MiniPlayerStyleIcon(
+                  key: const ValueKey('mini-player-mode-selector-icon'),
+                  mode: miniPlayerMode,
+                ),
+                title: strings.miniPlayerStyle,
+                subtitle: strings.miniPlayerModeLabel(miniPlayerMode),
+                onTap: () => _chooseMiniPlayerMode(context),
+              ),
+              const SizedBox(height: appCardGap),
+              _SettingsEntryCard(
+                key: const ValueKey('mini-player-background-selector'),
+                icon: switch (miniPlayerBackgroundMode) {
+                  MiniPlayerBackgroundMode.accent =>
+                    Icons.format_color_fill_rounded,
+                  MiniPlayerBackgroundMode.artwork => Icons.image_rounded,
+                  MiniPlayerBackgroundMode.transparent => Icons.blur_on_rounded,
+                  MiniPlayerBackgroundMode.liquidGlass =>
+                    Icons.water_drop_rounded,
+                },
+                title: strings.miniPlayerBackground,
+                subtitle: strings.miniPlayerBackgroundModeLabel(
+                  miniPlayerBackgroundMode,
+                ),
+                onTap: () => _chooseMiniPlayerBackgroundMode(context),
+              ),
+            ],
           ),
-          const SizedBox(height: appCardGap),
-          _SettingsEntryCard(
-            key: const ValueKey('mini-player-background-selector'),
-            icon: switch (miniPlayerBackgroundMode) {
-              MiniPlayerBackgroundMode.accent =>
-                Icons.format_color_fill_rounded,
-              MiniPlayerBackgroundMode.artwork => Icons.image_rounded,
-              MiniPlayerBackgroundMode.transparent => Icons.blur_on_rounded,
-              MiniPlayerBackgroundMode.liquidGlass => Icons.water_drop_rounded,
-            },
-            title: strings.miniPlayerBackground,
-            subtitle: strings.miniPlayerBackgroundModeLabel(
-              miniPlayerBackgroundMode,
-            ),
-            onTap: () => _chooseMiniPlayerBackgroundMode(context),
-          ),
+          const SizedBox(height: appSectionGap),
           if (onOpenLiveWidget != null) ...[
-            const SizedBox(height: 24),
-            _SettingsEntryCard(
-              key: const ValueKey('live-widget-style-selector'),
-              icon: Icons.live_tv_rounded,
+            _SettingsSectionPanel(
               title: strings.liveWidget,
-              subtitle: strings.liveWidgetStyleLabel(liveWidgetStyle),
-              onTap: onOpenLiveWidget,
+              children: [
+                _SettingsEntryCard(
+                  key: const ValueKey('live-widget-style-selector'),
+                  icon: Icons.live_tv_rounded,
+                  title: strings.liveWidget,
+                  subtitle: strings.liveWidgetStyleLabel(liveWidgetStyle),
+                  onTap: onOpenLiveWidget,
+                ),
+              ],
             ),
           ],
         ],
@@ -2917,11 +2798,13 @@ class _LyricsAppearanceSettings extends StatelessWidget {
     required this.enabledProviders,
     required this.onOpenProviders,
     required this.animationStyle,
+    required this.backgroundStyle,
     required this.alignment,
     required this.romanizationEnabled,
     required this.romanizationLanguages,
     required this.strings,
     required this.onAnimationChanged,
+    required this.onBackgroundChanged,
     required this.onAlignmentChanged,
     required this.onRomanizationEnabledChanged,
     required this.onRomanizationLanguagesChanged,
@@ -2930,11 +2813,13 @@ class _LyricsAppearanceSettings extends StatelessWidget {
   final Set<LyricsProvider> enabledProviders;
   final VoidCallback onOpenProviders;
   final LyricsAnimationStyle animationStyle;
+  final LyricsBackgroundStyle backgroundStyle;
   final LyricsTextAlignment alignment;
   final bool romanizationEnabled;
   final Set<LyricsRomanizationLanguage> romanizationLanguages;
   final AppStrings strings;
   final ValueChanged<LyricsAnimationStyle> onAnimationChanged;
+  final ValueChanged<LyricsBackgroundStyle> onBackgroundChanged;
   final ValueChanged<LyricsTextAlignment> onAlignmentChanged;
   final ValueChanged<bool> onRomanizationEnabledChanged;
   final ValueChanged<Set<LyricsRomanizationLanguage>>
@@ -2949,175 +2834,192 @@ class _LyricsAppearanceSettings extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _SettingsEntryCard(
-            key: const ValueKey('settings-card-lyrics-providers'),
-            icon: Icons.library_music_rounded,
-            title: strings.lyricsProviders,
-            subtitle: enabledProviders.isEmpty
-                ? strings.noLyricsProvidersEnabled
-                : LyricsProvider.values
-                      .where(enabledProviders.contains)
-                      .map((provider) => provider.label)
-                      .join(' · '),
-            onTap: onOpenProviders,
-          ),
-          const SizedBox(height: 22),
-          Text(
-            strings.lyricsAnimation,
-            style: Theme.of(
-              context,
-            ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w800),
-          ),
-          const SizedBox(height: 10),
-          Wrap(
-            key: const ValueKey('lyrics-animation-options'),
-            spacing: 8,
-            runSpacing: 8,
+          _SettingsSectionPanel(
             children: [
-              for (final option in LyricsAnimationStyle.values)
-                ChoiceChip(
-                  key: ValueKey('lyrics-animation-option-${option.code}'),
-                  selected: animationStyle == option,
-                  showCheckmark: true,
-                  avatar: Icon(_lyricsAnimationIcon(option), size: 18),
-                  label: Text(strings.lyricsAnimationLabel(option)),
-                  onSelected: (_) => onAnimationChanged(option),
-                ),
+              _SettingsEntryCard(
+                key: const ValueKey('settings-card-lyrics-providers'),
+                icon: Icons.library_music_rounded,
+                title: strings.lyricsProviders,
+                subtitle: enabledProviders.isEmpty
+                    ? strings.noLyricsProvidersEnabled
+                    : LyricsProvider.values
+                          .where(enabledProviders.contains)
+                          .map((provider) => provider.label)
+                          .join(' · '),
+                onTap: onOpenProviders,
+              ),
             ],
           ),
-          const SizedBox(height: 22),
-          Text(
-            strings.lyricsAlignment,
-            style: Theme.of(
-              context,
-            ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w800),
-          ),
-          const SizedBox(height: 10),
-          SizedBox(
-            width: double.infinity,
-            child: SegmentedButton<LyricsTextAlignment>(
-              key: const ValueKey('lyrics-alignment-options'),
-              selected: {alignment},
-              segments: [
-                ButtonSegment(
-                  value: LyricsTextAlignment.normal,
-                  icon: const Icon(Icons.format_align_left_rounded),
-                  label: Text(strings.normalLyricsAlignment),
+          const SizedBox(height: appSectionGap),
+          _SettingsSectionPanel(
+            title: strings.lyricsBackground,
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(12, 6, 12, 12),
+                child: LyricsBackgroundSelector(
+                  value: backgroundStyle,
+                  strings: strings,
+                  onChanged: onBackgroundChanged,
                 ),
-                ButtonSegment(
-                  value: LyricsTextAlignment.centered,
-                  icon: const Icon(Icons.format_align_center_rounded),
-                  label: Text(strings.centeredLyricsAlignment),
+              ),
+            ],
+          ),
+          const SizedBox(height: appSectionGap),
+          _SettingsSectionPanel(
+            title: strings.lyricsAnimation,
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(12, 6, 12, 12),
+                child: LyricsAppearanceSelector<LyricsAnimationStyle>(
+                  keyPrefix: 'lyrics-animation',
+                  value: animationStyle,
+                  onChanged: onAnimationChanged,
+                  options: [
+                    for (final option in LyricsAnimationStyle.values)
+                      (
+                        value: option,
+                        code: option.code,
+                        label: strings.lyricsAnimationLabel(option),
+                      ),
+                  ],
                 ),
-              ],
-              onSelectionChanged: (selection) =>
-                  onAlignmentChanged(selection.first),
-            ),
+              ),
+            ],
           ),
-          const SizedBox(height: 22),
-          Text(
-            strings.lyricsRomanization,
-            style: Theme.of(
-              context,
-            ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w800),
-          ),
-          const SizedBox(height: 10),
-          Material(
-            key: const ValueKey('lyrics-romanization-card'),
-            color: AppColors.neutralSurfaceFor(context),
-            borderRadius: BorderRadius.circular(appCardRadius),
-            clipBehavior: Clip.antiAlias,
-            child: Column(
-              children: [
-                SwitchListTile.adaptive(
-                  key: const ValueKey('lyrics-romanization-toggle'),
-                  value: romanizationEnabled,
-                  title: Text(strings.romanizeLyrics),
-                  subtitle: Text(
-                    strings.romanizeLyricsSummary,
-                    style: appListCardSubtitleStyle(context),
+          const SizedBox(height: appSectionGap),
+          _SettingsSectionPanel(
+            title: strings.lyricsAlignment,
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(12, 6, 12, 12),
+                child: SizedBox(
+                  width: double.infinity,
+                  child: SegmentedButton<LyricsTextAlignment>(
+                    key: const ValueKey('lyrics-alignment-options'),
+                    selected: {alignment},
+                    segments: [
+                      ButtonSegment(
+                        value: LyricsTextAlignment.normal,
+                        icon: const Icon(Icons.format_align_left_rounded),
+                        label: Text(strings.normalLyricsAlignment),
+                      ),
+                      ButtonSegment(
+                        value: LyricsTextAlignment.centered,
+                        icon: const Icon(Icons.format_align_center_rounded),
+                        label: Text(strings.centeredLyricsAlignment),
+                      ),
+                    ],
+                    onSelectionChanged: (selection) =>
+                        onAlignmentChanged(selection.first),
                   ),
-                  secondary: const Icon(Icons.translate_rounded),
-                  onChanged: onRomanizationEnabledChanged,
                 ),
-                if (romanizationEnabled) ...[
-                  const Divider(height: 1),
-                  Padding(
-                    key: const ValueKey('lyrics-romanization-languages'),
-                    padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Align(
-                          alignment: Alignment.centerLeft,
-                          child: Text(
-                            strings.romanizationLanguages,
-                            style: Theme.of(context).textTheme.labelLarge
-                                ?.copyWith(fontWeight: FontWeight.w800),
-                          ),
-                        ),
-                        const SizedBox(height: 10),
-                        Align(
-                          alignment: Alignment.centerLeft,
-                          child: Wrap(
-                            spacing: 8,
-                            runSpacing: 8,
-                            children: [
-                              for (final language
-                                  in LyricsRomanizationLanguage.values)
-                                FilterChip(
-                                  key: ValueKey(
-                                    'lyrics-romanization-language-'
-                                    '${language.code}',
-                                  ),
-                                  selected: romanizationLanguages.contains(
-                                    language,
-                                  ),
-                                  showCheckmark: true,
-                                  label: Text(
-                                    strings.romanizationLanguageLabel(language),
-                                  ),
-                                  onSelected:
-                                      romanizationLanguages.contains(
-                                            language,
-                                          ) &&
-                                          romanizationLanguages.length == 1
-                                      ? null
-                                      : (selected) {
-                                          final next = romanizationLanguages
-                                              .toSet();
-                                          if (selected) {
-                                            next.add(language);
-                                          } else {
-                                            next.remove(language);
-                                          }
-                                          onRomanizationLanguagesChanged(next);
-                                        },
-                                ),
-                            ],
-                          ),
-                        ),
-                      ],
+              ),
+            ],
+          ),
+          const SizedBox(height: appSectionGap),
+          _SettingsSectionPanel(
+            title: strings.lyricsRomanization,
+            children: [
+              _SettingsItemSurface(
+                key: const ValueKey('lyrics-romanization-card'),
+                child: Column(
+                  children: [
+                    SwitchListTile.adaptive(
+                      key: const ValueKey('lyrics-romanization-toggle'),
+                      value: romanizationEnabled,
+                      title: Text(strings.romanizeLyrics),
+                      subtitle: Text(
+                        strings.romanizeLyricsSummary,
+                        style: appListCardSubtitleStyle(context),
+                      ),
+                      secondary: const Icon(Icons.translate_rounded),
+                      onChanged: onRomanizationEnabledChanged,
                     ),
-                  ),
-                ],
-              ],
-            ),
+                    if (romanizationEnabled) ...[
+                      const Divider(height: 1),
+                      Padding(
+                        key: const ValueKey('lyrics-romanization-languages'),
+                        padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Align(
+                              alignment: Alignment.centerLeft,
+                              child: Text(
+                                strings.romanizationLanguages,
+                                style: Theme.of(context).textTheme.labelLarge
+                                    ?.copyWith(fontWeight: FontWeight.w800),
+                              ),
+                            ),
+                            const SizedBox(height: 10),
+                            Align(
+                              alignment: Alignment.centerLeft,
+                              child: Wrap(
+                                spacing: 8,
+                                runSpacing: 8,
+                                children: [
+                                  for (final language
+                                      in LyricsRomanizationLanguage.values)
+                                    FilterChip(
+                                      key: ValueKey(
+                                        'lyrics-romanization-language-'
+                                        '${language.code}',
+                                      ),
+                                      selected: romanizationLanguages.contains(
+                                        language,
+                                      ),
+                                      showCheckmark: true,
+                                      label: Text(
+                                        strings.romanizationLanguageLabel(
+                                          language,
+                                        ),
+                                      ),
+                                      onSelected:
+                                          romanizationLanguages.contains(
+                                                language,
+                                              ) &&
+                                              romanizationLanguages.length == 1
+                                          ? null
+                                          : (selected) {
+                                              final next = romanizationLanguages
+                                                  .toSet();
+                                              if (selected) {
+                                                next.add(language);
+                                              } else {
+                                                next.remove(language);
+                                              }
+                                              onRomanizationLanguagesChanged(
+                                                next,
+                                              );
+                                            },
+                                    ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ],
           ),
-          const SizedBox(height: 22),
-          Text(
-            strings.lyricsPreview,
-            style: Theme.of(
-              context,
-            ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w800),
-          ),
-          const SizedBox(height: 10),
-          _LyricsAnimationPreview(
-            animationStyle: animationStyle,
-            alignment: alignment,
-            romanizationEnabled: romanizationEnabled,
-            romanizationLanguages: romanizationLanguages,
-            strings: strings,
+          const SizedBox(height: appSectionGap),
+          _SettingsSectionPanel(
+            title: strings.lyricsPreview,
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(12, 6, 12, 12),
+                child: _LyricsAnimationPreview(
+                  animationStyle: animationStyle,
+                  alignment: alignment,
+                  romanizationEnabled: romanizationEnabled,
+                  romanizationLanguages: romanizationLanguages,
+                  strings: strings,
+                ),
+              ),
+            ],
           ),
         ],
       ),
@@ -3142,27 +3044,18 @@ class _LyricsProvidersSettings extends StatelessWidget {
       constraints: BoxConstraints(
         maxWidth: _settingsContentMaxWidth(context, 520),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
+      child: _SettingsSectionPanel(
         children: [
-          Text(
-            strings.lyricsProvidersHint,
-            style: appListCardSubtitleStyle(context),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(12, 6, 12, 0),
+            child: Text(
+              strings.lyricsProvidersHint,
+              style: appListCardSubtitleStyle(context),
+            ),
           ),
           const SizedBox(height: 16),
-          Material(
+          _SettingsItemSurface(
             key: const ValueKey('lyrics-providers-card'),
-            color: AppColors.cardSurfaceFor(context),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(appCardRadius),
-              side: BorderSide(
-                color: AppColors.cardBorderFor(
-                  context,
-                  solidInLiquidGlass: true,
-                ),
-              ),
-            ),
-            clipBehavior: Clip.antiAlias,
             child: Column(
               children: [
                 for (final provider in LyricsProvider.values) ...[
@@ -3185,24 +3078,21 @@ class _LyricsProvidersSettings extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 16),
-          Text(
-            enabledProviders.isEmpty
-                ? strings.lyricsProvidersDisabledHint
-                : strings.lyricsProvidersFallbackHint,
-            key: const ValueKey('lyrics-providers-status'),
-            style: appListCardSubtitleStyle(context),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+            child: Text(
+              enabledProviders.isEmpty
+                  ? strings.lyricsProvidersDisabledHint
+                  : strings.lyricsProvidersFallbackHint,
+              key: const ValueKey('lyrics-providers-status'),
+              style: appListCardSubtitleStyle(context),
+            ),
           ),
         ],
       ),
     );
   }
 }
-
-IconData _lyricsAnimationIcon(LyricsAnimationStyle style) => switch (style) {
-  LyricsAnimationStyle.smooth => Icons.auto_awesome_rounded,
-  LyricsAnimationStyle.slide => Icons.swipe_up_rounded,
-  LyricsAnimationStyle.highlight => Icons.zoom_in_rounded,
-};
 
 class _LyricsAnimationPreview extends ConsumerStatefulWidget {
   const _LyricsAnimationPreview({
@@ -3485,6 +3375,109 @@ List<String> _lyricsRomanizationPreviewLines(
   ],
 };
 
+class _ThemeModeSelector extends StatelessWidget {
+  const _ThemeModeSelector({
+    required this.selected,
+    required this.strings,
+    required this.onChanged,
+  });
+
+  final AppThemeMode selected;
+  final AppStrings strings;
+  final ValueChanged<AppThemeMode> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final textStyle = Theme.of(
+      context,
+    ).textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w800);
+    final options = [
+      (
+        value: AppThemeMode.system,
+        icon: Icons.settings_suggest_rounded,
+        label: strings.themeSystem,
+      ),
+      (
+        value: AppThemeMode.light,
+        icon: Icons.light_mode_rounded,
+        label: strings.themeLight,
+      ),
+      (
+        value: AppThemeMode.dark,
+        icon: Icons.dark_mode_rounded,
+        label: strings.themeDark,
+      ),
+    ];
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final painter = TextPainter(
+          textDirection: Directionality.of(context),
+          textScaler: MediaQuery.textScalerOf(context),
+          locale: Localizations.maybeLocaleOf(context),
+          maxLines: 1,
+        );
+        var widestLabel = 0.0;
+        try {
+          for (final option in options) {
+            painter.text = TextSpan(text: option.label, style: textStyle);
+            painter.layout();
+            if (painter.width > widestLabel) widestLabel = painter.width;
+          }
+        } finally {
+          painter.dispose();
+        }
+        // Keep full labels at the user's text size. Stack icons on compact
+        // screens, then use vertical segments if enlarged text needs more room.
+        final compact =
+            (widestLabel + 22 + 8 + 28) * options.length > constraints.maxWidth;
+        final vertical =
+            compact &&
+            (widestLabel + 16) * options.length > constraints.maxWidth;
+        final stacked = compact && !vertical;
+        return SizedBox(
+          width: constraints.maxWidth,
+          child: SegmentedButton<AppThemeMode>(
+            key: const ValueKey('settings-theme-mode-selector'),
+            selected: {selected},
+            direction: vertical ? Axis.vertical : Axis.horizontal,
+            expandedInsets: vertical ? null : EdgeInsets.zero,
+            showSelectedIcon: !stacked,
+            style: ButtonStyle(
+              minimumSize: WidgetStateProperty.all(const Size(0, 50)),
+              padding: WidgetStateProperty.all(
+                EdgeInsets.symmetric(
+                  horizontal: stacked ? 8 : 14,
+                  vertical: 10,
+                ),
+              ),
+              textStyle: WidgetStateProperty.all(textStyle),
+              iconSize: WidgetStateProperty.all(22),
+            ),
+            segments: [
+              for (final option in options)
+                ButtonSegment(
+                  value: option.value,
+                  icon: stacked ? null : Icon(option.icon),
+                  label: stacked
+                      ? Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(option.icon),
+                            const SizedBox(height: 5),
+                            Text(option.label, textAlign: TextAlign.center),
+                          ],
+                        )
+                      : Text(option.label),
+                ),
+            ],
+            onSelectionChanged: (selection) => onChanged(selection.first),
+          ),
+        );
+      },
+    );
+  }
+}
+
 class _AccentSwatch extends StatelessWidget {
   const _AccentSwatch({
     required this.accent,
@@ -3510,42 +3503,45 @@ class _AccentSwatch extends StatelessWidget {
         message: label,
         child: InkWell(
           onTap: onTap,
-          borderRadius: BorderRadius.circular(appListCardIconRadius),
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 180),
-            width: 48,
-            height: 48,
-            padding: const EdgeInsets.all(5),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [accent.seedColor, accent.darkColor],
+          customBorder: const CircleBorder(),
+          child: Center(
+            child: AnimatedContainer(
+              key: ValueKey('accent-swatch-${accent.code}'),
+              duration: const Duration(milliseconds: 180),
+              width: 42,
+              height: 42,
+              padding: const EdgeInsets.all(5),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [accent.seedColor, accent.darkColor],
+                ),
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: selected ? scheme.onSurface : scheme.outlineVariant,
+                  width: selected ? 3 : 1,
+                ),
+                boxShadow: selected
+                    ? [
+                        BoxShadow(
+                          color: accent.seedColor.withValues(alpha: 0.38),
+                          blurRadius: 10,
+                          spreadRadius: 1,
+                        ),
+                      ]
+                    : null,
               ),
-              borderRadius: BorderRadius.circular(appListCardIconRadius),
-              border: Border.all(
-                color: selected ? scheme.onSurface : scheme.outlineVariant,
-                width: selected ? 3 : 1,
-              ),
-              boxShadow: selected
-                  ? [
-                      BoxShadow(
-                        color: accent.seedColor.withValues(alpha: 0.38),
-                        blurRadius: 10,
-                        spreadRadius: 1,
-                      ),
-                    ]
+              child: selected
+                  ? Icon(
+                      Icons.check_rounded,
+                      color: accent.seedColor.computeLuminance() > 0.58
+                          ? Colors.black
+                          : Colors.white,
+                      size: 20,
+                    )
                   : null,
             ),
-            child: selected
-                ? Icon(
-                    Icons.check_rounded,
-                    color: accent.seedColor.computeLuminance() > 0.58
-                        ? Colors.black
-                        : Colors.white,
-                    size: 22,
-                  )
-                : null,
           ),
         ),
       ),
@@ -3662,83 +3658,75 @@ class _SleepTimerSettings extends StatelessWidget {
     final customSelected = !_presets.contains(state.selectedDuration);
     return ConstrainedBox(
       constraints: const BoxConstraints(maxWidth: 520),
-      child: AppCardGradientBorder(
-        solidInLiquidGlass: true,
-        child: Material(
-          color: AppColors.cardSurfaceFor(context),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(appCardRadius),
-            side: BorderSide(
-              color: AppColors.cardBorderFor(context, solidInLiquidGlass: true),
+      child: _SettingsItemSurface(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            SwitchListTile.adaptive(
+              value: state.isActive,
+              onChanged: onEnabledChanged,
+              secondary: const _SettingsLeadingIcon(
+                icon: Icons.bedtime_rounded,
+              ),
+              horizontalTitleGap: 14,
+              title: Text(
+                strings.automaticShutdown,
+                style: const TextStyle(fontWeight: FontWeight.w800),
+              ),
+              subtitle: Text(
+                state.isActive
+                    ? strings.sleepTimerRemaining(state.remaining)
+                    : strings.sleepTimerOff,
+                style: appListCardSubtitleStyle(context),
+              ),
             ),
-          ),
-          clipBehavior: Clip.antiAlias,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              SwitchListTile.adaptive(
-                value: state.isActive,
-                onChanged: onEnabledChanged,
-                secondary: const Icon(Icons.bedtime_rounded),
-                title: Text(
-                  strings.automaticShutdown,
-                  style: const TextStyle(fontWeight: FontWeight.w800),
-                ),
-                subtitle: Text(
-                  state.isActive
-                      ? strings.sleepTimerRemaining(state.remaining)
-                      : strings.sleepTimerOff,
-                  style: appListCardSubtitleStyle(context),
-                ),
-              ),
-              AnimatedSize(
-                duration: const Duration(milliseconds: 240),
-                curve: Curves.easeOutCubic,
-                alignment: Alignment.topCenter,
-                child: state.isActive
-                    ? Padding(
-                        padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            Row(
-                              children: [
-                                for (
-                                  var index = 0;
-                                  index < _presets.length;
-                                  index++
-                                ) ...[
-                                  if (index > 0) const SizedBox(width: 8),
-                                  Expanded(
-                                    child: _PlaybackOptionButton(
-                                      selected:
-                                          state.selectedDuration ==
-                                          _presets[index],
-                                      inactiveIcon: Icons.schedule_rounded,
-                                      label: strings.timerMinutes(
-                                        _presets[index].inMinutes,
-                                      ),
-                                      onTap: () =>
-                                          onDurationSelected(_presets[index]),
+            AnimatedSize(
+              duration: const Duration(milliseconds: 240),
+              curve: Curves.easeOutCubic,
+              alignment: Alignment.topCenter,
+              child: state.isActive
+                  ? Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          Row(
+                            children: [
+                              for (
+                                var index = 0;
+                                index < _presets.length;
+                                index++
+                              ) ...[
+                                if (index > 0) const SizedBox(width: 8),
+                                Expanded(
+                                  child: _PlaybackOptionButton(
+                                    selected:
+                                        state.selectedDuration ==
+                                        _presets[index],
+                                    inactiveIcon: Icons.schedule_rounded,
+                                    label: strings.timerMinutes(
+                                      _presets[index].inMinutes,
                                     ),
+                                    onTap: () =>
+                                        onDurationSelected(_presets[index]),
                                   ),
-                                ],
+                                ),
                               ],
-                            ),
-                            const SizedBox(height: 10),
-                            _PlaybackOptionButton(
-                              selected: customSelected,
-                              inactiveIcon: Icons.tune_rounded,
-                              label: strings.customDuration,
-                              onTap: onCustomDuration,
-                            ),
-                          ],
-                        ),
-                      )
-                    : const SizedBox.shrink(),
-              ),
-            ],
-          ),
+                            ],
+                          ),
+                          const SizedBox(height: 10),
+                          _PlaybackOptionButton(
+                            selected: customSelected,
+                            inactiveIcon: Icons.tune_rounded,
+                            label: strings.customDuration,
+                            onTap: onCustomDuration,
+                          ),
+                        ],
+                      ),
+                    )
+                  : const SizedBox.shrink(),
+            ),
+          ],
         ),
       ),
     );
@@ -3770,67 +3758,59 @@ class _CrossfadeSettings extends StatelessWidget {
       constraints: BoxConstraints(
         maxWidth: desktopLayout ? double.infinity : 520,
       ),
-      child: AppCardGradientBorder(
-        solidInLiquidGlass: true,
-        child: Material(
-          color: AppColors.cardSurfaceFor(context),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(appCardRadius),
-            side: BorderSide(
-              color: AppColors.cardBorderFor(context, solidInLiquidGlass: true),
+      child: _SettingsItemSurface(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            SwitchListTile.adaptive(
+              key: const ValueKey('settings-crossfade-switch'),
+              value: enabled,
+              onChanged: onEnabledChanged,
+              secondary: const _SettingsLeadingIcon(
+                icon: Icons.multitrack_audio_rounded,
+              ),
+              horizontalTitleGap: 14,
+              title: Text(
+                strings.crossfade,
+                style: const TextStyle(fontWeight: FontWeight.w800),
+              ),
+              subtitle: Text(
+                strings.crossfadeSummary,
+                style: appListCardSubtitleStyle(context),
+              ),
             ),
-          ),
-          clipBehavior: Clip.antiAlias,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              SwitchListTile.adaptive(
-                key: const ValueKey('settings-crossfade-switch'),
-                value: enabled,
-                onChanged: onEnabledChanged,
-                secondary: const Icon(Icons.multitrack_audio_rounded),
-                title: Text(
-                  strings.crossfade,
-                  style: const TextStyle(fontWeight: FontWeight.w800),
-                ),
-                subtitle: Text(
-                  strings.crossfadeSummary,
-                  style: appListCardSubtitleStyle(context),
+            AnimatedSwitcher(
+              key: const ValueKey('settings-crossfade-options-transition'),
+              duration: MediaQuery.disableAnimationsOf(context)
+                  ? Duration.zero
+                  : const Duration(milliseconds: 180),
+              reverseDuration: MediaQuery.disableAnimationsOf(context)
+                  ? Duration.zero
+                  : const Duration(milliseconds: 140),
+              switchInCurve: Curves.easeOutCubic,
+              switchOutCurve: Curves.easeInCubic,
+              transitionBuilder: (child, animation) => ClipRect(
+                child: SizeTransition(
+                  sizeFactor: animation,
+                  alignment: Alignment.topCenter,
+                  child: FadeTransition(opacity: animation, child: child),
                 ),
               ),
-              AnimatedSwitcher(
-                key: const ValueKey('settings-crossfade-options-transition'),
-                duration: MediaQuery.disableAnimationsOf(context)
-                    ? Duration.zero
-                    : const Duration(milliseconds: 180),
-                reverseDuration: MediaQuery.disableAnimationsOf(context)
-                    ? Duration.zero
-                    : const Duration(milliseconds: 140),
-                switchInCurve: Curves.easeOutCubic,
-                switchOutCurve: Curves.easeInCubic,
-                transitionBuilder: (child, animation) => ClipRect(
-                  child: SizeTransition(
-                    sizeFactor: animation,
-                    alignment: Alignment.topCenter,
-                    child: FadeTransition(opacity: animation, child: child),
-                  ),
-                ),
-                child: enabled
-                    ? Padding(
-                        key: const ValueKey('settings-crossfade-options'),
-                        padding: const EdgeInsets.fromLTRB(16, 0, 16, 14),
-                        child: _CrossfadeDurationSlider(
-                          duration: duration,
-                          strings: strings,
-                          onDurationSelected: onDurationSelected,
-                        ),
-                      )
-                    : const SizedBox.shrink(
-                        key: ValueKey('settings-crossfade-options-hidden'),
+              child: enabled
+                  ? Padding(
+                      key: const ValueKey('settings-crossfade-options'),
+                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 14),
+                      child: _CrossfadeDurationSlider(
+                        duration: duration,
+                        strings: strings,
+                        onDurationSelected: onDurationSelected,
                       ),
-              ),
-            ],
-          ),
+                    )
+                  : const SizedBox.shrink(
+                      key: ValueKey('settings-crossfade-options-hidden'),
+                    ),
+            ),
+          ],
         ),
       ),
     );
@@ -3840,12 +3820,14 @@ class _CrossfadeSettings extends StatelessWidget {
 class _SkipSilenceSettings extends StatelessWidget {
   const _SkipSilenceSettings({
     required this.enabled,
+    required this.available,
     required this.strings,
     required this.onEnabledChanged,
     super.key,
   });
 
   final bool enabled;
+  final bool available;
   final AppStrings strings;
   final ValueChanged<bool> onEnabledChanged;
 
@@ -3858,30 +3840,24 @@ class _SkipSilenceSettings extends StatelessWidget {
       constraints: BoxConstraints(
         maxWidth: desktopLayout ? double.infinity : 520,
       ),
-      child: AppCardGradientBorder(
-        solidInLiquidGlass: true,
-        child: Material(
-          color: AppColors.cardSurfaceFor(context),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(appCardRadius),
-            side: BorderSide(
-              color: AppColors.cardBorderFor(context, solidInLiquidGlass: true),
-            ),
+      child: _SettingsItemSurface(
+        child: SwitchListTile.adaptive(
+          key: const ValueKey('settings-skip-silence-switch'),
+          value: enabled,
+          onChanged: onEnabledChanged,
+          secondary: const _SettingsLeadingIcon(
+            icon: Icons.fast_forward_rounded,
           ),
-          clipBehavior: Clip.antiAlias,
-          child: SwitchListTile.adaptive(
-            key: const ValueKey('settings-skip-silence-switch'),
-            value: enabled,
-            onChanged: onEnabledChanged,
-            secondary: const Icon(Icons.fast_forward_rounded),
-            title: Text(
-              strings.skipSilence,
-              style: const TextStyle(fontWeight: FontWeight.w800),
-            ),
-            subtitle: Text(
-              strings.skipSilenceSummary,
-              style: appListCardSubtitleStyle(context),
-            ),
+          horizontalTitleGap: 14,
+          title: Text(
+            strings.skipSilence,
+            style: const TextStyle(fontWeight: FontWeight.w800),
+          ),
+          subtitle: Text(
+            available
+                ? strings.skipSilenceSummary
+                : strings.skipSilenceUnavailableForAudio,
+            style: appListCardSubtitleStyle(context),
           ),
         ),
       ),
@@ -4363,24 +4339,579 @@ class _SettingsGroup extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.only(bottom: appSectionGap),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Padding(
-            padding: const EdgeInsets.symmetric(
-              horizontal:
-                  appTabTitleHorizontalPadding -
-                  _settingsRootCardHorizontalPadding,
-            ),
-            child: Text(
-              title,
-              key: titleKey,
-              style: appSectionTitleStyle(context),
+      child: _SettingsSectionPanel(
+        title: title,
+        titleKey: titleKey,
+        children: children,
+      ),
+    );
+  }
+}
+
+/// Shares a single, inexpensive painted surface between related settings.
+/// Rows use this Material for their ink response instead of adding individual
+/// cards, borders, blur filters, or composited opacity layers.
+class _SettingsSectionPanel extends StatelessWidget {
+  const _SettingsSectionPanel({
+    this.title,
+    this.titleKey,
+    required this.children,
+  });
+
+  final String? title;
+  final Key? titleKey;
+  final List<Widget> children;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    return SizedBox(
+      width: double.infinity,
+      child: Card(
+        key: title == null ? null : ValueKey('settings-section-panel-$title'),
+        margin: EdgeInsets.zero,
+        elevation: 0,
+        color: colors.surfaceContainerLow.withValues(alpha: 0.88),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(22),
+          side: BorderSide(color: colors.outlineVariant.withValues(alpha: 0.5)),
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: _SettingsSectionScope(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(6, 6, 6, 6),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (title != null) ...[
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(12, 10, 12, 6),
+                    child: Text(
+                      title!,
+                      key: titleKey,
+                      style: appSectionTitleStyle(context),
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                ],
+                for (final child in children)
+                  if (child is SizedBox &&
+                      child.child == null &&
+                      child.height == appCardGap)
+                    const Divider(height: 1, indent: 16, endIndent: 16)
+                  else
+                    child,
+              ],
             ),
           ),
-          const SizedBox(height: appGroupHeadingGap),
-          ...children,
+        ),
+      ),
+    );
+  }
+}
+
+class _SettingsSectionScope extends InheritedWidget {
+  const _SettingsSectionScope({required super.child});
+
+  static bool contains(BuildContext context) =>
+      context.dependOnInheritedWidgetOfExactType<_SettingsSectionScope>() !=
+      null;
+
+  @override
+  bool updateShouldNotify(_SettingsSectionScope oldWidget) => false;
+}
+
+class _SettingsItemSurface extends StatelessWidget {
+  const _SettingsItemSurface({required this.child, super.key});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    if (_SettingsSectionScope.contains(context)) return child;
+    return AppCardGradientBorder(
+      solidInLiquidGlass: true,
+      child: Material(
+        color: AppColors.cardSurfaceFor(context),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(appCardRadius),
+          side: BorderSide(
+            color: AppColors.cardBorderFor(context, solidInLiquidGlass: true),
+          ),
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: child,
+      ),
+    );
+  }
+}
+
+class _AudioSourcesSettings extends StatelessWidget {
+  const _AudioSourcesSettings({
+    required this.jioSaavnEnabled,
+    required this.extensions,
+    required this.strings,
+    required this.onAdd,
+    required this.onJioSaavnChanged,
+    required this.onExtensionChanged,
+    required this.onRemove,
+  });
+
+  final bool jioSaavnEnabled;
+  final List<AudioExtension> extensions;
+  final AppStrings strings;
+  final VoidCallback onAdd;
+  final ValueChanged<bool> onJioSaavnChanged;
+  final void Function(AudioExtension, bool) onExtensionChanged;
+  final ValueChanged<AudioExtension> onRemove;
+
+  @override
+  Widget build(BuildContext context) => _SettingsSectionPanel(
+    children: [
+      _SettingsEntryCard(
+        key: const ValueKey('audio-source-youtube-music'),
+        icon: Icons.play_circle_rounded,
+        title: 'YouTube Music',
+        subtitle: strings.youtubeMusicSourceDescription,
+        onTap: null,
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Tooltip(
+              message: strings.audioSourceAlwaysEnabled,
+              child: const Icon(Icons.lock_outline_rounded, size: 18),
+            ),
+            Switch.adaptive(
+              key: const ValueKey('audio-source-youtube-music-switch'),
+              value: true,
+              onChanged: null,
+            ),
+          ],
+        ),
+      ),
+      const SizedBox(height: appCardGap),
+      _SettingsEntryCard(
+        key: const ValueKey('audio-source-jiosaavn'),
+        icon: Icons.high_quality_rounded,
+        title: 'JioSaavn',
+        subtitle: strings.jioSaavnSourceDescription,
+        onTap: () => onJioSaavnChanged(!jioSaavnEnabled),
+        trailing: Switch.adaptive(
+          key: const ValueKey('audio-source-jiosaavn-switch'),
+          value: jioSaavnEnabled,
+          onChanged: onJioSaavnChanged,
+        ),
+      ),
+      for (final extension in extensions) ...[
+        const SizedBox(height: appCardGap),
+        _SettingsEntryCard(
+          key: ValueKey(extension.manifestUri),
+          icon: Icons.extension_rounded,
+          title: extension.name,
+          subtitle: extension.allowDownloads
+              ? extension.manifestUri.host
+              : strings.audioExtensionStreamingOnly,
+          onTap: () => onExtensionChanged(extension, !extension.enabled),
+          trailing: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Switch.adaptive(
+                value: extension.enabled,
+                onChanged: (value) => onExtensionChanged(extension, value),
+              ),
+              IconButton(
+                tooltip: strings.removeAudioSource,
+                onPressed: () => onRemove(extension),
+                icon: const Icon(Icons.delete_outline_rounded),
+              ),
+            ],
+          ),
+        ),
+      ],
+      const SizedBox(height: appCardGap),
+      _SettingsEntryCard(
+        key: const ValueKey('settings-add-audio-source'),
+        icon: Icons.add_rounded,
+        title: strings.addAudioSource,
+        subtitle: '',
+        onTap: onAdd,
+      ),
+    ],
+  );
+}
+
+class _AddAudioSourceDialog extends StatefulWidget {
+  const _AddAudioSourceDialog({required this.strings, required this.onLoad});
+
+  final AppStrings strings;
+  final Future<List<AudioExtension>> Function(String url) onLoad;
+
+  @override
+  State<_AddAudioSourceDialog> createState() => _AddAudioSourceDialogState();
+}
+
+class _AddAudioSourceDialogState extends State<_AddAudioSourceDialog> {
+  final _url = TextEditingController();
+  AudioExtensionError? _error;
+  bool _loading = false;
+
+  @override
+  void dispose() {
+    _url.dispose();
+    super.dispose();
+  }
+
+  Future<void> _submit() async {
+    if (_loading) return;
+    FocusScope.of(context).unfocus();
+    final url = _url.text;
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+    try {
+      final extensions = await widget.onLoad(url);
+      if (extensions.isEmpty) {
+        throw const AudioExtensionException(
+          AudioExtensionError.noAvailableSources,
+        );
+      }
+      if (mounted && ModalRoute.of(context)?.isCurrent == true) {
+        Navigator.of(context).pop(extensions);
+      }
+    } on AudioExtensionException catch (error) {
+      if (mounted) setState(() => _error = error.reason);
+    } catch (_) {
+      if (mounted) setState(() => _error = AudioExtensionError.unavailable);
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final strings = widget.strings;
+    final errorText = switch (_error) {
+      AudioExtensionError.invalidUrl => strings.audioExtensionInvalidUrl,
+      AudioExtensionError.unavailable => strings.audioExtensionUnavailable,
+      AudioExtensionError.unsupported => strings.audioExtensionUnsupported,
+      AudioExtensionError.restricted => strings.audioExtensionRestricted,
+      AudioExtensionError.officialClientOnly =>
+        strings.audioExtensionOfficialClientOnly,
+      AudioExtensionError.outputRequired =>
+        strings.audioExtensionOutputRequired,
+      AudioExtensionError.moduleIndex => strings.audioExtensionModuleIndex,
+      AudioExtensionError.noAvailableSources =>
+        strings.audioExtensionNoAvailableSources,
+      null => null,
+    };
+    return AppAlertDialog(
+      title: Text(strings.addAudioSource),
+      scrollable: true,
+      content: SizedBox(
+        width: 400,
+        child: TextField(
+          key: const ValueKey('audio-extension-url'),
+          controller: _url,
+          enabled: !_loading,
+          keyboardType: TextInputType.url,
+          textInputAction: TextInputAction.done,
+          autocorrect: false,
+          enableSuggestions: false,
+          onSubmitted: (_) => _submit(),
+          onChanged: (_) {
+            if (_error != null) setState(() => _error = null);
+          },
+          decoration: InputDecoration(
+            labelText: strings.audioExtensionUrl,
+            helper: Text(strings.audioExtensionUrlHelp),
+            errorText: errorText,
+            errorMaxLines: 3,
+          ),
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: Text(strings.cancel),
+        ),
+        FilledButton.icon(
+          key: const ValueKey('audio-extension-submit'),
+          onPressed: _loading ? null : _submit,
+          icon: _loading
+              ? const SizedBox.square(
+                  dimension: 16,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              : const Icon(Icons.add_rounded),
+          label: Text(strings.addAudioSource),
+        ),
+      ],
+    );
+  }
+}
+
+class _AudioQualityChoices {
+  _AudioQualityChoices(
+    SettingsState state, {
+    required this.profile,
+    required this.preference,
+    required this.downloads,
+  }) : jioSaavnEnabled = state.jioSaavnEnabled,
+       extensions = automatic.orderedExtensions(
+         state.audioExtensions,
+         forDownload: downloads,
+       ),
+       savedExtension = state.audioExtensions
+           .where(
+             (item) => item.manifestUri == preference.preferredExtensionUri,
+           )
+           .firstOrNull;
+
+  static const automatic = AudioSourcePreference.automatic();
+  static const standardSourceLabel = 'YTMusic';
+
+  final AudioQualityProfile profile;
+  final AudioSourcePreference preference;
+  final bool downloads;
+  final bool jioSaavnEnabled;
+  final List<AudioExtension> extensions;
+  final AudioExtension? savedExtension;
+
+  bool get hasOptionalSource => _hasSource(automatic);
+
+  bool get preferredAvailable {
+    if (preference.preferredExtensionUri != null) {
+      return extensions.contains(savedExtension);
+    }
+    return _hasSource(preference);
+  }
+
+  bool get hasUnavailablePreference =>
+      profile == AudioQualityProfile.high &&
+      preference != automatic &&
+      !preferredAvailable;
+
+  bool get usesStandard =>
+      profile == AudioQualityProfile.standard || !_hasSource(preference);
+
+  AudioExtension? get _effectiveExtension {
+    if (preference.isJioSaavnOnly) return null;
+    return extensions.contains(savedExtension)
+        ? savedExtension
+        : extensions.firstOrNull;
+  }
+
+  AudioSourcePreference? get effectivePreference {
+    if (usesStandard) return null;
+    final extension = _effectiveExtension;
+    return extension == null
+        ? const AudioSourcePreference.jioSaavn()
+        : AudioSourcePreference.audioExtension(extension.manifestUri);
+  }
+
+  bool _hasSource(AudioSourcePreference preference) => preference.hasSource(
+    jioSaavnEnabled: jioSaavnEnabled,
+    hasExtensions: extensions.isNotEmpty,
+  );
+
+  String summary(AppStrings strings) {
+    final effective = usesStandard
+        ? '${strings.standardAudioQuality} · $standardSourceLabel'
+        : '${strings.highAudioQuality} · ${_effectiveExtension?.name ?? 'JioSaavn'}';
+    if (!hasUnavailablePreference) return effective;
+    final preferred = preference.isJioSaavnOnly
+        ? 'JioSaavn'
+        : savedExtension?.name ?? strings.audioSourcePreferredAddon;
+    return '${strings.unavailableAudioSource(preferred)} $effective';
+  }
+
+  String path(AppStrings strings, {AudioExtension? preferred}) => [
+    if (!downloads) standardSourceLabel,
+    if (preferred != null) preferred.name,
+    if (preferred != null && extensions.length > 1)
+      strings.audioSourceOtherAddons,
+    if (jioSaavnEnabled) 'JioSaavn',
+    if (downloads) standardSourceLabel,
+  ].join(' → ');
+}
+
+class _DataSavingSettings extends StatelessWidget {
+  const _DataSavingSettings({
+    required this.state,
+    required this.strings,
+    required this.singleProfile,
+    required this.onQualityTap,
+  });
+
+  final SettingsState state;
+  final AppStrings strings;
+  final bool singleProfile;
+  final ValueChanged<_SettingsRoute> onQualityTap;
+
+  String _selectionLabel(
+    AudioQualityProfile profile,
+    AudioSourcePreference preference, {
+    bool downloads = false,
+  }) => _AudioQualityChoices(
+    state,
+    profile: profile,
+    preference: preference,
+    downloads: downloads,
+  ).summary(strings);
+
+  @override
+  Widget build(BuildContext context) => Column(
+    mainAxisSize: MainAxisSize.min,
+    children: [
+      _SettingsGroup(
+        title: strings.streamingAudio,
+        children: [
+          _SettingsEntryCard(
+            key: ValueKey(
+              singleProfile ? 'data-saving-quality' : 'data-saving-wifi',
+            ),
+            icon: singleProfile ? Icons.headphones_rounded : Icons.wifi_rounded,
+            title: singleProfile ? strings.audioQuality : strings.wifiNetwork,
+            subtitle: _selectionLabel(
+              state.wifiAudioQuality,
+              state.wifiAudioSourcePreference,
+            ),
+            onTap: () => onQualityTap(_SettingsRoute.wifiQuality),
+          ),
+          if (!singleProfile) ...[
+            const SizedBox(height: appCardGap),
+            _SettingsEntryCard(
+              key: const ValueKey('data-saving-mobile'),
+              icon: Icons.signal_cellular_alt_rounded,
+              title: strings.mobileNetwork,
+              subtitle: _selectionLabel(
+                state.mobileAudioQuality,
+                state.mobileAudioSourcePreference,
+              ),
+              onTap: () => onQualityTap(_SettingsRoute.mobileQuality),
+            ),
+          ],
         ],
+      ),
+      _SettingsSectionPanel(
+        title: strings.downloads,
+        children: [
+          _SettingsEntryCard(
+            key: const ValueKey('data-saving-download-quality'),
+            icon: Icons.download_rounded,
+            title: strings.downloadAudioQuality,
+            subtitle: _selectionLabel(
+              state.downloadAudioQuality,
+              state.downloadAudioSourcePreference,
+              downloads: true,
+            ),
+            onTap: () => onQualityTap(_SettingsRoute.downloadQuality),
+          ),
+        ],
+      ),
+    ],
+  );
+}
+
+class _AudioQualityProfileSettings extends StatelessWidget {
+  const _AudioQualityProfileSettings({
+    required this.choices,
+    required this.strings,
+    required this.onChanged,
+  });
+
+  final _AudioQualityChoices choices;
+  final AppStrings strings;
+  final void Function(AudioQualityProfile, AudioSourcePreference?) onChanged;
+
+  @override
+  Widget build(BuildContext context) => Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      if (choices.hasUnavailablePreference)
+        Padding(
+          padding: const EdgeInsets.fromLTRB(12, 0, 12, appCardGap),
+          child: Text(choices.summary(strings)),
+        ),
+      _SettingsSectionPanel(
+        title: strings.standardAudioQuality,
+        children: [
+          _option(
+            context,
+            key: const ValueKey('audio-quality-profile-standard'),
+            title: _AudioQualityChoices.standardSourceLabel,
+            icon: Icons.play_circle_rounded,
+          ),
+        ],
+      ),
+      if (choices.hasOptionalSource) ...[
+        const SizedBox(height: appSectionGap),
+        _SettingsSectionPanel(
+          title: strings.highAudioQuality,
+          children: [
+            if (choices.jioSaavnEnabled)
+              _option(
+                context,
+                key: const ValueKey('audio-quality-profile-jiosaavn'),
+                title: 'JioSaavn',
+                subtitle: choices.path(strings),
+                icon: Icons.headphones_rounded,
+                preference: const AudioSourcePreference.jioSaavn(),
+              ),
+            for (final (index, extension) in choices.extensions.indexed) ...[
+              if (choices.jioSaavnEnabled || index > 0)
+                const SizedBox(height: appCardGap),
+              _extensionOption(context, extension),
+            ],
+          ],
+        ),
+      ],
+    ],
+  );
+
+  Widget _extensionOption(BuildContext context, AudioExtension extension) {
+    final preference = AudioSourcePreference.audioExtension(
+      extension.manifestUri,
+    );
+    return _option(
+      context,
+      key: ValueKey(extension.manifestUri),
+      title: extension.name,
+      subtitle: choices.path(strings, preferred: extension),
+      icon: Icons.extension_rounded,
+      preference: preference,
+    );
+  }
+
+  Widget _option(
+    BuildContext context, {
+    required Key key,
+    required String title,
+    String subtitle = '',
+    required IconData icon,
+    AudioSourcePreference? preference,
+  }) {
+    final selected = choices.effectivePreference == preference;
+    return Semantics(
+      selected: selected,
+      child: _SettingsEntryCard(
+        key: key,
+        icon: icon,
+        title: title,
+        subtitle: subtitle,
+        onTap: () => onChanged(
+          preference == null
+              ? AudioQualityProfile.standard
+              : AudioQualityProfile.high,
+          preference,
+        ),
+        trailing: Icon(
+          selected
+              ? Icons.check_circle_rounded
+              : Icons.radio_button_unchecked_rounded,
+          color: selected ? Theme.of(context).colorScheme.primary : null,
+        ),
       ),
     );
   }
@@ -4417,15 +4948,21 @@ class _StorageSettings extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         if (canChangeDownloadDirectory) ...[
-          Text(strings.downloads, style: appSectionTitleStyle(context)),
-          const SizedBox(height: 8),
-          _PathField(
-            controller: downloadPathController,
-            focusNode: downloadPathFocusNode,
-            label: strings.folder,
-            icon: Icons.folder_rounded,
-            browseTooltip: strings.browseFolder,
-            onBrowse: onBrowse,
+          _SettingsSectionPanel(
+            title: strings.downloads,
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(12, 6, 12, 12),
+                child: _PathField(
+                  controller: downloadPathController,
+                  focusNode: downloadPathFocusNode,
+                  label: strings.folder,
+                  icon: Icons.folder_rounded,
+                  browseTooltip: strings.browseFolder,
+                  onBrowse: onBrowse,
+                ),
+              ),
+            ],
           ),
           const SizedBox(height: appSectionGap),
         ],
@@ -4648,14 +5185,7 @@ class _StorageTransferSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(title, style: appSectionTitleStyle(context)),
-        const SizedBox(height: appGroupHeadingGap),
-        ...children,
-      ],
-    );
+    return _SettingsSectionPanel(title: title, children: children);
   }
 }
 
